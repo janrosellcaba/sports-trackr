@@ -1,44 +1,42 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { RestTimerProvider } from "@/components/gym/RestTimer";
 import { AppNav } from "@/components/layout/AppNav";
+import { PageEnter } from "@/components/layout/PageEnter";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { Logo } from "@/components/ui/Logo";
 import { isAdminUser } from "@/lib/auth";
 
 export async function AppShell({
   children,
-  subtitle,
   wide = false,
 }: {
   children: React.ReactNode;
-  subtitle?: string;
   wide?: boolean;
 }) {
   const user = await getCurrentUser();
 
   return (
     <RestTimerProvider>
-      <main className="min-h-screen bg-black text-neutral-100">
-        <div
-          className={`mx-auto flex w-full flex-col gap-6 px-4 py-6 pb-28 sm:px-6 sm:py-10 ${
-            wide ? "max-w-3xl" : "max-w-lg"
-          }`}
-        >
-          <header className="space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-2">
-                <Logo />
-                <p className="text-sm text-neutral-400">
-                  {subtitle ?? "Minimalist workout & activity logger"}
-                </p>
-              </div>
-              {user ? <UserMenu user={user} /> : null}
-            </div>
-            <AppNav isAdmin={user ? isAdminUser(user) : false} />
-          </header>
-          {children}
-        </div>
-      </main>
+      <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col bg-cream">
+        <header className="shrink-0 border-b border-line bg-paper/90 px-5 py-4 backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <Logo />
+            {user ? <UserMenu user={user} /> : null}
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+          <div
+            className={`mx-auto px-5 pt-6 pb-6 ${
+              wide ? "max-w-md lg:max-w-6xl" : "max-w-md"
+            }`}
+          >
+            <PageEnter>{children}</PageEnter>
+          </div>
+        </main>
+
+        <AppNav isAdmin={user ? isAdminUser(user) : false} />
+      </div>
     </RestTimerProvider>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { endSession, startSession } from "@/app/actions/gym";
 import type { SessionPayload } from "@/types/trackr";
 import { QuickActivityTrigger } from "@/components/activity/QuickActivityModal";
+import { LABEL_CLS, PRIMARY_BTN } from "@/lib/ui";
 
 function formatElapsed(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -57,64 +58,53 @@ export function SessionHeader({ session }: SessionHeaderProps) {
 
   if (!session) {
     return (
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-              Gym
-            </p>
-            <h2 className="text-xl font-semibold text-neutral-100">
-              Ready to train
-            </h2>
-          </div>
-          <span className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1 text-xs text-neutral-400">
-            Idle
-          </span>
+      <section className="space-y-3">
+        <div className="relative overflow-hidden rounded-3xl border border-line bg-paper p-6 text-center shadow-sm">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand/5 via-transparent to-transparent" />
+          <p className={`relative ${LABEL_CLS}`}>Gym</p>
+          <p className="relative mt-2 text-3xl font-extrabold tracking-tight text-ink">
+            Ready to train
+          </p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={handleStart}
-            disabled={isPending}
-            className="flex h-14 items-center justify-center rounded-xl bg-lime-400 text-base font-semibold text-neutral-950 transition active:scale-[0.98] disabled:opacity-60"
-          >
-            {isPending ? "Starting…" : "Start Gym Session"}
-          </button>
-          <QuickActivityTrigger />
-        </div>
+        <button
+          type="button"
+          onClick={handleStart}
+          disabled={isPending}
+          className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark shadow-sm`}
+        >
+          {isPending ? "Starting…" : "Start Gym Session"}
+        </button>
+        <QuickActivityTrigger />
       </section>
     );
   }
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-            Gym
-          </p>
-          <h2 className="font-mono text-xl font-semibold tabular-nums text-neutral-100">
-            Active Session: {elapsed}
-          </h2>
+    <section className="space-y-3">
+      <div className="relative overflow-hidden rounded-3xl border border-line bg-paper p-6 text-center shadow-sm">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand/5 via-transparent to-transparent" />
+        <div className="relative mb-2 flex items-center justify-center gap-2">
+          <p className={LABEL_CLS}>Active session</p>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-0.5 text-[11px] font-bold text-brand">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
+            Live
+          </span>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          Live
-        </span>
+        <p className="relative font-mono text-4xl font-extrabold tracking-tight text-brand tabular-nums">
+          {elapsed}
+        </p>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-[1.4fr_1fr]">
-        <button
-          type="button"
-          onClick={handleEnd}
-          disabled={isPending}
-          className="flex h-12 items-center justify-center rounded-xl border border-neutral-700 bg-neutral-900 text-sm font-medium text-neutral-200 transition active:scale-[0.98] disabled:opacity-60"
-        >
-          {isPending ? "Ending…" : "End Session"}
-        </button>
-        <QuickActivityTrigger compact />
-      </div>
+      <button
+        type="button"
+        onClick={handleEnd}
+        disabled={isPending}
+        className="w-full rounded-2xl border-2 border-danger/25 bg-danger-soft py-4 text-lg font-bold text-danger transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-danger/40 hover:shadow-md active:translate-y-0 disabled:opacity-60 select-none"
+      >
+        {isPending ? "Ending…" : "End Session"}
+      </button>
+      <QuickActivityTrigger compact />
     </section>
   );
 }

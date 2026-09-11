@@ -7,6 +7,7 @@ import type {
   CardioType,
   IntensityLevel,
 } from "@/types/trackr";
+import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 
 const TYPE_LABELS: Record<CardioType, string> = {
   PADEL: "Padel",
@@ -35,20 +36,18 @@ export function RecentActivities({ activities }: RecentActivitiesProps) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium uppercase tracking-[0.18em] text-neutral-500">
-        Recent activities
-      </h2>
+      <h2 className={LABEL_CLS}>Recent activities</h2>
       <ul className="space-y-2">
         {activities.map((activity) => (
           <li
             key={activity.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-neutral-900/40 px-4 py-3"
+            className={`${CARD_CLS} flex items-center justify-between gap-3 px-4 py-3`}
           >
             <div>
-              <p className="text-sm font-medium text-neutral-100">
+              <p className="text-sm font-bold text-ink">
                 {TYPE_LABELS[activity.type]} · {activity.durationMinutes}m
               </p>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-muted">
                 {INTENSITY_LABELS[activity.intensity]}
                 {activity.notes ? ` · ${activity.notes}` : ""}
               </p>
@@ -61,7 +60,7 @@ export function RecentActivities({ activities }: RecentActivitiesProps) {
                   await deleteCardioActivity(activity.id);
                 })
               }
-              className="rounded-md px-2 py-1 text-xs text-neutral-500 hover:text-red-400 disabled:opacity-50"
+              className="rounded-md px-2 py-1 text-xs font-semibold text-muted hover:text-danger disabled:opacity-50"
             >
               Del
             </button>

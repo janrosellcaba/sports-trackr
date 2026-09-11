@@ -2,11 +2,13 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { addExercise } from "@/app/actions/gym";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import {
   EXERCISE_CATALOG,
   MUSCLE_FILTERS,
   type MuscleFilter,
 } from "@/lib/exercises";
+import { INPUT_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
 
 type AddExerciseModalProps = {
   sessionId: string;
@@ -49,87 +51,66 @@ export function AddExerciseModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <button
-        type="button"
-        aria-label="Close"
-        className="absolute inset-0 bg-black/70"
-        onClick={onClose}
-      />
-
-      <div className="relative z-10 w-full max-w-lg rounded-t-2xl border border-neutral-850 bg-black p-5 shadow-2xl sm:rounded-2xl">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold text-neutral-100">
-            Add exercise
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-neutral-850 px-3 py-2 text-sm text-neutral-400"
-          >
-            Close
-          </button>
-        </div>
-
-        <form
-          className="mb-3 flex gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            submit(query);
-          }}
-        >
+    <BottomSheet title="Add Exercise" onClose={onClose}>
+      <form
+        className="mb-4 space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit(query);
+        }}
+      >
+        <label className="block">
+          <span className="mb-1 block text-sm font-semibold text-ink">
+            Exercise
+          </span>
           <input
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search or type custom…"
-            className="h-12 flex-1 rounded-xl border border-neutral-850 bg-neutral-950 px-4 text-base text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-lime-400/50"
+            className={INPUT_CLS}
           />
+        </label>
+        <button
+          type="submit"
+          disabled={isPending || !query.trim()}
+          className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark`}
+        >
+          {isPending ? "Adding…" : "Add Custom"}
+        </button>
+      </form>
+
+      <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1">
+        {MUSCLE_FILTERS.map((group) => (
           <button
-            type="submit"
-            disabled={isPending || !query.trim()}
-            className="h-12 shrink-0 rounded-xl bg-lime-400 px-4 text-sm font-semibold text-neutral-950 disabled:opacity-50"
+            key={group}
+            type="button"
+            onClick={() => setFilter(group)}
+            className={`shrink-0 ${chipClass(filter === group)} !rounded-full px-3 py-1.5 text-xs`}
           >
-            Add
+            {group}
           </button>
-        </form>
-
-        <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1">
-          {MUSCLE_FILTERS.map((group) => (
-            <button
-              key={group}
-              type="button"
-              onClick={() => setFilter(group)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                filter === group
-                  ? "bg-lime-400 text-neutral-950"
-                  : "border border-neutral-850 bg-neutral-950 text-neutral-400"
-              }`}
-            >
-              {group}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto pb-2">
-          {suggestions.map((exercise) => (
-            <button
-              key={exercise.name}
-              type="button"
-              disabled={isPending}
-              onClick={() => submit(exercise.name)}
-              className="rounded-full border border-neutral-850 bg-neutral-950 px-4 py-2.5 text-sm text-neutral-200 transition active:scale-[0.98] hover:border-lime-400/40 hover:text-lime-300 disabled:opacity-50"
-            >
-              {exercise.name}
-            </button>
-          ))}
-          {suggestions.length === 0 && (
-            <p className="text-sm text-neutral-500">
-              No matches — use the input to add a custom exercise.
-            </p>
-          )}
-        </div>
+        ))}
       </div>
-    </div>
+
+      <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto pb-2">
+        {suggestions.map((exercise) => (
+          <button
+            key={exercise.name}
+            type="button"
+            disabled={isPending}
+            onClick={() => submit(exercise.name)}
+            className="rounded-full bg-chip px-4 py-2.5 text-sm font-medium text-ink transition-colors duration-150 hover:bg-chip-hover disabled:opacity-50"
+          >
+            {exercise.name}
+          </button>
+        ))}
+        {suggestions.length === 0 && (
+          <p className="text-sm text-muted">
+            No matches — use the input to add a custom exercise.
+          </p>
+        )}
+      </div>
+    </BottomSheet>
   );
 }

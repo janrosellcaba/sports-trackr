@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ExercisePayload } from "@/types/trackr";
 import { AddExerciseModal } from "@/components/gym/AddExerciseModal";
 import { ExerciseCard } from "@/components/gym/ExerciseCard";
+import { CARD_CLS, LABEL_CLS, PRIMARY_BTN } from "@/lib/ui";
 
 type ExerciseListProps = {
   sessionId: string;
@@ -16,17 +17,15 @@ export function ExerciseList({ sessionId, exercises }: ExerciseListProps) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium uppercase tracking-[0.18em] text-neutral-500">
-          Exercises
-        </h2>
-        <span className="text-xs text-neutral-500">
+        <h2 className={LABEL_CLS}>Exercises</h2>
+        <span className="text-xs font-medium text-muted">
           {exercises.length} logged
         </span>
       </div>
 
       {exercises.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/30 px-4 py-8 text-center">
-          <p className="text-sm text-neutral-400">
+        <div className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
+          <p className="text-sm text-muted">
             No exercises yet. Add your first machine to start logging sets.
           </p>
         </div>
@@ -41,10 +40,9 @@ export function ExerciseList({ sessionId, exercises }: ExerciseListProps) {
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        className="flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-lime-400/30 bg-lime-400/10 text-base font-semibold text-lime-300 transition active:scale-[0.98]"
+        className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark shadow-sm`}
       >
-        <span className="text-xl leading-none">+</span>
-        Add Exercise
+        + Add Exercise
       </button>
 
       <AddExerciseModal

@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { logCardioActivity } from "@/app/actions/activities";
+import { BottomSheet } from "@/components/ui/BottomSheet";
+import { INK_BTN, INPUT_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
 import {
   CARDIO_TYPES,
   INTENSITY_LEVELS,
@@ -41,8 +43,8 @@ export function QuickActivityTrigger({
         onClick={() => setOpen(true)}
         className={
           compact
-            ? "flex h-11 w-full items-center justify-center rounded-xl border border-neutral-800 bg-neutral-900 text-sm font-medium text-neutral-300 transition active:scale-[0.98] hover:border-lime-400/30 hover:text-lime-300"
-            : "flex h-12 w-full items-center justify-center rounded-xl border border-neutral-700 bg-neutral-900 text-sm font-medium text-neutral-200 transition active:scale-[0.98] hover:border-lime-400/40 hover:text-lime-300"
+            ? "w-full rounded-2xl bg-chip py-3 text-base font-bold text-ink transition-all duration-150 hover:-translate-y-0.5 hover:bg-chip-hover active:translate-y-0 select-none"
+            : `${INK_BTN} w-full py-4 text-lg`
         }
       >
         Log Sport / Cardio
@@ -73,147 +75,106 @@ function QuickActivityModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <BottomSheet title="Log Sport / Cardio" onClose={onClose}>
+      <fieldset className="mb-4">
+        <legend className="mb-1 block text-sm font-semibold text-ink">
+          Sport
+        </legend>
+        <div className="grid grid-cols-3 gap-2">
+          {CARDIO_TYPES.map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setType(value)}
+              className={chipClass(type === value)}
+            >
+              {TYPE_LABELS[value]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="mb-4">
+        <legend className="mb-1 block text-sm font-semibold text-ink">
+          Duration
+        </legend>
+        <div className="mb-3 flex flex-wrap gap-2">
+          {DURATION_PRESETS.map((minutes) => (
+            <button
+              key={minutes}
+              type="button"
+              onClick={() => setDurationMinutes(minutes)}
+              className={`!rounded-full px-3.5 py-2 text-sm ${chipClass(durationMinutes === minutes)}`}
+            >
+              {minutes}m
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min={10}
+            max={180}
+            step={5}
+            value={durationMinutes}
+            onChange={(event) =>
+              setDurationMinutes(Number(event.target.value))
+            }
+            className="h-2 flex-1 accent-brand"
+          />
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={300}
+            value={durationMinutes}
+            onChange={(event) =>
+              setDurationMinutes(Math.max(1, Number(event.target.value) || 1))
+            }
+            className={`${INPUT_CLS} h-11 w-20 px-2 py-2 text-center font-mono text-sm`}
+          />
+          <span className="text-sm text-muted">min</span>
+        </div>
+      </fieldset>
+
+      <fieldset className="mb-4">
+        <legend className="mb-1 block text-sm font-semibold text-ink">
+          Intensity
+        </legend>
+        <div className="grid grid-cols-3 gap-2">
+          {INTENSITY_LEVELS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setIntensity(value)}
+              className={chipClass(intensity === value)}
+            >
+              {INTENSITY_LABELS[value]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <label className="mb-4 block">
+        <span className="mb-1 block text-sm font-semibold text-ink">
+          Notes (optional)
+        </span>
+        <input
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          placeholder="Court 2, interval session…"
+          className={INPUT_CLS}
+        />
+      </label>
+
       <button
         type="button"
-        aria-label="Close"
-        className="absolute inset-0 bg-black/70"
-        onClick={onClose}
-      />
-
-      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-2xl sm:rounded-2xl">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-              Activity
-            </p>
-            <h3 className="text-lg font-semibold text-neutral-100">
-              Log Sport / Cardio
-            </h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-neutral-800 px-3 py-2 text-sm text-neutral-400"
-          >
-            Close
-          </button>
-        </div>
-
-        <fieldset className="mb-5 space-y-2">
-          <legend className="text-xs uppercase tracking-wide text-neutral-500">
-            Sport
-          </legend>
-          <div className="flex flex-wrap gap-2">
-            {CARDIO_TYPES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setType(value)}
-                className={`rounded-full border px-4 py-2.5 text-sm font-medium transition ${
-                  type === value
-                    ? "border-lime-400/50 bg-lime-400/15 text-lime-300"
-                    : "border-neutral-800 bg-neutral-900 text-neutral-300"
-                }`}
-              >
-                {TYPE_LABELS[value]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset className="mb-5 space-y-3">
-          <legend className="text-xs uppercase tracking-wide text-neutral-500">
-            Duration
-          </legend>
-          <div className="flex flex-wrap gap-2">
-            {DURATION_PRESETS.map((minutes) => (
-              <button
-                key={minutes}
-                type="button"
-                onClick={() => setDurationMinutes(minutes)}
-                className={`rounded-full border px-3.5 py-2 text-sm transition ${
-                  durationMinutes === minutes
-                    ? "border-lime-400/50 bg-lime-400/15 text-lime-300"
-                    : "border-neutral-800 bg-neutral-900 text-neutral-300"
-                }`}
-              >
-                {minutes}m
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={10}
-              max={180}
-              step={5}
-              value={durationMinutes}
-              onChange={(event) =>
-                setDurationMinutes(Number(event.target.value))
-              }
-              className="h-2 flex-1 accent-lime-400"
-            />
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={300}
-              value={durationMinutes}
-              onChange={(event) =>
-                setDurationMinutes(
-                  Math.max(1, Number(event.target.value) || 1),
-                )
-              }
-              className="h-11 w-20 rounded-xl border border-neutral-800 bg-neutral-900 text-center font-mono text-sm text-neutral-100 outline-none focus:border-lime-400/40"
-            />
-            <span className="text-sm text-neutral-500">min</span>
-          </div>
-        </fieldset>
-
-        <fieldset className="mb-5 space-y-2">
-          <legend className="text-xs uppercase tracking-wide text-neutral-500">
-            Intensity
-          </legend>
-          <div className="grid grid-cols-3 gap-2">
-            {INTENSITY_LEVELS.map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setIntensity(value)}
-                className={`h-11 rounded-xl border text-sm font-medium transition ${
-                  intensity === value
-                    ? "border-lime-400/50 bg-lime-400/15 text-lime-300"
-                    : "border-neutral-800 bg-neutral-900 text-neutral-300"
-                }`}
-              >
-                {INTENSITY_LABELS[value]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <label className="mb-5 block space-y-2">
-          <span className="text-xs uppercase tracking-wide text-neutral-500">
-            Notes (optional)
-          </span>
-          <input
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="Court 2, interval session…"
-            className="h-12 w-full rounded-xl border border-neutral-800 bg-neutral-900 px-4 text-base text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-lime-400/40"
-          />
-        </label>
-
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isPending}
-          className="flex h-14 w-full items-center justify-center rounded-xl bg-lime-400 text-base font-semibold text-neutral-950 transition active:scale-[0.98] disabled:opacity-60"
-        >
-          {isPending ? "Saving…" : "Save Activity"}
-        </button>
-      </div>
-    </div>
+        onClick={handleSave}
+        disabled={isPending}
+        className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark`}
+      >
+        {isPending ? "Saving…" : "Save Activity"}
+      </button>
+    </BottomSheet>
   );
 }

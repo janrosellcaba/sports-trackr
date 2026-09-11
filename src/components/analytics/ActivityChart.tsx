@@ -10,30 +10,33 @@ import {
   YAxis,
 } from "recharts";
 import type { DailyActivityPoint } from "@/types/trackr";
+import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 
 type ActivityChartProps = {
   data: DailyActivityPoint[];
 };
 
+const BRAND = "#1f7a54";
+const INK = "#23221d";
+const MUTED = "#918c7c";
+const LINE = "#e9e4d6";
+const PAPER = "#fffdf8";
+
 export function ActivityChart({ data }: ActivityChartProps) {
   return (
-    <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
+    <section className={`${CARD_CLS} p-4`}>
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium uppercase tracking-[0.18em] text-neutral-500">
-            Activity
-          </h2>
-          <p className="mt-1 text-base font-semibold text-neutral-100">
-            Daily load
-          </p>
+          <h2 className={LABEL_CLS}>Activity</h2>
+          <p className="mt-1 text-base font-bold text-ink">Daily load</p>
         </div>
-        <div className="flex gap-3 text-[11px] text-neutral-400">
+        <div className="flex gap-3 text-[11px] font-medium text-muted">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-lime-400" />
+            <span className="h-2 w-2 rounded-full bg-brand" />
             Gym min
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="h-2 w-2 rounded-full bg-ink" />
             Cardio min
           </span>
         </div>
@@ -44,35 +47,35 @@ export function ActivityChart({ data }: ActivityChartProps) {
           <AreaChart data={data} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
             <defs>
               <linearGradient id="gymFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#a3e635" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#a3e635" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={BRAND} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={BRAND} stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="cardioFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={INK} stopOpacity={0.18} />
+                <stop offset="100%" stopColor={INK} stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="#262626" strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid stroke={LINE} strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="date"
               tickFormatter={formatShortDate}
-              tick={{ fill: "#737373", fontSize: 11 }}
+              tick={{ fill: MUTED, fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               minTickGap={28}
             />
             <YAxis
-              tick={{ fill: "#737373", fontSize: 11 }}
+              tick={{ fill: MUTED, fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
             />
             <Tooltip
               contentStyle={{
-                background: "#0a0a0a",
-                border: "1px solid #262626",
+                background: PAPER,
+                border: `1px solid ${LINE}`,
                 borderRadius: 12,
-                color: "#f5f5f5",
+                color: INK,
                 fontSize: 12,
               }}
               labelFormatter={(label) => formatShortDate(String(label))}
@@ -85,7 +88,7 @@ export function ActivityChart({ data }: ActivityChartProps) {
               type="monotone"
               dataKey="gymMinutes"
               stackId="minutes"
-              stroke="#a3e635"
+              stroke={BRAND}
               fill="url(#gymFill)"
               strokeWidth={2}
             />
@@ -93,7 +96,7 @@ export function ActivityChart({ data }: ActivityChartProps) {
               type="monotone"
               dataKey="cardioMinutes"
               stackId="minutes"
-              stroke="#10b981"
+              stroke={INK}
               fill="url(#cardioFill)"
               strokeWidth={2}
             />

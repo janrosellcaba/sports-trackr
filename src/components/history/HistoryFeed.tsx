@@ -5,6 +5,7 @@ import { ChevronDown, Trash2 } from "lucide-react";
 import { deleteWorkoutSession } from "@/app/actions/analytics";
 import type { CardioHistoryItem, WorkoutHistoryItem } from "@/types/trackr";
 import { deleteCardioActivity } from "@/app/actions/activities";
+import { CARD_CLS } from "@/lib/ui";
 
 type HistoryFeedProps = {
   sessions: WorkoutHistoryItem[];
@@ -45,8 +46,8 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
 
   if (items.length === 0) {
     return (
-      <section className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/30 px-4 py-10 text-center">
-        <p className="text-sm text-neutral-400">
+      <section className={`${CARD_CLS} border-dashed px-4 py-10 text-center`}>
+        <p className="text-sm text-muted">
           No completed workouts or sports yet. Finish a gym session or log
           cardio to build history.
         </p>
@@ -64,7 +65,7 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
           return (
             <article
               key={`session-${session.id}`}
-              className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/50"
+              className={`${CARD_CLS} overflow-hidden`}
             >
               <button
                 type="button"
@@ -73,39 +74,39 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-lime-400/30 bg-lime-400/10 px-2 py-0.5 text-[11px] font-medium text-lime-300">
+                    <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand">
                       Gym
                     </span>
-                    <span className="text-xs text-neutral-500">
+                    <span className="text-xs text-muted">
                       {formatDateTime(session.startTime)}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-sm font-semibold text-neutral-100">
+                  <p className="mt-1.5 text-sm font-bold text-ink">
                     {session.durationMinutes}m · {session.exerciseCount}{" "}
                     exercises · {session.totalVolumeKg.toLocaleString()}kg
                   </p>
                   {session.notes && (
-                    <p className="mt-1 truncate text-xs text-neutral-500">
+                    <p className="mt-1 truncate text-xs text-muted">
                       {session.notes}
                     </p>
                   )}
                 </div>
                 <ChevronDown
-                  className={`mt-1 h-4 w-4 shrink-0 text-neutral-500 transition ${
+                  className={`mt-1 h-4 w-4 shrink-0 text-muted transition ${
                     open ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
               {open && (
-                <div className="space-y-3 border-t border-neutral-800 px-4 py-3">
+                <div className="space-y-3 border-t border-line px-4 py-3">
                   {session.exercises.map((exercise) => (
                     <div key={exercise.id}>
                       <div className="mb-1.5 flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-neutral-200">
+                        <p className="text-sm font-semibold text-ink">
                           {exercise.machineName}
                         </p>
-                        <p className="text-xs text-neutral-500">
+                        <p className="text-xs text-muted">
                           {exercise.volumeKg}kg vol
                         </p>
                       </div>
@@ -113,7 +114,7 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
                         {exercise.sets.map((set) => (
                           <li
                             key={set.id}
-                            className="flex justify-between font-mono text-xs text-neutral-400"
+                            className="flex justify-between font-mono text-xs text-muted"
                           >
                             <span>Set {set.setNumber}</span>
                             <span>
@@ -126,8 +127,8 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
                     </div>
                   ))}
 
-                  <div className="flex items-center justify-between gap-3 border-t border-neutral-800 pt-3">
-                    <p className="text-xs text-neutral-500">
+                  <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
+                    <p className="text-xs text-muted">
                       Ended {formatDateTime(session.endTime)}
                     </p>
                     <button
@@ -142,7 +143,7 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
                           await deleteWorkoutSession(session.id);
                         });
                       }}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-neutral-800 px-3 text-xs text-neutral-400 hover:border-red-500/40 hover:text-red-400 disabled:opacity-50"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-xs font-bold text-danger hover:bg-danger/15 disabled:opacity-50"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       Delete
@@ -158,23 +159,23 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
         return (
           <article
             key={`cardio-${activity.id}`}
-            className="flex items-start justify-between gap-3 rounded-2xl border border-neutral-800 bg-neutral-900/50 px-4 py-3.5"
+            className={`${CARD_CLS} flex items-start justify-between gap-3 px-4 py-3.5`}
           >
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                <span className="rounded-full bg-chip px-2 py-0.5 text-[11px] font-bold text-ink">
                   Sport
                 </span>
-                <span className="text-xs text-neutral-500">
+                <span className="text-xs text-muted">
                   {formatDateTime(activity.date)}
                 </span>
               </div>
-              <p className="mt-1.5 text-sm font-semibold text-neutral-100">
+              <p className="mt-1.5 text-sm font-bold text-ink">
                 {CARDIO_LABELS[activity.type] ?? activity.type} ·{" "}
                 {activity.durationMinutes}m · {activity.intensity.toLowerCase()}
               </p>
               {activity.notes && (
-                <p className="mt-1 truncate text-xs text-neutral-500">
+                <p className="mt-1 truncate text-xs text-muted">
                   {activity.notes}
                 </p>
               )}
@@ -187,7 +188,7 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
                   await deleteCardioActivity(activity.id);
                 });
               }}
-              className="rounded-md px-2 py-1 text-xs text-neutral-500 hover:text-red-400 disabled:opacity-50"
+              className="rounded-md px-2 py-1 text-xs font-semibold text-muted hover:text-danger disabled:opacity-50"
             >
               Del
             </button>

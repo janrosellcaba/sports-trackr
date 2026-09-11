@@ -4,9 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { register } from "@/app/actions/auth";
-
-const inputClass =
-  "h-12 w-full rounded-xl border border-neutral-800 bg-neutral-900 px-4 text-base text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-lime-400/50";
+import { INPUT_CLS, PRIMARY_BTN } from "@/lib/ui";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -15,9 +13,9 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="flex h-12 w-full items-center justify-center rounded-xl bg-lime-400 text-sm font-semibold text-neutral-950 transition disabled:opacity-50"
+      className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark`}
     >
-      {pending ? "Creating account…" : "Create account"}
+      {pending ? "Please wait…" : "Create Account"}
     </button>
   );
 }
@@ -27,15 +25,17 @@ export function RegisterForm() {
 
   return (
     <form
-      className="space-y-4"
+      className="space-y-3"
       action={async (formData) => {
         setError(null);
         const result = await register(formData);
         if (result?.error) setError(result.error);
       }}
     >
-      <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-neutral-300">Username</span>
+      <label className="block">
+        <span className="mb-1 block text-sm font-semibold text-ink">
+          Username
+        </span>
         <input
           name="username"
           type="text"
@@ -45,12 +45,14 @@ export function RegisterForm() {
           spellCheck={false}
           required
           placeholder="e.g. jan"
-          className={inputClass}
+          className={INPUT_CLS}
         />
       </label>
 
-      <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-neutral-300">Password</span>
+      <label className="block">
+        <span className="mb-1 block text-sm font-semibold text-ink">
+          Password
+        </span>
         <input
           name="password"
           type="password"
@@ -58,13 +60,13 @@ export function RegisterForm() {
           required
           minLength={8}
           placeholder="At least 8 characters"
-          className={inputClass}
+          className={INPUT_CLS}
         />
       </label>
 
-      <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-neutral-300">
-          Invite / Secret Code
+      <label className="block">
+        <span className="mb-1 block text-sm font-semibold text-ink">
+          Registration Safety Code
         </span>
         <input
           name="inviteCode"
@@ -72,24 +74,22 @@ export function RegisterForm() {
           autoComplete="off"
           required
           placeholder="Enter access code"
-          className={inputClass}
+          className={INPUT_CLS}
         />
       </label>
 
       {error ? (
-        <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-          {error}
-        </p>
+        <p className="text-sm font-medium text-danger">{error}</p>
       ) : null}
 
       <SubmitButton />
 
-      <p className="text-center text-sm text-neutral-500">
-        Already have an account?{" "}
-        <Link href="/login" className="text-lime-400 hover:text-lime-300">
-          Sign in
-        </Link>
-      </p>
+      <Link
+        href="/login"
+        className="mt-2 block w-full text-center text-sm font-semibold text-muted transition-colors duration-150 hover:text-ink"
+      >
+        Already have an account? Log in
+      </Link>
     </form>
   );
 }

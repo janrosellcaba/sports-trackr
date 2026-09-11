@@ -2,6 +2,7 @@
 
 import { Activity, Dumbbell, Flame, Pill } from "lucide-react";
 import type { AnalyticsSummary } from "@/types/trackr";
+import { CARD_CLS } from "@/lib/ui";
 
 type KpiGridProps = {
   summary: AnalyticsSummary;
@@ -12,12 +13,12 @@ function TrendBadge({ value }: { value: number }) {
   const neutral = value === 0;
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+      className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
         neutral
-          ? "bg-neutral-800 text-neutral-400"
+          ? "bg-chip text-muted"
           : positive
-            ? "bg-emerald-500/15 text-emerald-400"
-            : "bg-red-500/15 text-red-400"
+            ? "bg-brand-soft text-brand"
+            : "bg-danger-soft text-danger"
       }`}
     >
       {neutral ? "0%" : `${positive ? "+" : ""}${value}%`}
@@ -58,23 +59,18 @@ export function KpiGrid({ summary }: KpiGridProps) {
   ];
 
   return (
-    <section className="grid grid-cols-2 gap-3">
+    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {cards.map((card) => (
-        <article
-          key={card.label}
-          className="rounded-2xl border border-neutral-850 bg-neutral-950/80 p-3.5"
-        >
+        <article key={card.label} className={`${CARD_CLS} p-3.5`}>
           <div className="mb-3 flex items-start justify-between gap-2">
-            <card.icon className="h-4 w-4 text-lime-400/80" />
+            <card.icon className="h-4 w-4 text-brand" />
             <TrendBadge value={card.trend} />
           </div>
-          <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight text-neutral-50">
+          <p className="text-2xl font-extrabold tracking-tight text-ink tabular-nums">
             {card.value}
           </p>
-          <p className="mt-1 text-xs font-medium text-neutral-300">
-            {card.label}
-          </p>
-          <p className="mt-0.5 text-[11px] text-neutral-500">{card.hint}</p>
+          <p className="mt-1 text-xs font-semibold text-ink">{card.label}</p>
+          <p className="mt-0.5 text-[11px] text-muted">{card.hint}</p>
         </article>
       ))}
     </section>

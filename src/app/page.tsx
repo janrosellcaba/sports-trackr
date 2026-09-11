@@ -6,6 +6,7 @@ import { ExerciseList } from "@/components/gym/ExerciseList";
 import { SessionHeader } from "@/components/gym/SessionHeader";
 import { AppShell } from "@/components/layout/AppShell";
 import { SupplementBar } from "@/components/supplements/SupplementBar";
+import { CARD_CLS } from "@/lib/ui";
 
 export default async function Home() {
   const [session, supplements, activities] = await Promise.all([
@@ -15,7 +16,7 @@ export default async function Home() {
   ]);
 
   return (
-    <AppShell subtitle="Log gym, sports, and daily supplements">
+    <AppShell>
       <SupplementBar intakes={supplements} />
 
       <SessionHeader session={session} />
@@ -23,8 +24,8 @@ export default async function Home() {
       {session ? (
         <ExerciseList sessionId={session.id} exercises={session.exercises} />
       ) : (
-        <section className="rounded-2xl border border-neutral-800 bg-neutral-900/40 px-4 py-8 text-center">
-          <p className="text-sm text-neutral-400">
+        <section className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
+          <p className="text-sm text-muted">
             Start a session to log machines, sets, and RPE with near-zero
             friction.
           </p>

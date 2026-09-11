@@ -7,6 +7,7 @@ import { ExerciseProgressionChart } from "@/components/analytics/ExerciseProgres
 import { ExportDataButton } from "@/components/analytics/ExportDataButton";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function AnalyticsPage() {
   const [summary, exerciseNames] = await Promise.all([
@@ -15,15 +16,11 @@ export default async function AnalyticsPage() {
   ]);
 
   return (
-    <AppShell subtitle="Volume, frequency, and strength trends">
-      <div className="space-y-2">
-        <h2 className="text-sm font-medium uppercase tracking-[0.18em] text-neutral-500">
-          Analytics
-        </h2>
-        <p className="text-sm text-neutral-400">
-          Last {summary.days} days compared with the prior period.
-        </p>
-      </div>
+    <AppShell wide>
+      <PageHeader
+        title="Analytics"
+        subtitle={`Last ${summary.days} days compared with the prior period.`}
+      />
 
       <KpiGrid summary={summary} />
       <ExportDataButton />

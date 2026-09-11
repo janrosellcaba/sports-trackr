@@ -3,6 +3,7 @@
 import { useMemo, useTransition } from "react";
 import { deleteSupplement, logSupplement } from "@/app/actions/supplements";
 import type { SupplementPayload, SupplementType } from "@/types/trackr";
+import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 
 const QUICK_LOGS: {
   type: SupplementType;
@@ -75,17 +76,13 @@ export function SupplementBar({ intakes }: SupplementBarProps) {
   }
 
   return (
-    <section className="space-y-3 rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
+    <section className={`${CARD_CLS} space-y-3 p-4`}>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
-            Today
-          </p>
-          <h2 className="text-base font-semibold text-neutral-100">
-            Supplements
-          </h2>
+          <p className={LABEL_CLS}>Today</p>
+          <h2 className="text-base font-bold text-ink">Supplements</h2>
         </div>
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs font-medium text-muted">
           {intakes.length === 0 ? "Nothing logged" : `${intakes.length} logged`}
         </span>
       </div>
@@ -123,7 +120,7 @@ export function SupplementBar({ intakes }: SupplementBarProps) {
             onClick={() =>
               handleQuickLog(item.type, item.amountGrams, item.scoops)
             }
-            className="flex h-12 items-center justify-center rounded-xl border border-neutral-800 bg-neutral-950 text-sm font-medium text-neutral-100 transition active:scale-[0.98] hover:border-lime-400/40 hover:text-lime-300 disabled:opacity-60"
+            className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
           >
             {item.label}
           </button>
@@ -131,13 +128,13 @@ export function SupplementBar({ intakes }: SupplementBarProps) {
       </div>
 
       {intakes.length > 0 && (
-        <ul className="space-y-1.5 border-t border-neutral-800 pt-3">
+        <ul className="space-y-1.5 border-t border-line pt-3">
           {intakes.map((intake) => (
             <li
               key={intake.id}
               className="flex items-center justify-between gap-3 text-sm"
             >
-              <span className="text-neutral-300">
+              <span className="font-medium text-ink">
                 {TYPE_LABELS[intake.type]}
                 {intake.scoops != null ? ` · ${intake.scoops} scoop` : ""}
                 {intake.amountGrams != null ? ` · ${intake.amountGrams}g` : ""}
@@ -150,7 +147,7 @@ export function SupplementBar({ intakes }: SupplementBarProps) {
                     await deleteSupplement(intake.id);
                   })
                 }
-                className="rounded-md px-2 py-1 text-xs text-neutral-500 hover:text-red-400 disabled:opacity-50"
+                className="rounded-md px-2 py-1 text-xs font-semibold text-muted hover:text-danger disabled:opacity-50"
               >
                 Undo
               </button>
@@ -189,7 +186,7 @@ function StatusBadge({
       onClick={onUndo}
       disabled={disabled}
       title="Tap to undo latest"
-      className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 transition hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50"
+      className="rounded-full bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand transition-colors duration-150 hover:bg-danger-soft hover:text-danger disabled:opacity-50"
     >
       {label}
     </button>

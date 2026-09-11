@@ -4,8 +4,8 @@
   "description": "Minimalist workout and sports logger",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#faf8f2",
+  "theme_color": "#faf8f2",
   "orientation": "portrait",
   "icons": [
     {

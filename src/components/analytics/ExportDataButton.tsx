@@ -29,7 +29,7 @@ export function ExportDataButton() {
       type="button"
       onClick={handleExport}
       disabled={isPending}
-      className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-neutral-850 bg-neutral-950 text-sm font-medium text-neutral-200 transition hover:border-lime-400/30 hover:text-lime-300 disabled:opacity-60"
+      className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-line bg-paper text-sm font-bold text-ink shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 disabled:opacity-60"
     >
       <Download className="h-4 w-4" />
       {isPending ? "Preparing export…" : "Export All My Data (JSON)"}

@@ -12,11 +12,18 @@ import {
 } from "recharts";
 import { getExerciseProgression } from "@/app/actions/analytics";
 import type { ProgressionPoint } from "@/types/trackr";
+import { CARD_CLS, INPUT_CLS, LABEL_CLS } from "@/lib/ui";
 
 type ExerciseProgressionChartProps = {
   exerciseNames: string[];
   initialName?: string;
 };
+
+const BRAND = "#1f7a54";
+const MUTED = "#918c7c";
+const LINE = "#e9e4d6";
+const PAPER = "#fffdf8";
+const INK = "#23221d";
 
 export function ExerciseProgressionChart({
   exerciseNames,
@@ -42,8 +49,8 @@ export function ExerciseProgressionChart({
 
   if (exerciseNames.length === 0) {
     return (
-      <section className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/30 px-4 py-8 text-center">
-        <p className="text-sm text-neutral-400">
+      <section className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
+        <p className="text-sm text-muted">
           Log a few gym sets to unlock strength progression charts.
         </p>
       </section>
@@ -51,22 +58,18 @@ export function ExerciseProgressionChart({
   }
 
   return (
-    <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
+    <section className={`${CARD_CLS} p-4`}>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-sm font-medium uppercase tracking-[0.18em] text-neutral-500">
-            Progression
-          </h2>
-          <p className="mt-1 text-base font-semibold text-neutral-100">
-            Strength over time
-          </p>
+          <h2 className={LABEL_CLS}>Progression</h2>
+          <p className="mt-1 text-base font-bold text-ink">Strength over time</p>
         </div>
         <label className="block w-full sm:w-56">
           <span className="sr-only">Exercise</span>
           <select
             value={selected}
             onChange={(event) => setSelected(event.target.value)}
-            className="h-11 w-full rounded-xl border border-neutral-800 bg-neutral-950 px-3 text-sm text-neutral-100 outline-none focus:border-lime-400/40"
+            className={INPUT_CLS}
           >
             {exerciseNames.map((name) => (
               <option key={name} value={name}>
@@ -79,32 +82,32 @@ export function ExerciseProgressionChart({
 
       <div className={`h-56 w-full ${isPending ? "opacity-60" : ""}`}>
         {points.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+          <div className="flex h-full items-center justify-center text-sm text-muted">
             No sets recorded for this exercise yet.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={points} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke="#262626" strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid stroke={LINE} strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={formatShortDate}
-                tick={{ fill: "#737373", fontSize: 11 }}
+                tick={{ fill: MUTED, fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 minTickGap={28}
               />
               <YAxis
-                tick={{ fill: "#737373", fontSize: 11 }}
+                tick={{ fill: MUTED, fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  background: "#0a0a0a",
-                  border: "1px solid #262626",
+                  background: PAPER,
+                  border: `1px solid ${LINE}`,
                   borderRadius: 12,
-                  color: "#f5f5f5",
+                  color: INK,
                   fontSize: 12,
                 }}
                 labelFormatter={(label) => formatShortDate(String(label))}
@@ -116,15 +119,15 @@ export function ExerciseProgressionChart({
               <Line
                 type="monotone"
                 dataKey="maxWeight"
-                stroke="#a3e635"
+                stroke={BRAND}
                 strokeWidth={2}
-                dot={{ r: 3, fill: "#a3e635" }}
+                dot={{ r: 3, fill: BRAND }}
                 activeDot={{ r: 5 }}
               />
               <Line
                 type="monotone"
                 dataKey="estimatedOneRm"
-                stroke="#34d399"
+                stroke={MUTED}
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={false}

@@ -8,10 +8,10 @@ export function UserMenu({ user }: { user: AuthUser }) {
   const initial = (user.username[0] ?? "U").toUpperCase();
 
   return (
-    <form action={logout} className="flex items-center gap-2">
+    <form action={logout} className="flex items-center gap-1.5">
       <span
         title={user.username}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900 text-xs font-semibold text-neutral-300"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-chip text-xs font-bold text-ink"
       >
         {initial}
       </span>
@@ -19,9 +19,9 @@ export function UserMenu({ user }: { user: AuthUser }) {
         type="submit"
         title="Sign out"
         aria-label="Sign out"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-800 text-neutral-500 transition hover:border-neutral-600 hover:text-neutral-200"
+        className="rounded-full p-2.5 text-muted transition-all duration-150 hover:bg-chip hover:text-ink active:scale-90"
       >
-        <LogOut className="h-4 w-4" />
+        <LogOut className="h-5 w-5" />
       </button>
     </form>
   );

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Activity, BarChart3, Dumbbell, Shield } from "lucide-react";
-import { Logo } from "@/components/ui/Logo";
 
 const TABS = [
   { href: "/", label: "Tracker", icon: Dumbbell },
@@ -22,17 +21,8 @@ export function AppNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const tabs = isAdmin ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
-    <nav className="flex items-center gap-2 rounded-2xl border border-neutral-850 bg-neutral-950/80 p-1">
-      <Link
-        href="/"
-        aria-label="Trackr home"
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl hover:bg-neutral-900"
-      >
-        <Logo compact />
-      </Link>
-      <ul
-        className={`grid min-w-0 flex-1 gap-1 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}
-      >
+    <nav className="shrink-0 border-t border-line bg-paper/95 backdrop-blur [padding-bottom:env(safe-area-inset-bottom)]">
+      <div className="mx-auto flex max-w-md px-1">
         {tabs.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/"
@@ -40,22 +30,30 @@ export function AppNav({ isAdmin = false }: { isAdmin?: boolean }) {
               : pathname === href || pathname.startsWith(`${href}/`);
 
           return (
-            <li key={href}>
-              <Link
-                href={href}
-                className={`flex h-11 items-center justify-center gap-1 rounded-xl text-[11px] font-medium transition sm:gap-1.5 sm:text-sm ${
+            <Link
+              key={href}
+              href={href}
+              onClick={() => navigator.vibrate?.(8)}
+              className={`group relative flex flex-1 flex-col items-center gap-1 py-2 text-xs font-bold transition-all duration-150 select-none ${
+                active ? "text-brand" : "text-muted hover:text-ink"
+              }`}
+            >
+              <span
+                className={`flex h-7 w-12 items-center justify-center rounded-full transition-all duration-200 ${
                   active
-                    ? "bg-lime-400 text-neutral-950"
-                    : "text-neutral-400 hover:bg-neutral-900 hover:text-neutral-100"
+                    ? "scale-105 bg-brand/12 shadow-xs"
+                    : "group-hover:bg-chip/60"
                 }`}
               >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{label}</span>
-              </Link>
-            </li>
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="text-[11px] leading-tight font-medium">
+                {label}
+              </span>
+            </Link>
           );
         })}
-      </ul>
+      </div>
     </nav>
   );
 }

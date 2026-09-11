@@ -89,11 +89,11 @@ export function RestTimer() {
   if (!timer || (!timer.active && timer.remaining <= 0)) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-5 z-40 flex justify-center px-4">
+    <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40 flex justify-center px-4">
       <div
         role="timer"
         aria-live="polite"
-        className="pointer-events-auto flex items-center gap-2 rounded-full border border-neutral-850 bg-black/90 px-2 py-1.5 shadow-2xl shadow-black/40 backdrop-blur"
+        className="pointer-events-auto flex items-center gap-2 rounded-full border border-line bg-paper/95 px-2 py-1.5 shadow-xl backdrop-blur"
       >
         <div className="flex items-center gap-1 px-1">
           {REST_PRESETS.map((seconds) => (
@@ -104,10 +104,10 @@ export function RestTimer() {
                 timer.setPreset(seconds);
                 timer.start(seconds);
               }}
-              className={`rounded-full px-2 py-1 text-[10px] font-medium ${
+              className={`rounded-full px-2 py-1 text-[10px] font-bold ${
                 timer.preset === seconds
-                  ? "bg-lime-400 text-neutral-950"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  ? "bg-brand text-white"
+                  : "text-muted hover:text-ink"
               }`}
             >
               {seconds}s
@@ -115,14 +115,14 @@ export function RestTimer() {
           ))}
         </div>
 
-        <p className="min-w-[3.25rem] text-center font-mono text-lg tabular-nums text-lime-300">
+        <p className="min-w-[3.25rem] text-center font-mono text-lg font-bold tabular-nums text-brand">
           {formatRestTime(timer.remaining)}
         </p>
 
         <button
           type="button"
           onClick={() => timer.adjust(-30)}
-          className="h-8 rounded-full border border-neutral-850 px-2 font-mono text-[11px] text-neutral-300"
+          className="h-8 rounded-full bg-chip px-2 font-mono text-[11px] font-bold text-ink"
           aria-label="Subtract 30 seconds"
         >
           −30
@@ -130,7 +130,7 @@ export function RestTimer() {
         <button
           type="button"
           onClick={() => timer.adjust(30)}
-          className="h-8 rounded-full border border-neutral-850 px-2 font-mono text-[11px] text-neutral-300"
+          className="h-8 rounded-full bg-chip px-2 font-mono text-[11px] font-bold text-ink"
           aria-label="Add 30 seconds"
         >
           +30
@@ -138,7 +138,7 @@ export function RestTimer() {
         <button
           type="button"
           onClick={timer.stop}
-          className="rounded-full bg-neutral-900 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:text-neutral-100"
+          className="rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-paper"
         >
           Skip
         </button>
