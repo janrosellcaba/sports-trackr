@@ -1,14 +1,37 @@
-export default function Home() {
+import { getRecentActivities } from "@/app/actions/activities";
+import { getActiveSession } from "@/app/actions/gym";
+import { getTodaySupplements } from "@/app/actions/supplements";
+import { RecentActivities } from "@/components/activity/RecentActivities";
+import { ExerciseList } from "@/components/gym/ExerciseList";
+import { SessionHeader } from "@/components/gym/SessionHeader";
+import { AppShell } from "@/components/layout/AppShell";
+import { SupplementBar } from "@/components/supplements/SupplementBar";
+
+export default async function Home() {
+  const [session, supplements, activities] = await Promise.all([
+    getActiveSession(),
+    getTodaySupplements(),
+    getRecentActivities(5),
+  ]);
+
   return (
-    <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 text-center">
-      <div className="max-w-md w-full border border-neutral-800 bg-neutral-900/60 p-8 rounded-2xl shadow-2xl backdrop-blur">
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-2">Trackr</h1>
-        <p className="text-neutral-400 mb-6 text-sm">Minimalist workout & activity logger</p>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          System Online • sport.janrosell.com
-        </div>
-      </div>
-    </main>
+    <AppShell subtitle="Log gym, sports, and daily supplements">
+      <SupplementBar intakes={supplements} />
+
+      <SessionHeader session={session} />
+
+      {session ? (
+        <ExerciseList sessionId={session.id} exercises={session.exercises} />
+      ) : (
+        <section className="rounded-2xl border border-neutral-800 bg-neutral-900/40 px-4 py-8 text-center">
+          <p className="text-sm text-neutral-400">
+            Start a session to log machines, sets, and RPE with near-zero
+            friction.
+          </p>
+        </section>
+      )}
+
+      <RecentActivities activities={activities} />
+    </AppShell>
   );
 }

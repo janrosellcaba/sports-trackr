@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model WorkoutSession {
+  id        String        @id @default(cuid())
+  startTime DateTime      @default(now())
+  endTime   DateTime?
+  notes     String?
+  exercises ExerciseLog[]
+  createdAt DateTime      @default(now())
+}
+
+model ExerciseLog {
+  id          String         @id @default(cuid())
+  sessionId   String
+  session     WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  machineName String
+  sets        SetLog[]
+  order       Int            @default(0)
+}
+
+model SetLog {
+  id            String      @id @default(cuid())
+  exerciseLogId String
+  exerciseLog   ExerciseLog @relation(fields: [exerciseLogId], references: [id], onDelete: Cascade)
+  setNumber     Int
+  weight        Float
+  reps          Int
+  rpe           Float?
+}
+
+model CardioActivity {
+  id              String   @id @default(cuid())
+  type            String
+  durationMinutes Int
+  intensity       String
+  notes           String?
+  date            DateTime @default(now())
+}
+
+model SupplementIntake {
+  id          String   @id @default(cuid())
+  type        String
+  amountGrams Float?
+  scoops      Float?
+  notes       String?
+  date        DateTime @default(now())
+}
