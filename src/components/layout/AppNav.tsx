@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BarChart3, Dumbbell } from "lucide-react";
+import { Activity, BarChart3, Dumbbell, Shield } from "lucide-react";
 
 const TABS = [
   { href: "/", label: "Tracker", icon: Dumbbell },
@@ -10,13 +10,22 @@ const TABS = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ] as const;
 
-export function AppNav() {
+const ADMIN_TAB = {
+  href: "/admin",
+  label: "Admin",
+  icon: Shield,
+} as const;
+
+export function AppNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const tabs = isAdmin ? [...TABS, ADMIN_TAB] : TABS;
 
   return (
     <nav className="rounded-2xl border border-neutral-800 bg-neutral-900/60 p-1">
-      <ul className="grid grid-cols-3 gap-1">
-        {TABS.map(({ href, label, icon: Icon }) => {
+      <ul
+        className={`grid gap-1 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}
+      >
+        {tabs.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/"
               ? pathname === "/"
@@ -26,7 +35,7 @@ export function AppNav() {
             <li key={href}>
               <Link
                 href={href}
-                className={`flex h-11 items-center justify-center gap-1.5 rounded-xl text-sm font-medium transition ${
+                className={`flex h-11 items-center justify-center gap-1 rounded-xl text-[11px] font-medium transition sm:gap-1.5 sm:text-sm ${
                   active
                     ? "bg-lime-400 text-neutral-950"
                     : "text-neutral-400 hover:bg-neutral-800/80 hover:text-neutral-100"

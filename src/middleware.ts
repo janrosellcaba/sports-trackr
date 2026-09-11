@@ -9,7 +9,9 @@ function isProtectedPath(pathname: string): boolean {
     pathname === "/history" ||
     pathname.startsWith("/history/") ||
     pathname === "/analytics" ||
-    pathname.startsWith("/analytics/")
+    pathname.startsWith("/analytics/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
   );
 }
 
@@ -31,5 +33,12 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/history/:path*", "/analytics/:path*", "/login", "/register"],
+  matcher: [
+    "/",
+    "/history/:path*",
+    "/analytics/:path*",
+    "/admin/:path*",
+    "/login",
+    "/register",
+  ],
 };

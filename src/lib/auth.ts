@@ -27,7 +27,21 @@ export type AuthUser = {
   id: string;
   email: string;
   name: string | null;
+  role: string;
 };
+
+export function isJanIdentity(email: string, name?: string | null): boolean {
+  const haystack = `${email} ${name ?? ""}`.toLowerCase();
+  return haystack.includes("jan");
+}
+
+export function isAdminUser(user: {
+  email: string;
+  name?: string | null;
+  role?: string | null;
+}): boolean {
+  return user.role === "ADMIN" || isJanIdentity(user.email, user.name);
+}
 
 export type AuthActionResult = {
   error: string;

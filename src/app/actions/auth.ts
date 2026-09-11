@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import {
   SESSION_COOKIE,
   getRegistrationCode,
+  isJanIdentity,
   sessionCookieOptions,
   signSessionToken,
   verifySessionToken,
@@ -40,7 +41,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, role: true },
   });
 }
 
@@ -83,6 +84,7 @@ export async function register(
       email,
       passwordHash,
       name: name || null,
+      role: isJanIdentity(email, name) ? "ADMIN" : "USER",
     },
   });
 

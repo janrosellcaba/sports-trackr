@@ -146,3 +146,19 @@ export type ProgressionPoint = {
   estimatedOneRm: number;
   bestSetReps: number;
 };
+
+export type AdminUserRow = {
+  id: string;
+  name: string | null;
+  email: string;
+  createdAt: string;
+  totalWorkoutsCount: number;
+  lastActiveDate: string | null;
+};
+
+export type AdminStats = {
+  totalUsers: number;
+  totalWorkouts: number;
+  totalCardio: number;
+  users: AdminUserRow[];
+};
