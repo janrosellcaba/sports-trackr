@@ -149,16 +149,18 @@ export type ProgressionPoint = {
 
 export type AdminUserRow = {
   id: string;
-  name: string | null;
-  email: string;
+  username: string;
+  role: string;
   createdAt: string;
-  totalWorkoutsCount: number;
-  lastActiveDate: string | null;
+  _count: {
+    sessions: number;
+    activities: number;
+  };
 };
 
 export type AdminStats = {
   totalUsers: number;
   totalWorkouts: number;
   totalCardio: number;
-  users: AdminUserRow[];
+  usersList: AdminUserRow[];
 };

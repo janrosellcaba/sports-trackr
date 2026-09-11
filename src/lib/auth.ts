@@ -25,22 +25,15 @@ export const sessionCookieOptions = {
 
 export type AuthUser = {
   id: string;
-  email: string;
-  name: string | null;
+  username: string;
   role: string;
 };
 
-export function isJanIdentity(email: string, name?: string | null): boolean {
-  const haystack = `${email} ${name ?? ""}`.toLowerCase();
-  return haystack.includes("jan");
-}
-
 export function isAdminUser(user: {
-  email: string;
-  name?: string | null;
+  username: string;
   role?: string | null;
 }): boolean {
-  return user.role === "ADMIN" || isJanIdentity(user.email, user.name);
+  return user.role === "ADMIN" || user.username === "jan";
 }
 
 export type AuthActionResult = {

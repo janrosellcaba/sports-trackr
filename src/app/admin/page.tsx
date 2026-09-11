@@ -6,8 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { isAdminUser } from "@/lib/auth";
 import type { AdminStats } from "@/types/trackr";
 
-function formatDate(value: string | null): string {
-  if (!value) return "—";
+function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "short",
@@ -35,7 +34,7 @@ function StatCard({
   );
 }
 
-function UsersTable({ users }: { users: AdminStats["users"] }) {
+function UsersTable({ users }: { users: AdminStats["usersList"] }) {
   if (users.length === 0) {
     return (
       <p className="rounded-2xl border border-neutral-800 bg-neutral-900/40 px-4 py-8 text-center text-sm text-neutral-400">
@@ -49,11 +48,11 @@ function UsersTable({ users }: { users: AdminStats["users"] }) {
       <table className="w-full min-w-[36rem] text-left text-sm">
         <thead className="border-b border-neutral-800 text-xs uppercase tracking-[0.14em] text-neutral-500">
           <tr>
-            <th className="px-4 py-3 font-medium">Name</th>
-            <th className="px-4 py-3 font-medium">Email</th>
+            <th className="px-4 py-3 font-medium">Username</th>
+            <th className="px-4 py-3 font-medium">Role</th>
             <th className="px-4 py-3 font-medium">Joined</th>
-            <th className="px-4 py-3 font-medium">Workouts</th>
-            <th className="px-4 py-3 font-medium">Last Active</th>
+            <th className="px-4 py-3 font-medium">Total Workouts</th>
+            <th className="px-4 py-3 font-medium">Total Sports</th>
           </tr>
         </thead>
         <tbody>
@@ -63,17 +62,27 @@ function UsersTable({ users }: { users: AdminStats["users"] }) {
               className="border-b border-neutral-800/80 last:border-b-0"
             >
               <td className="px-4 py-3 font-medium text-neutral-100">
-                {user.name?.trim() || "—"}
+                {user.username}
               </td>
-              <td className="px-4 py-3 text-neutral-400">{user.email}</td>
+              <td className="px-4 py-3">
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    user.role === "ADMIN"
+                      ? "bg-lime-400/15 text-lime-300"
+                      : "bg-neutral-800 text-neutral-400"
+                  }`}
+                >
+                  {user.role}
+                </span>
+              </td>
               <td className="px-4 py-3 whitespace-nowrap text-neutral-400">
                 {formatDate(user.createdAt)}
               </td>
               <td className="px-4 py-3 text-neutral-200">
-                {user.totalWorkoutsCount}
+                {user._count.sessions}
               </td>
-              <td className="px-4 py-3 whitespace-nowrap text-neutral-400">
-                {formatDate(user.lastActiveDate)}
+              <td className="px-4 py-3 text-neutral-200">
+                {user._count.activities}
               </td>
             </tr>
           ))}
@@ -103,22 +112,18 @@ export default async function AdminPage() {
       </div>
 
       <section className="grid grid-cols-3 gap-3">
-        <StatCard label="Total Users" value={stats.totalUsers} icon={Users} />
+        <StatCard label="Users" value={stats.totalUsers} icon={Users} />
         <StatCard
-          label="Total Workouts Logged"
+          label="Workouts"
           value={stats.totalWorkouts}
           icon={Dumbbell}
         />
-        <StatCard
-          label="Total Cardio Sessions"
-          value={stats.totalCardio}
-          icon={Activity}
-        />
+        <StatCard label="Cardio" value={stats.totalCardio} icon={Activity} />
       </section>
 
       <section className="space-y-3">
         <h3 className="text-sm font-medium text-neutral-300">Registered users</h3>
-        <UsersTable users={stats.users} />
+        <UsersTable users={stats.usersList} />
       </section>
     </AppShell>
   );

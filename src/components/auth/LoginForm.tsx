@@ -35,13 +35,16 @@ export function LoginForm() {
       }}
     >
       <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-neutral-300">Email</span>
+        <span className="text-sm font-medium text-neutral-300">Username</span>
         <input
-          name="email"
-          type="email"
-          autoComplete="email"
+          name="username"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
-          placeholder="you@example.com"
+          placeholder="e.g. jan"
           className={inputClass}
         />
       </label>

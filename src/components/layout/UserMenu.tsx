@@ -5,13 +5,12 @@ import { logout } from "@/app/actions/auth";
 import type { AuthUser } from "@/lib/auth";
 
 export function UserMenu({ user }: { user: AuthUser }) {
-  const label = user.name?.trim() || user.email;
-  const initial = (label[0] ?? "U").toUpperCase();
+  const initial = (user.username[0] ?? "U").toUpperCase();
 
   return (
     <form action={logout} className="flex items-center gap-2">
       <span
-        title={label}
+        title={user.username}
         className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900 text-xs font-semibold text-neutral-300"
       >
         {initial}

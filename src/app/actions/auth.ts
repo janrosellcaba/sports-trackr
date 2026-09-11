@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import {
   SESSION_COOKIE,
   getRegistrationCode,
-  isJanIdentity,
   sessionCookieOptions,
   signSessionToken,
   verifySessionToken,
@@ -20,12 +19,12 @@ function readString(formData: FormData, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+function normalizeUsername(username: string): string {
+  return username.trim().toLowerCase();
 }
 
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+function isValidUsername(username: string): boolean {
+  return /^[a-z0-9._-]{2,32}$/.test(username);
 }
 
 async function createSession(userId: string): Promise<void> {
@@ -41,7 +40,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, role: true },
+    select: { id: true, username: true, role: true },
   });
 }
 
@@ -56,8 +55,7 @@ export async function requireUser(): Promise<AuthUser> {
 export async function register(
   formData: FormData,
 ): Promise<AuthActionResult | void> {
-  const name = readString(formData, "name").trim();
-  const email = normalizeEmail(readString(formData, "email"));
+  const username = normalizeUsername(readString(formData, "username"));
   const password = readString(formData, "password");
   const inviteCode = readString(formData, "inviteCode").trim();
 
@@ -65,26 +63,27 @@ export async function register(
     return { error: "Invalid registration code" };
   }
 
-  if (!isValidEmail(email)) {
-    return { error: "Enter a valid email address." };
+  if (!isValidUsername(username)) {
+    return {
+      error: "Username must be 2–32 characters (letters, numbers, . _ -).",
+    };
   }
 
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) {
-    return { error: "An account with this email already exists." };
+    return { error: "That username is already taken." };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: {
-      email,
+      username,
       passwordHash,
-      name: name || null,
-      role: isJanIdentity(email, name) ? "ADMIN" : "USER",
+      role: username === "jan" ? "ADMIN" : "USER",
     },
   });
 
@@ -95,21 +94,21 @@ export async function register(
 export async function login(
   formData: FormData,
 ): Promise<AuthActionResult | void> {
-  const email = normalizeEmail(readString(formData, "email"));
+  const username = normalizeUsername(readString(formData, "username"));
   const password = readString(formData, "password");
 
-  if (!email || !password) {
-    return { error: "Email and password are required." };
+  if (!username || !password) {
+    return { error: "Username and password are required." };
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { username } });
   if (!user) {
-    return { error: "Invalid email or password." };
+    return { error: "Invalid username or password." };
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
-    return { error: "Invalid email or password." };
+    return { error: "Invalid username or password." };
   }
 
   await createSession(user.id);

@@ -35,27 +35,16 @@ export function RegisterForm() {
       }}
     >
       <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-neutral-300">
-          Name{" "}
-          <span className="font-normal text-neutral-500">(optional)</span>
-        </span>
+        <span className="text-sm font-medium text-neutral-300">Username</span>
         <input
-          name="name"
+          name="username"
           type="text"
-          autoComplete="name"
-          placeholder="Your name"
-          className={inputClass}
-        />
-      </label>
-
-      <label className="block space-y-1.5">
-        <span className="text-sm font-medium text-neutral-300">Email</span>
-        <input
-          name="email"
-          type="email"
-          autoComplete="email"
+          autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
-          placeholder="you@example.com"
+          placeholder="e.g. jan"
           className={inputClass}
         />
       </label>
