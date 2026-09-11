@@ -2,6 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/app/actions/auth";
+import {
+  addDays,
+  computeStreak,
+  estimatedOneRm,
+  sessionDurationMinutes,
+  setVolume,
+  startOfDay,
+  toDateKey,
+} from "@/lib/calculations";
 import { prisma } from "@/lib/prisma";
 import type {
   AnalyticsSummary,
@@ -9,41 +18,6 @@ import type {
   ProgressionPoint,
   WorkoutHistoryFeed,
 } from "@/types/trackr";
-
-function toDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function startOfDay(date: Date): Date {
-  const copy = new Date(date);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
-function addDays(date: Date, days: number): Date {
-  const copy = new Date(date);
-  copy.setDate(copy.getDate() + days);
-  return copy;
-}
-
-function sessionDurationMinutes(start: Date, end: Date | null): number {
-  if (!end) return 0;
-  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
-}
-
-function setVolume(weight: number, reps: number): number {
-  return weight * reps;
-}
-
-/** Epley estimated 1RM */
-function estimatedOneRm(weight: number, reps: number): number {
-  if (reps <= 0) return 0;
-  if (reps === 1) return weight;
-  return Math.round(weight * (1 + reps / 30) * 10) / 10;
-}
 
 function percentChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
@@ -71,21 +45,7 @@ async function computeSupplementStreak(userId: string): Promise<number> {
     take: 365,
   });
 
-  const daysWithIntake = new Set(intakes.map((item) => toDateKey(item.date)));
-  if (daysWithIntake.size === 0) return 0;
-
-  let cursor = startOfDay(new Date());
-  if (!daysWithIntake.has(toDateKey(cursor))) {
-    cursor = addDays(cursor, -1);
-  }
-
-  let streak = 0;
-  while (daysWithIntake.has(toDateKey(cursor))) {
-    streak += 1;
-    cursor = addDays(cursor, -1);
-  }
-
-  return streak;
+  return computeStreak(intakes.map((item) => item.date));
 }
 
 export async function getAnalyticsSummary(
@@ -378,4 +338,39 @@ export async function deleteWorkoutSession(sessionId: string): Promise<void> {
   revalidatePath("/");
   revalidatePath("/history");
   revalidatePath("/analytics");
+}
+
+export async function exportMyData() {
+  const user = await requireUser();
+
+  const [sessions, activities, supplements] = await Promise.all([
+    prisma.workoutSession.findMany({
+      where: { userId: user.id },
+      orderBy: { startTime: "desc" },
+      include: {
+        exercises: {
+          orderBy: { order: "asc" },
+          include: {
+            sets: { orderBy: { setNumber: "asc" } },
+          },
+        },
+      },
+    }),
+    prisma.cardioActivity.findMany({
+      where: { userId: user.id },
+      orderBy: { date: "desc" },
+    }),
+    prisma.supplementIntake.findMany({
+      where: { userId: user.id },
+      orderBy: { date: "desc" },
+    }),
+  ]);
+
+  return {
+    exportedAt: new Date().toISOString(),
+    username: user.username,
+    sessions,
+    activities,
+    supplements,
+  };
 }

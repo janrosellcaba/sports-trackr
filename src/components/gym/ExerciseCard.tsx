@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { addSet, deleteExercise, deleteSet } from "@/app/actions/gym";
+import { useRestTimer } from "@/components/gym/RestTimer";
+import { estimatedOneRm } from "@/lib/calculations";
 import type { ExercisePayload } from "@/types/trackr";
 
 type ExerciseCardProps = {
@@ -9,6 +11,7 @@ type ExerciseCardProps = {
 };
 
 export function ExerciseCard({ exercise }: ExerciseCardProps) {
+  const restTimer = useRestTimer();
   const lastSet = exercise.sets[exercise.sets.length - 1];
   const [weight, setWeight] = useState(String(lastSet?.weight ?? 60));
   const [reps, setReps] = useState(String(lastSet?.reps ?? 10));
@@ -41,6 +44,7 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
 
     startTransition(async () => {
       await addSet(exercise.id, parsedWeight, parsedReps, parsedRpe);
+      restTimer?.start();
     });
   }
 
@@ -60,7 +64,7 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
   }
 
   return (
-    <article className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-4">
+    <article className="rounded-2xl border border-neutral-850 bg-neutral-950/80 p-4">
       <header className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-neutral-100">
           {exercise.machineName}
@@ -83,6 +87,7 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
               <th className="pb-2 font-medium">Set</th>
               <th className="pb-2 font-medium">kg</th>
               <th className="pb-2 font-medium">Reps</th>
+              <th className="pb-2 font-medium">1RM</th>
               <th className="pb-2 font-medium">RPE</th>
               <th className="pb-2 font-medium" />
             </tr>
@@ -90,19 +95,28 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
           <tbody>
             {exercise.sets.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-3 text-neutral-500">
+                <td colSpan={6} className="py-3 text-neutral-500">
                   No sets yet — log your first below.
                 </td>
               </tr>
             ) : (
               exercise.sets.map((set) => (
-                <tr key={set.id} className="border-t border-neutral-800/80">
-                  <td className="py-2.5 font-mono text-neutral-300">
+                <tr key={set.id} className="border-t border-neutral-850">
+                  <td className="py-2.5 font-mono tabular-nums text-neutral-300">
                     {set.setNumber}
                   </td>
-                  <td className="py-2.5 text-neutral-100">{set.weight}</td>
-                  <td className="py-2.5 text-neutral-100">{set.reps}</td>
-                  <td className="py-2.5 text-neutral-400">
+                  <td className="py-2.5 font-mono tabular-nums text-neutral-100">
+                    {set.weight}
+                  </td>
+                  <td className="py-2.5 font-mono tabular-nums text-neutral-100">
+                    {set.reps}
+                  </td>
+                  <td className="py-2.5">
+                    <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-emerald-400">
+                      {estimatedOneRm(set.weight, set.reps)}
+                    </span>
+                  </td>
+                  <td className="py-2.5 font-mono tabular-nums text-neutral-400">
                     {set.rpe ?? "—"}
                   </td>
                   <td className="py-2.5 text-right">

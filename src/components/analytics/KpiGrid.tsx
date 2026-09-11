@@ -62,13 +62,13 @@ export function KpiGrid({ summary }: KpiGridProps) {
       {cards.map((card) => (
         <article
           key={card.label}
-          className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-3.5"
+          className="rounded-2xl border border-neutral-850 bg-neutral-950/80 p-3.5"
         >
           <div className="mb-3 flex items-start justify-between gap-2">
             <card.icon className="h-4 w-4 text-lime-400/80" />
             <TrendBadge value={card.trend} />
           </div>
-          <p className="text-2xl font-semibold tracking-tight text-neutral-50">
+          <p className="font-mono text-2xl font-semibold tabular-nums tracking-tight text-neutral-50">
             {card.value}
           </p>
           <p className="mt-1 text-xs font-medium text-neutral-300">

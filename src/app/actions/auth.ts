@@ -13,18 +13,16 @@ import {
   type AuthActionResult,
   type AuthUser,
 } from "@/lib/auth";
+import {
+  assignRole,
+  isValidInviteCode,
+  isValidUsername,
+  normalizeUsername,
+} from "@/lib/auth-logic";
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
-}
-
-function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase();
-}
-
-function isValidUsername(username: string): boolean {
-  return /^[a-z0-9._-]{2,32}$/.test(username);
 }
 
 async function createSession(userId: string): Promise<void> {
@@ -59,7 +57,7 @@ export async function register(
   const password = readString(formData, "password");
   const inviteCode = readString(formData, "inviteCode").trim();
 
-  if (inviteCode !== getRegistrationCode()) {
+  if (!isValidInviteCode(inviteCode, getRegistrationCode())) {
     return { error: "Invalid registration code" };
   }
 
@@ -83,7 +81,7 @@ export async function register(
     data: {
       username,
       passwordHash,
-      role: username === "jan" ? "ADMIN" : "USER",
+      role: assignRole(username),
     },
   });
 

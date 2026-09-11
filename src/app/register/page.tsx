@@ -1,19 +1,20 @@
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { Logo } from "@/components/ui/Logo";
 
 export default function RegisterPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-4 py-10 text-neutral-100">
+    <main className="flex min-h-screen items-center justify-center bg-black px-4 py-10 text-neutral-100">
       <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-50">
-            Trackr
-          </h1>
+        <div className="space-y-3 text-center">
+          <div className="flex justify-center">
+            <Logo />
+          </div>
           <p className="text-sm text-neutral-400">
             Create an account with your invite code.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-5">
+        <div className="rounded-2xl border border-neutral-850 bg-neutral-950/80 p-5">
           <RegisterForm />
         </div>
       </div>

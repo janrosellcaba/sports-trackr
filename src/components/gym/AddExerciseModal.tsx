@@ -2,16 +2,11 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { addExercise } from "@/app/actions/gym";
-
-export const FREQUENT_EXERCISES = [
-  "Bench Press",
-  "Squat",
-  "Incline Dumbbell Press",
-  "Lat Pulldown",
-  "Cable Row",
-  "Leg Press",
-  "Lateral Raises",
-] as const;
+import {
+  EXERCISE_CATALOG,
+  MUSCLE_FILTERS,
+  type MuscleFilter,
+} from "@/lib/exercises";
 
 type AddExerciseModalProps = {
   sessionId: string;
@@ -25,15 +20,19 @@ export function AddExerciseModal({
   onClose,
 }: AddExerciseModalProps) {
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<MuscleFilter>("All");
   const [isPending, startTransition] = useTransition();
 
   const suggestions = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return [...FREQUENT_EXERCISES];
-    return FREQUENT_EXERCISES.filter((name) =>
-      name.toLowerCase().includes(normalized),
-    );
-  }, [query]);
+    return EXERCISE_CATALOG.filter((exercise) => {
+      const matchesFilter =
+        filter === "All" || exercise.category === filter;
+      const matchesQuery =
+        !normalized || exercise.name.toLowerCase().includes(normalized);
+      return matchesFilter && matchesQuery;
+    });
+  }, [filter, query]);
 
   if (!open) return null;
 
@@ -44,6 +43,7 @@ export function AddExerciseModal({
     startTransition(async () => {
       await addExercise(sessionId, trimmed);
       setQuery("");
+      setFilter("All");
       onClose();
     });
   }
@@ -57,7 +57,7 @@ export function AddExerciseModal({
         onClick={onClose}
       />
 
-      <div className="relative z-10 w-full max-w-lg rounded-t-2xl border border-neutral-800 bg-neutral-950 p-5 shadow-2xl sm:rounded-2xl">
+      <div className="relative z-10 w-full max-w-lg rounded-t-2xl border border-neutral-850 bg-black p-5 shadow-2xl sm:rounded-2xl">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h3 className="text-lg font-semibold text-neutral-100">
             Add exercise
@@ -65,14 +65,14 @@ export function AddExerciseModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-neutral-800 px-3 py-2 text-sm text-neutral-400"
+            className="rounded-lg border border-neutral-850 px-3 py-2 text-sm text-neutral-400"
           >
             Close
           </button>
         </div>
 
         <form
-          className="mb-4 flex gap-2"
+          className="mb-3 flex gap-2"
           onSubmit={(event) => {
             event.preventDefault();
             submit(query);
@@ -83,7 +83,7 @@ export function AddExerciseModal({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search or type custom…"
-            className="h-12 flex-1 rounded-xl border border-neutral-800 bg-neutral-900 px-4 text-base text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-lime-400/50"
+            className="h-12 flex-1 rounded-xl border border-neutral-850 bg-neutral-950 px-4 text-base text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-lime-400/50"
           />
           <button
             type="submit"
@@ -94,16 +94,33 @@ export function AddExerciseModal({
           </button>
         </form>
 
-        <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto pb-2">
-          {suggestions.map((name) => (
+        <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1">
+          {MUSCLE_FILTERS.map((group) => (
             <button
-              key={name}
+              key={group}
+              type="button"
+              onClick={() => setFilter(group)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                filter === group
+                  ? "bg-lime-400 text-neutral-950"
+                  : "border border-neutral-850 bg-neutral-950 text-neutral-400"
+              }`}
+            >
+              {group}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto pb-2">
+          {suggestions.map((exercise) => (
+            <button
+              key={exercise.name}
               type="button"
               disabled={isPending}
-              onClick={() => submit(name)}
-              className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2.5 text-sm text-neutral-200 transition active:scale-[0.98] hover:border-lime-400/40 hover:text-lime-300 disabled:opacity-50"
+              onClick={() => submit(exercise.name)}
+              className="rounded-full border border-neutral-850 bg-neutral-950 px-4 py-2.5 text-sm text-neutral-200 transition active:scale-[0.98] hover:border-lime-400/40 hover:text-lime-300 disabled:opacity-50"
             >
-              {name}
+              {exercise.name}
             </button>
           ))}
           {suggestions.length === 0 && (

@@ -94,7 +94,7 @@ export function SessionHeader({ session }: SessionHeaderProps) {
           <p className="text-xs uppercase tracking-[0.2em] text-neutral-500">
             Gym
           </p>
-          <h2 className="text-xl font-semibold text-neutral-100">
+          <h2 className="font-mono text-xl font-semibold tabular-nums text-neutral-100">
             Active Session: {elapsed}
           </h2>
         </div>
