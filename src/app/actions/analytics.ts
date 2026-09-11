@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
 import type {
   AnalyticsSummary,
@@ -62,8 +63,9 @@ function buildDailySkeleton(days: number, end: Date): DailyActivityPoint[] {
   return points;
 }
 
-async function computeSupplementStreak(): Promise<number> {
+async function computeSupplementStreak(userId: string): Promise<number> {
   const intakes = await prisma.supplementIntake.findMany({
+    where: { userId },
     select: { date: true },
     orderBy: { date: "desc" },
     take: 365,
@@ -89,6 +91,7 @@ async function computeSupplementStreak(): Promise<number> {
 export async function getAnalyticsSummary(
   days = 30,
 ): Promise<AnalyticsSummary> {
+  const user = await requireUser();
   const rangeDays = Math.max(7, Math.min(days, 90));
   const chartDays = rangeDays >= 30 ? 30 : 14;
   const end = startOfDay(new Date());
@@ -100,6 +103,7 @@ export async function getAnalyticsSummary(
     await Promise.all([
       prisma.workoutSession.findMany({
         where: {
+          userId: user.id,
           endTime: { not: null },
           startTime: { gte: rangeStart },
         },
@@ -110,14 +114,15 @@ export async function getAnalyticsSummary(
         },
       }),
       prisma.cardioActivity.findMany({
-        where: { date: { gte: rangeStart } },
+        where: { userId: user.id, date: { gte: rangeStart } },
       }),
       prisma.supplementIntake.findMany({
-        where: { date: { gte: rangeStart } },
+        where: { userId: user.id, date: { gte: rangeStart } },
         select: { date: true },
       }),
       prisma.workoutSession.findMany({
         where: {
+          userId: user.id,
           endTime: { not: null },
           startTime: { gte: previousStart, lt: rangeStart },
         },
@@ -126,10 +131,16 @@ export async function getAnalyticsSummary(
         },
       }),
       prisma.cardioActivity.findMany({
-        where: { date: { gte: previousStart, lt: rangeStart } },
+        where: {
+          userId: user.id,
+          date: { gte: previousStart, lt: rangeStart },
+        },
       }),
       prisma.supplementIntake.findMany({
-        where: { date: { gte: previousStart, lt: rangeStart } },
+        where: {
+          userId: user.id,
+          date: { gte: previousStart, lt: rangeStart },
+        },
         select: { date: true },
       }),
     ]);
@@ -186,7 +197,7 @@ export async function getAnalyticsSummary(
     previousSupplements.map((item) => toDateKey(item.date)),
   );
 
-  const supplementStreak = await computeSupplementStreak();
+  const supplementStreak = await computeSupplementStreak(user.id);
 
   return {
     days: rangeDays,
@@ -211,11 +222,12 @@ export async function getAnalyticsSummary(
 export async function getWorkoutHistory(
   limit = 20,
 ): Promise<WorkoutHistoryFeed> {
+  const user = await requireUser();
   const take = Math.max(1, Math.min(limit, 100));
 
   const [sessions, activities] = await Promise.all([
     prisma.workoutSession.findMany({
-      where: { endTime: { not: null } },
+      where: { userId: user.id, endTime: { not: null } },
       orderBy: { startTime: "desc" },
       take,
       include: {
@@ -228,6 +240,7 @@ export async function getWorkoutHistory(
       },
     }),
     prisma.cardioActivity.findMany({
+      where: { userId: user.id },
       orderBy: { date: "desc" },
       take,
     }),
@@ -291,7 +304,9 @@ export async function getWorkoutHistory(
 }
 
 export async function getExerciseNames(): Promise<string[]> {
+  const user = await requireUser();
   const rows = await prisma.exerciseLog.findMany({
+    where: { session: { userId: user.id } },
     select: { machineName: true },
     distinct: ["machineName"],
     orderBy: { machineName: "asc" },
@@ -303,11 +318,12 @@ export async function getExerciseNames(): Promise<string[]> {
 export async function getExerciseProgression(
   machineName: string,
 ): Promise<ProgressionPoint[]> {
+  const user = await requireUser();
   const trimmed = machineName.trim();
   if (!trimmed) return [];
 
   const logs = await prisma.exerciseLog.findMany({
-    where: { machineName: trimmed },
+    where: { machineName: trimmed, session: { userId: user.id } },
     include: {
       session: { select: { startTime: true, endTime: true } },
       sets: true,
@@ -351,7 +367,14 @@ export async function getExerciseProgression(
 }
 
 export async function deleteWorkoutSession(sessionId: string): Promise<void> {
-  await prisma.workoutSession.delete({ where: { id: sessionId } });
+  const user = await requireUser();
+  const result = await prisma.workoutSession.deleteMany({
+    where: { id: sessionId, userId: user.id },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Session not found.");
+  }
   revalidatePath("/");
   revalidatePath("/history");
   revalidatePath("/analytics");

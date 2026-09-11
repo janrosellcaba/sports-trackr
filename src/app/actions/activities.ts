@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
 import {
   CARDIO_TYPES,
@@ -32,6 +33,8 @@ function serializeActivity(activity: {
 export async function logCardioActivity(
   data: LogCardioActivityInput,
 ): Promise<CardioActivityPayload> {
+  const user = await requireUser();
+
   if (!CARDIO_TYPES.includes(data.type)) {
     throw new Error("Invalid activity type.");
   }
@@ -44,6 +47,7 @@ export async function logCardioActivity(
 
   const activity = await prisma.cardioActivity.create({
     data: {
+      userId: user.id,
       type: data.type,
       durationMinutes: Math.round(data.durationMinutes),
       intensity: data.intensity,
@@ -61,7 +65,9 @@ export async function logCardioActivity(
 export async function getRecentActivities(
   limit = 10,
 ): Promise<CardioActivityPayload[]> {
+  const user = await requireUser();
   const activities = await prisma.cardioActivity.findMany({
+    where: { userId: user.id },
     orderBy: { date: "desc" },
     take: Math.max(1, Math.min(limit, 50)),
   });
@@ -70,7 +76,15 @@ export async function getRecentActivities(
 }
 
 export async function deleteCardioActivity(id: string): Promise<void> {
-  await prisma.cardioActivity.delete({ where: { id } });
+  const user = await requireUser();
+  const result = await prisma.cardioActivity.deleteMany({
+    where: { id, userId: user.id },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Activity not found.");
+  }
+
   revalidatePath("/");
   revalidatePath("/history");
   revalidatePath("/analytics");

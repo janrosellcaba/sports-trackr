@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
 import {
   SUPPLEMENT_TYPES,
@@ -36,6 +37,8 @@ function serializeSupplement(intake: {
 export async function logSupplement(
   data: LogSupplementInput,
 ): Promise<SupplementPayload> {
+  const user = await requireUser();
+
   if (!SUPPLEMENT_TYPES.includes(data.type)) {
     throw new Error("Invalid supplement type.");
   }
@@ -56,6 +59,7 @@ export async function logSupplement(
 
   const intake = await prisma.supplementIntake.create({
     data: {
+      userId: user.id,
       type: data.type,
       amountGrams: data.amountGrams ?? null,
       scoops: data.scoops ?? null,
@@ -70,8 +74,10 @@ export async function logSupplement(
 }
 
 export async function getTodaySupplements(): Promise<SupplementPayload[]> {
+  const user = await requireUser();
   const intakes = await prisma.supplementIntake.findMany({
     where: {
+      userId: user.id,
       date: {
         gte: startOfToday(),
       },
@@ -83,7 +89,15 @@ export async function getTodaySupplements(): Promise<SupplementPayload[]> {
 }
 
 export async function deleteSupplement(id: string): Promise<void> {
-  await prisma.supplementIntake.delete({ where: { id } });
+  const user = await requireUser();
+  const result = await prisma.supplementIntake.deleteMany({
+    where: { id, userId: user.id },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Supplement entry not found.");
+  }
+
   revalidatePath("/");
   revalidatePath("/analytics");
 }

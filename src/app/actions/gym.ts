@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
 import type {
   ExercisePayload,
@@ -60,8 +61,9 @@ const activeSessionInclude = {
 };
 
 export async function startSession(): Promise<SessionPayload> {
+  const user = await requireUser();
   const existing = await prisma.workoutSession.findFirst({
-    where: { endTime: null },
+    where: { userId: user.id, endTime: null },
   });
 
   if (existing) {
@@ -70,6 +72,7 @@ export async function startSession(): Promise<SessionPayload> {
 
   const session = await prisma.workoutSession.create({
     data: {
+      userId: user.id,
       startTime: new Date(),
       endTime: null,
     },
@@ -84,6 +87,16 @@ export async function endSession(
   sessionId: string,
   notes?: string,
 ): Promise<SessionPayload> {
+  const user = await requireUser();
+  const existing = await prisma.workoutSession.findFirst({
+    where: { id: sessionId, userId: user.id },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    throw new Error("Session not found.");
+  }
+
   const session = await prisma.workoutSession.update({
     where: { id: sessionId },
     data: {
@@ -100,8 +113,9 @@ export async function endSession(
 }
 
 export async function getActiveSession(): Promise<SessionPayload | null> {
+  const user = await requireUser();
   const session = await prisma.workoutSession.findFirst({
-    where: { endTime: null },
+    where: { userId: user.id, endTime: null },
     include: activeSessionInclude,
     orderBy: { startTime: "desc" },
   });
@@ -113,9 +127,19 @@ export async function addExercise(
   sessionId: string,
   machineName: string,
 ): Promise<ExercisePayload> {
+  const user = await requireUser();
   const trimmed = machineName.trim();
   if (!trimmed) {
     throw new Error("Exercise name is required.");
+  }
+
+  const session = await prisma.workoutSession.findFirst({
+    where: { id: sessionId, userId: user.id },
+    select: { id: true },
+  });
+
+  if (!session) {
+    throw new Error("Session not found.");
   }
 
   const lastExercise = await prisma.exerciseLog.findFirst({
@@ -158,6 +182,8 @@ export async function addSet(
   reps: number,
   rpe?: number,
 ): Promise<SetPayload> {
+  const user = await requireUser();
+
   if (!Number.isFinite(weight) || weight < 0) {
     throw new Error("Weight must be a non-negative number.");
   }
@@ -166,6 +192,15 @@ export async function addSet(
   }
   if (rpe !== undefined && (rpe < 0 || rpe > 10)) {
     throw new Error("RPE must be between 0 and 10.");
+  }
+
+  const exercise = await prisma.exerciseLog.findFirst({
+    where: { id: exerciseLogId, session: { userId: user.id } },
+    select: { id: true },
+  });
+
+  if (!exercise) {
+    throw new Error("Exercise not found.");
   }
 
   const lastSet = await prisma.setLog.findFirst({
@@ -195,11 +230,33 @@ export async function addSet(
 }
 
 export async function deleteSet(setId: string): Promise<void> {
-  await prisma.setLog.delete({ where: { id: setId } });
+  const user = await requireUser();
+  const result = await prisma.setLog.deleteMany({
+    where: {
+      id: setId,
+      exerciseLog: { session: { userId: user.id } },
+    },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Set not found.");
+  }
+
   revalidatePath("/");
 }
 
 export async function deleteExercise(exerciseLogId: string): Promise<void> {
-  await prisma.exerciseLog.delete({ where: { id: exerciseLogId } });
+  const user = await requireUser();
+  const result = await prisma.exerciseLog.deleteMany({
+    where: {
+      id: exerciseLogId,
+      session: { userId: user.id },
+    },
+  });
+
+  if (result.count === 0) {
+    throw new Error("Exercise not found.");
+  }
+
   revalidatePath("/");
 }

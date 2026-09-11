@@ -6,13 +6,28 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id           String              @id @default(cuid())
+  email        String              @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime            @default(now())
+  sessions     WorkoutSession[]
+  activities   CardioActivity[]
+  supplements  SupplementIntake[]
+}
+
 model WorkoutSession {
   id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   startTime DateTime      @default(now())
   endTime   DateTime?
   notes     String?
   exercises ExerciseLog[]
   createdAt DateTime      @default(now())
+
+  @@index([userId])
 }
 
 model ExerciseLog {
@@ -36,18 +51,26 @@ model SetLog {
 
 model CardioActivity {
   id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type            String
   durationMinutes Int
   intensity       String
   notes           String?
   date            DateTime @default(now())
+
+  @@index([userId])
 }
 
 model SupplementIntake {
   id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        String
   amountGrams Float?
   scoops      Float?
   notes       String?
   date        DateTime @default(now())
+
+  @@index([userId])
 }
