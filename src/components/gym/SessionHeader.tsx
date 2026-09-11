@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { endSession, startSession, type SessionPayload } from "@/app/actions/gym";
+import { endSession, startSession } from "@/app/actions/gym";
+import type { SessionPayload } from "@/types/trackr";
 import { QuickActivityTrigger } from "@/components/activity/QuickActivityModal";
 
 function formatElapsed(ms: number): string {

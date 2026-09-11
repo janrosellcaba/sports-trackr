@@ -10,10 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  getExerciseProgression,
-  type ProgressionPoint,
-} from "@/app/actions/analytics";
+import { getExerciseProgression } from "@/app/actions/analytics";
+import type { ProgressionPoint } from "@/types/trackr";
 
 type ExerciseProgressionChartProps = {
   exerciseNames: string[];

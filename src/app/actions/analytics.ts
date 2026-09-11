@@ -2,78 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-
-export type DailyActivityPoint = {
-  date: string;
-  gymMinutes: number;
-  cardioMinutes: number;
-  volumeKg: number;
-};
-
-export type AnalyticsSummary = {
-  days: number;
-  totalSessions: number;
-  totalCardioMinutes: number;
-  totalVolumeKg: number;
-  supplementComplianceDays: number;
-  supplementStreak: number;
-  trends: {
-    sessions: number;
-    cardioMinutes: number;
-    volumeKg: number;
-    supplements: number;
-  };
-  daily: DailyActivityPoint[];
-};
-
-export type HistorySet = {
-  id: string;
-  setNumber: number;
-  weight: number;
-  reps: number;
-  rpe: number | null;
-};
-
-export type HistoryExercise = {
-  id: string;
-  machineName: string;
-  order: number;
-  sets: HistorySet[];
-  volumeKg: number;
-};
-
-export type WorkoutHistoryItem = {
-  id: string;
-  startTime: string;
-  endTime: string;
-  notes: string | null;
-  durationMinutes: number;
-  totalVolumeKg: number;
-  exerciseCount: number;
-  setCount: number;
-  exercises: HistoryExercise[];
-};
-
-export type CardioHistoryItem = {
-  id: string;
-  type: string;
-  durationMinutes: number;
-  intensity: string;
-  notes: string | null;
-  date: string;
-};
-
-export type WorkoutHistoryFeed = {
-  sessions: WorkoutHistoryItem[];
-  activities: CardioHistoryItem[];
-};
-
-export type ProgressionPoint = {
-  date: string;
-  maxWeight: number;
-  estimatedOneRm: number;
-  bestSetReps: number;
-};
+import type {
+  AnalyticsSummary,
+  DailyActivityPoint,
+  ProgressionPoint,
+  WorkoutHistoryFeed,
+} from "@/types/trackr";
 
 function toDateKey(date: Date): string {
   const y = date.getFullYear();

@@ -2,29 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-
-export type SetPayload = {
-  id: string;
-  setNumber: number;
-  weight: number;
-  reps: number;
-  rpe: number | null;
-};
-
-export type ExercisePayload = {
-  id: string;
-  machineName: string;
-  order: number;
-  sets: SetPayload[];
-};
-
-export type SessionPayload = {
-  id: string;
-  startTime: string;
-  endTime: string | null;
-  notes: string | null;
-  exercises: ExercisePayload[];
-};
+import type {
+  ExercisePayload,
+  SessionPayload,
+  SetPayload,
+} from "@/types/trackr";
 
 function serializeSession(
   session: {

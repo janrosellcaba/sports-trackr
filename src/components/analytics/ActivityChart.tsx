@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { DailyActivityPoint } from "@/app/actions/analytics";
+import type { DailyActivityPoint } from "@/types/trackr";
 
 type ActivityChartProps = {
   data: DailyActivityPoint[];

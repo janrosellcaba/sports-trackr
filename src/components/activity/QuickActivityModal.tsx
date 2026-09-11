@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { logCardioActivity } from "@/app/actions/activities";
 import {
   CARDIO_TYPES,
   INTENSITY_LEVELS,
-  logCardioActivity,
   type CardioType,
   type IntensityLevel,
-} from "@/app/actions/activities";
+} from "@/types/trackr";
 
 const DURATION_PRESETS = [30, 45, 60, 90, 120] as const;
 

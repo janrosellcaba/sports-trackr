@@ -2,30 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-
-export const SUPPLEMENT_TYPES = [
-  "WHEY_PROTEIN",
-  "PRE_WORKOUT",
-  "CREATINE",
-] as const;
-
-export type SupplementType = (typeof SUPPLEMENT_TYPES)[number];
-
-export type SupplementPayload = {
-  id: string;
-  type: SupplementType;
-  amountGrams: number | null;
-  scoops: number | null;
-  notes: string | null;
-  date: string;
-};
-
-export type LogSupplementInput = {
-  type: SupplementType;
-  amountGrams?: number;
-  scoops?: number;
-  notes?: string;
-};
+import {
+  SUPPLEMENT_TYPES,
+  type LogSupplementInput,
+  type SupplementPayload,
+  type SupplementType,
+} from "@/types/trackr";
 
 function startOfToday(): Date {
   const start = new Date();

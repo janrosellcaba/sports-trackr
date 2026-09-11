@@ -1,12 +1,8 @@
 "use client";
 
 import { useMemo, useTransition } from "react";
-import {
-  deleteSupplement,
-  logSupplement,
-  type SupplementPayload,
-  type SupplementType,
-} from "@/app/actions/supplements";
+import { deleteSupplement, logSupplement } from "@/app/actions/supplements";
+import type { SupplementPayload, SupplementType } from "@/types/trackr";
 
 const QUICK_LOGS: {
   type: SupplementType;

@@ -2,36 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-
-export const CARDIO_TYPES = [
-  "RUNNING",
-  "CYCLING",
-  "SWIMMING",
-  "PADEL",
-  "TENNIS",
-] as const;
-
-export const INTENSITY_LEVELS = ["LOW", "MODERATE", "HIGH"] as const;
-
-export type CardioType = (typeof CARDIO_TYPES)[number];
-export type IntensityLevel = (typeof INTENSITY_LEVELS)[number];
-
-export type CardioActivityPayload = {
-  id: string;
-  type: CardioType;
-  durationMinutes: number;
-  intensity: IntensityLevel;
-  notes: string | null;
-  date: string;
-};
-
-export type LogCardioActivityInput = {
-  type: CardioType;
-  durationMinutes: number;
-  intensity: IntensityLevel;
-  notes?: string;
-  date?: Date | string;
-};
+import {
+  CARDIO_TYPES,
+  INTENSITY_LEVELS,
+  type CardioActivityPayload,
+  type CardioType,
+  type IntensityLevel,
+  type LogCardioActivityInput,
+} from "@/types/trackr";
 
 function serializeActivity(activity: {
   id: string;

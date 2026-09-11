@@ -1,12 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import {
-  addSet,
-  deleteExercise,
-  deleteSet,
-  type ExercisePayload,
-} from "@/app/actions/gym";
+import { addSet, deleteExercise, deleteSet } from "@/app/actions/gym";
+import type { ExercisePayload } from "@/types/trackr";
 
 type ExerciseCardProps = {
   exercise: ExercisePayload;

@@ -1,7 +1,7 @@
 "use client";
 
 import { Activity, Dumbbell, Flame, Pill } from "lucide-react";
-import type { AnalyticsSummary } from "@/app/actions/analytics";
+import type { AnalyticsSummary } from "@/types/trackr";
 
 type KpiGridProps = {
   summary: AnalyticsSummary;

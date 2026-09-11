@@ -2,11 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, Trash2 } from "lucide-react";
-import {
-  deleteWorkoutSession,
-  type CardioHistoryItem,
-  type WorkoutHistoryItem,
-} from "@/app/actions/analytics";
+import { deleteWorkoutSession } from "@/app/actions/analytics";
+import type { CardioHistoryItem, WorkoutHistoryItem } from "@/types/trackr";
 import { deleteCardioActivity } from "@/app/actions/activities";
 
 type HistoryFeedProps = {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ExercisePayload } from "@/app/actions/gym";
+import type { ExercisePayload } from "@/types/trackr";
 import { AddExerciseModal } from "@/components/gym/AddExerciseModal";
 import { ExerciseCard } from "@/components/gym/ExerciseCard";
 

@@ -1,12 +1,12 @@
 "use client";
 
 import { useTransition } from "react";
-import {
-  deleteCardioActivity,
-  type CardioActivityPayload,
-  type CardioType,
-  type IntensityLevel,
-} from "@/app/actions/activities";
+import { deleteCardioActivity } from "@/app/actions/activities";
+import type {
+  CardioActivityPayload,
+  CardioType,
+  IntensityLevel,
+} from "@/types/trackr";
 
 const TYPE_LABELS: Record<CardioType, string> = {
   PADEL: "Padel",
