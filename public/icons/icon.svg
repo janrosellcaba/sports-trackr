@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="112" fill="#faf8f2"/>
-  <path d="M74 96H438L390 196H122L74 96Z" fill="#1f7a54"/>
-  <path d="M214 196H298L274 436H194L214 196Z" fill="#175f42"/>
-  <path d="M328 258L384 202L440 258" stroke="#1f7a54" stroke-width="28" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="M344 326L384 286L424 326" stroke="#175f42" stroke-width="22" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="M356 390L384 362L412 390" stroke="#1f7a54" stroke-width="18" stroke-linecap="square" opacity="0.85"/>
+  <rect width="512" height="512" rx="112" fill="#09090b"/>
+  <path d="M74 96H438L390 196H122L74 96Z" fill="#f97316"/>
+  <path d="M214 196H298L274 436H194L214 196Z" fill="#fb923c"/>
+  <path d="M328 258L384 202L440 258" stroke="#f97316" stroke-width="28" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M344 326L384 286L424 326" stroke="#fb923c" stroke-width="22" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M356 390L384 362L412 390" stroke="#f97316" stroke-width="18" stroke-linecap="square" opacity="0.85"/>
 </svg>

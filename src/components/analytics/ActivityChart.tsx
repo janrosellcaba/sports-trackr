@@ -10,19 +10,20 @@ import {
   YAxis,
 } from "recharts";
 import type { DailyActivityPoint } from "@/types/trackr";
+import { useAccentColor } from "@/components/theme/ThemeProvider";
 import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 
 type ActivityChartProps = {
   data: DailyActivityPoint[];
 };
 
-const BRAND = "#1f7a54";
-const INK = "#23221d";
-const MUTED = "#918c7c";
-const LINE = "#e9e4d6";
-const PAPER = "#fffdf8";
+const INK = "#f4f4f5";
+const MUTED = "#a1a1aa";
+const LINE = "rgba(255, 255, 255, 0.08)";
+const PAPER = "#18181b";
 
 export function ActivityChart({ data }: ActivityChartProps) {
+  const brand = useAccentColor();
   return (
     <section className={`${CARD_CLS} p-4`}>
       <div className="mb-4 flex items-end justify-between gap-3">
@@ -47,8 +48,8 @@ export function ActivityChart({ data }: ActivityChartProps) {
           <AreaChart data={data} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
             <defs>
               <linearGradient id="gymFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={BRAND} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={BRAND} stopOpacity={0.02} />
+                <stop offset="0%" stopColor={brand} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={brand} stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="cardioFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={INK} stopOpacity={0.18} />
@@ -88,7 +89,7 @@ export function ActivityChart({ data }: ActivityChartProps) {
               type="monotone"
               dataKey="gymMinutes"
               stackId="minutes"
-              stroke={BRAND}
+              stroke={brand}
               fill="url(#gymFill)"
               strokeWidth={2}
             />

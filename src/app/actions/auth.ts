@@ -38,14 +38,14 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, username: true, role: true },
+    select: { id: true, username: true, role: true, accentTheme: true },
   });
 }
 
 export async function requireUser(): Promise<AuthUser> {
   const user = await getCurrentUser();
   if (!user) {
-    throw new Error("Unauthorized");
+    redirect("/login");
   }
   return user;
 }
@@ -115,6 +115,7 @@ export async function login(
 
 export async function logout(): Promise<void> {
   const store = await cookies();
+  store.set(SESSION_COOKIE, "", { ...sessionCookieOptions, maxAge: 0 });
   store.delete(SESSION_COOKIE);
   redirect("/login");
 }

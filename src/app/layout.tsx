@@ -1,5 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { OfflineProvider } from "@/components/offline/OfflineProvider";
+import { ServiceWorkerRegister } from "@/components/offline/ServiceWorkerRegister";
+import { themeBootstrapScript, resolveAccentTheme } from "@/lib/theme";
+import { getCurrentUser } from "@/app/actions/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,7 +29,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Trackr",
   },
   icons: {
@@ -38,22 +43,37 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf8f2",
+  themeColor: "#09090b",
 };
 
 export const dynamic = "force-dynamic";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+  const accent = resolveAccentTheme(user?.accentTheme).id;
+
   return (
-    <html lang="en">
+    <html lang="en" data-accent={accent}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: themeBootstrapScript(user?.accentTheme),
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased`}
       >
-        {children}
+        <ThemeProvider initialTheme={user?.accentTheme}>
+          <OfflineProvider>
+            {children}
+            <ServiceWorkerRegister />
+          </OfflineProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

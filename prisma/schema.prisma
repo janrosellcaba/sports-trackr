@@ -7,14 +7,17 @@ datasource db {
 }
 
 model User {
-  id           String              @id @default(cuid())
-  username     String              @unique
-  passwordHash String
-  role         String              @default("USER")
-  createdAt    DateTime            @default(now())
-  sessions     WorkoutSession[]
-  activities   CardioActivity[]
-  supplements  SupplementIntake[]
+  id                String              @id @default(cuid())
+  username          String              @unique
+  passwordHash      String
+  role              String              @default("USER")
+  accentTheme       String              @default("amber")
+  createdAt         DateTime            @default(now())
+  sessions          WorkoutSession[]
+  activities        CardioActivity[]
+  supplements       SupplementIntake[]
+  customExercises   CustomExercise[]
+  customSupplements CustomSupplement[]
 }
 
 model WorkoutSession {
@@ -24,8 +27,9 @@ model WorkoutSession {
   startTime DateTime      @default(now())
   endTime   DateTime?
   notes     String?
-  exercises ExerciseLog[]
+  mode      String        @default("LIVE")
   createdAt DateTime      @default(now())
+  exercises ExerciseLog[]
 
   @@index([userId])
 }
@@ -67,10 +71,37 @@ model SupplementIntake {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        String
+  label       String?
+  catalogId   String?
   amountGrams Float?
   scoops      Float?
   notes       String?
   date        DateTime @default(now())
+
+  @@index([userId])
+}
+
+model CustomExercise {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  muscleGroup   String
+  defaultWeight Float?
+  defaultReps   Int?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+model CustomSupplement {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  defaultDose String
+  iconOrType  String   @default("pill")
+  createdAt   DateTime @default(now())
 
   @@index([userId])
 }

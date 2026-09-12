@@ -343,7 +343,8 @@ export async function deleteWorkoutSession(sessionId: string): Promise<void> {
 export async function exportMyData() {
   const user = await requireUser();
 
-  const [sessions, activities, supplements] = await Promise.all([
+  const [sessions, activities, supplements, customExercises, customSupplements] =
+    await Promise.all([
     prisma.workoutSession.findMany({
       where: { userId: user.id },
       orderBy: { startTime: "desc" },
@@ -364,6 +365,14 @@ export async function exportMyData() {
       where: { userId: user.id },
       orderBy: { date: "desc" },
     }),
+    prisma.customExercise.findMany({
+      where: { userId: user.id },
+      orderBy: { name: "asc" },
+    }),
+    prisma.customSupplement.findMany({
+      where: { userId: user.id },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   return {
@@ -372,5 +381,7 @@ export async function exportMyData() {
     sessions,
     activities,
     supplements,
+    customExercises,
+    customSupplements,
   };
 }

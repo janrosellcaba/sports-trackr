@@ -4,7 +4,8 @@ export type MuscleGroup =
   | "Legs"
   | "Shoulders"
   | "Arms"
-  | "Core";
+  | "Core"
+  | "Other";
 
 export const MUSCLE_FILTERS = [
   "All",
@@ -14,6 +15,7 @@ export const MUSCLE_FILTERS = [
   "Shoulders",
   "Arms",
   "Core",
+  "Other",
 ] as const;
 
 export type MuscleFilter = (typeof MUSCLE_FILTERS)[number];

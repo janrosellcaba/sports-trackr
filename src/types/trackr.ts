@@ -21,6 +21,7 @@ export type CardioActivityPayload = {
 };
 
 export type LogCardioActivityInput = {
+  id?: string;
   type: CardioType;
   durationMinutes: number;
   intensity: IntensityLevel;
@@ -43,11 +44,14 @@ export type ExercisePayload = {
   sets: SetPayload[];
 };
 
+export type SessionMode = "LIVE" | "MANUAL";
+
 export type SessionPayload = {
   id: string;
   startTime: string;
   endTime: string | null;
   notes: string | null;
+  mode: SessionMode;
   exercises: ExercisePayload[];
 };
 
@@ -57,11 +61,13 @@ export const SUPPLEMENT_TYPES = [
   "CREATINE",
 ] as const;
 
-export type SupplementType = (typeof SUPPLEMENT_TYPES)[number];
+export type SupplementType = (typeof SUPPLEMENT_TYPES)[number] | "CUSTOM";
 
 export type SupplementPayload = {
   id: string;
   type: SupplementType;
+  label: string;
+  catalogId: string | null;
   amountGrams: number | null;
   scoops: number | null;
   notes: string | null;
@@ -69,10 +75,31 @@ export type SupplementPayload = {
 };
 
 export type LogSupplementInput = {
+  id?: string;
   type: SupplementType;
+  label?: string;
+  catalogId?: string;
   amountGrams?: number;
   scoops?: number;
   notes?: string;
+  date?: Date | string;
+};
+
+export type CustomExercisePayload = {
+  id: string;
+  name: string;
+  muscleGroup: string;
+  defaultWeight: number | null;
+  defaultReps: number | null;
+  createdAt: string;
+};
+
+export type CustomSupplementPayload = {
+  id: string;
+  name: string;
+  defaultDose: string;
+  iconOrType: string;
+  createdAt: string;
 };
 
 export type DailyActivityPoint = {

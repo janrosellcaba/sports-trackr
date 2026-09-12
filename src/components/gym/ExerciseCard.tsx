@@ -1,17 +1,25 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { addSet, deleteExercise, deleteSet } from "@/app/actions/gym";
 import { useRestTimer } from "@/components/gym/RestTimer";
 import { estimatedOneRm } from "@/lib/calculations";
+import { runMutation } from "@/lib/offline/mutate";
 import { CARD_CLS, LABEL_CLS, PRIMARY_BTN } from "@/lib/ui";
-import type { ExercisePayload } from "@/types/trackr";
+import type { ExercisePayload, SetPayload } from "@/types/trackr";
 
 type ExerciseCardProps = {
   exercise: ExercisePayload;
+  enableRestTimer?: boolean;
+  onChange: (exercise: ExercisePayload) => void;
+  onDelete: () => void;
 };
 
-export function ExerciseCard({ exercise }: ExerciseCardProps) {
+export function ExerciseCard({
+  exercise,
+  enableRestTimer = true,
+  onChange,
+  onDelete,
+}: ExerciseCardProps) {
   const restTimer = useRestTimer();
   const lastSet = exercise.sets[exercise.sets.length - 1];
   const [weight, setWeight] = useState(String(lastSet?.weight ?? 60));
@@ -44,8 +52,27 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
     const parsedRpe = rpe.trim() === "" ? undefined : Number(rpe);
 
     startTransition(async () => {
-      await addSet(exercise.id, parsedWeight, parsedReps, parsedRpe);
-      restTimer?.start();
+      const id = crypto.randomUUID();
+      const optimistic: SetPayload = {
+        id,
+        setNumber: exercise.sets.length + 1,
+        weight: parsedWeight,
+        reps: parsedReps,
+        rpe: parsedRpe ?? null,
+      };
+      const result = await runMutation(
+        "addSet",
+        {
+          id,
+          exerciseLogId: exercise.id,
+          weight: parsedWeight,
+          reps: parsedReps,
+          rpe: parsedRpe,
+        },
+        optimistic,
+      );
+      onChange({ ...exercise, sets: [...exercise.sets, result.data] });
+      if (enableRestTimer) restTimer?.start();
     });
   }
 
@@ -54,13 +81,18 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
     if (!confirmed) return;
 
     startTransition(async () => {
-      await deleteExercise(exercise.id);
+      await runMutation("deleteExercise", { exerciseLogId: exercise.id }, undefined);
+      onDelete();
     });
   }
 
   function handleDeleteSet(setId: string) {
     startTransition(async () => {
-      await deleteSet(setId);
+      await runMutation("deleteSet", { setId }, undefined);
+      onChange({
+        ...exercise,
+        sets: exercise.sets.filter((set) => set.id !== setId),
+      });
     });
   }
 

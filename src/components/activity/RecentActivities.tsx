@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { deleteCardioActivity } from "@/app/actions/activities";
+import { runMutation } from "@/lib/offline/mutate";
 import type {
   CardioActivityPayload,
   CardioType,
@@ -25,9 +25,10 @@ const INTENSITY_LABELS: Record<IntensityLevel, string> = {
 
 type RecentActivitiesProps = {
   activities: CardioActivityPayload[];
+  onChange?: (activities: CardioActivityPayload[]) => void;
 };
 
-export function RecentActivities({ activities }: RecentActivitiesProps) {
+export function RecentActivities({ activities, onChange }: RecentActivitiesProps) {
   const [isPending, startTransition] = useTransition();
 
   if (activities.length === 0) {
@@ -57,7 +58,10 @@ export function RecentActivities({ activities }: RecentActivitiesProps) {
               disabled={isPending}
               onClick={() =>
                 startTransition(async () => {
-                  await deleteCardioActivity(activity.id);
+                  await runMutation("deleteCardio", { id: activity.id }, undefined);
+                  onChange?.(
+                    activities.filter((item) => item.id !== activity.id),
+                  );
                 })
               }
               className="rounded-md px-2 py-1 text-xs font-semibold text-muted hover:text-danger disabled:opacity-50"

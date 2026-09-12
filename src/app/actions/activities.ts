@@ -45,8 +45,16 @@ export async function logCardioActivity(
     throw new Error("Duration must be a positive number of minutes.");
   }
 
+  if (data.id) {
+    const existing = await prisma.cardioActivity.findFirst({
+      where: { id: data.id, userId: user.id },
+    });
+    if (existing) return serializeActivity(existing);
+  }
+
   const activity = await prisma.cardioActivity.create({
     data: {
+      ...(data.id ? { id: data.id } : {}),
       userId: user.id,
       type: data.type,
       durationMinutes: Math.round(data.durationMinutes),

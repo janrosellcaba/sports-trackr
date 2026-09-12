@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, BarChart3, Dumbbell, Shield } from "lucide-react";
+import { Activity, BarChart3, Dumbbell, Settings, Shield } from "lucide-react";
 
 const TABS = [
   { href: "/", label: "Tracker", icon: Dumbbell },
   { href: "/history", label: "History", icon: Activity },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 const ADMIN_TAB = {
@@ -41,7 +42,7 @@ export function AppNav({ isAdmin = false }: { isAdmin?: boolean }) {
               <span
                 className={`flex h-7 w-12 items-center justify-center rounded-full transition-all duration-200 ${
                   active
-                    ? "scale-105 bg-brand/12 shadow-xs"
+                    ? "scale-105 bg-brand/12 shadow-[0_0_16px_var(--accent-glow)]"
                     : "group-hover:bg-chip/60"
                 }`}
               >

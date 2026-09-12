@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { logCardioActivity } from "@/app/actions/activities";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { runMutation } from "@/lib/offline/mutate";
 import { INK_BTN, INPUT_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
 import {
   CARDIO_TYPES,
   INTENSITY_LEVELS,
+  type CardioActivityPayload,
   type CardioType,
   type IntensityLevel,
 } from "@/types/trackr";
@@ -29,10 +30,12 @@ const INTENSITY_LABELS: Record<IntensityLevel, string> = {
 
 type QuickActivityModalProps = {
   compact?: boolean;
+  onLogged?: (activity: CardioActivityPayload) => void;
 };
 
 export function QuickActivityTrigger({
   compact = false,
+  onLogged,
 }: QuickActivityModalProps) {
   const [open, setOpen] = useState(false);
 
@@ -50,12 +53,23 @@ export function QuickActivityTrigger({
         Log Sport / Cardio
       </button>
 
-      {open && <QuickActivityModal onClose={() => setOpen(false)} />}
+      {open && (
+        <QuickActivityModal
+          onClose={() => setOpen(false)}
+          onLogged={onLogged}
+        />
+      )}
     </>
   );
 }
 
-function QuickActivityModal({ onClose }: { onClose: () => void }) {
+function QuickActivityModal({
+  onClose,
+  onLogged,
+}: {
+  onClose: () => void;
+  onLogged?: (activity: CardioActivityPayload) => void;
+}) {
   const [type, setType] = useState<CardioType>("PADEL");
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [intensity, setIntensity] = useState<IntensityLevel>("MODERATE");
@@ -64,12 +78,27 @@ function QuickActivityModal({ onClose }: { onClose: () => void }) {
 
   function handleSave() {
     startTransition(async () => {
-      await logCardioActivity({
+      const id = crypto.randomUUID();
+      const optimistic: CardioActivityPayload = {
+        id,
         type,
         durationMinutes,
         intensity,
-        notes: notes.trim() || undefined,
-      });
+        notes: notes.trim() || null,
+        date: new Date().toISOString(),
+      };
+      const result = await runMutation(
+        "logCardio",
+        {
+          id,
+          type,
+          durationMinutes,
+          intensity,
+          notes: notes.trim() || undefined,
+        },
+        optimistic,
+      );
+      onLogged?.(result.data);
       onClose();
     });
   }

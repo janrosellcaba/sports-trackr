@@ -27,6 +27,7 @@ export type AuthUser = {
   id: string;
   username: string;
   role: string;
+  accentTheme: string;
 };
 
 export function isAdminUser(user: {

@@ -1,38 +1,41 @@
 import { getRecentActivities } from "@/app/actions/activities";
-import { getActiveSession } from "@/app/actions/gym";
+import { listCustomExercises, listCustomSupplements } from "@/app/actions/catalog";
+import { getActiveSession, getSession } from "@/app/actions/gym";
 import { getTodaySupplements } from "@/app/actions/supplements";
-import { RecentActivities } from "@/components/activity/RecentActivities";
-import { ExerciseList } from "@/components/gym/ExerciseList";
-import { SessionHeader } from "@/components/gym/SessionHeader";
+import { TrackerView } from "@/components/gym/TrackerView";
 import { AppShell } from "@/components/layout/AppShell";
-import { SupplementBar } from "@/components/supplements/SupplementBar";
-import { CARD_CLS } from "@/lib/ui";
 
-export default async function Home() {
-  const [session, supplements, activities] = await Promise.all([
-    getActiveSession(),
-    getTodaySupplements(),
-    getRecentActivities(5),
-  ]);
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ session?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const requestedId = Array.isArray(params.session)
+    ? params.session[0]
+    : params.session;
+
+  const [activeSession, supplements, activities, customExercises, customSupplements] =
+    await Promise.all([
+      getActiveSession(),
+      getTodaySupplements(),
+      getRecentActivities(5),
+      listCustomExercises(),
+      listCustomSupplements(),
+    ]);
+
+  const requestedSession = requestedId ? await getSession(requestedId) : null;
+  const session = requestedSession ?? activeSession;
 
   return (
     <AppShell>
-      <SupplementBar intakes={supplements} />
-
-      <SessionHeader session={session} />
-
-      {session ? (
-        <ExerciseList sessionId={session.id} exercises={session.exercises} />
-      ) : (
-        <section className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
-          <p className="text-sm text-muted">
-            Start a session to log machines, sets, and RPE with near-zero
-            friction.
-          </p>
-        </section>
-      )}
-
-      <RecentActivities activities={activities} />
+      <TrackerView
+        initialSession={session}
+        initialSupplements={supplements}
+        initialActivities={activities}
+        customExercises={customExercises}
+        customSupplements={customSupplements}
+      />
     </AppShell>
   );
 }

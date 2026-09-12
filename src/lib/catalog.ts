@@ -1,0 +1,229 @@
+import { EXERCISE_CATALOG, type MuscleGroup } from "@/lib/exercises";
+import type { CustomExercisePayload, CustomSupplementPayload } from "@/types/trackr";
+
+export const MUSCLE_GROUP_KEYS = [
+  "CHEST",
+  "BACK",
+  "LEGS",
+  "SHOULDERS",
+  "ARMS",
+  "CORE",
+  "OTHER",
+] as const;
+
+export type MuscleGroupKey = (typeof MUSCLE_GROUP_KEYS)[number];
+
+const BUILTIN_TO_KEY: Record<MuscleGroup, MuscleGroupKey> = {
+  Chest: "CHEST",
+  Back: "BACK",
+  Legs: "LEGS",
+  Shoulders: "SHOULDERS",
+  Arms: "ARMS",
+  Core: "CORE",
+  Other: "OTHER",
+};
+
+const KEY_TO_LABEL: Record<MuscleGroupKey, string> = {
+  CHEST: "Chest",
+  BACK: "Back",
+  LEGS: "Legs",
+  SHOULDERS: "Shoulders",
+  ARMS: "Arms",
+  CORE: "Core",
+  OTHER: "Other",
+};
+
+export function isMuscleGroupKey(value: unknown): value is MuscleGroupKey {
+  return (
+    typeof value === "string" &&
+    (MUSCLE_GROUP_KEYS as readonly string[]).includes(value.toUpperCase())
+  );
+}
+
+export function normalizeMuscleGroup(value: string): MuscleGroupKey {
+  const upper = value.trim().toUpperCase();
+  if (isMuscleGroupKey(upper)) return upper;
+  const fromLabel = (Object.entries(BUILTIN_TO_KEY) as [MuscleGroup, MuscleGroupKey][])
+    .find(([label]) => label.toLowerCase() === value.trim().toLowerCase());
+  return fromLabel?.[1] ?? "OTHER";
+}
+
+export function muscleGroupLabel(key: MuscleGroupKey | string): string {
+  const normalized = normalizeMuscleGroup(String(key));
+  return KEY_TO_LABEL[normalized];
+}
+
+export type CatalogExercise = {
+  id: string;
+  name: string;
+  muscleGroup: MuscleGroupKey;
+  source: "builtin" | "custom";
+  defaultWeight?: number | null;
+  defaultReps?: number | null;
+};
+
+export function mergeExerciseCatalog(
+  custom: CustomExercisePayload[],
+): CatalogExercise[] {
+  const builtins: CatalogExercise[] = EXERCISE_CATALOG.map((item) => ({
+    id: `builtin:${item.name}`,
+    name: item.name,
+    muscleGroup: BUILTIN_TO_KEY[item.category],
+    source: "builtin",
+  }));
+
+  const customs: CatalogExercise[] = custom.map((item) => ({
+    id: item.id,
+    name: item.name,
+    muscleGroup: normalizeMuscleGroup(item.muscleGroup),
+    source: "custom",
+    defaultWeight: item.defaultWeight,
+    defaultReps: item.defaultReps,
+  }));
+
+  return [...customs, ...builtins];
+}
+
+export type CatalogSupplement = {
+  id: string;
+  name: string;
+  source: "builtin" | "custom";
+  type: string;
+  defaultDose: string;
+  iconOrType: string;
+  amountGrams?: number;
+  scoops?: number;
+};
+
+export const BUILTIN_SUPPLEMENTS: CatalogSupplement[] = [
+  {
+    id: "builtin:WHEY_PROTEIN",
+    name: "Whey",
+    source: "builtin",
+    type: "WHEY_PROTEIN",
+    defaultDose: "30g / 1 scoop",
+    iconOrType: "powder",
+    amountGrams: 30,
+    scoops: 1,
+  },
+  {
+    id: "builtin:PRE_WORKOUT",
+    name: "Pre-workout",
+    source: "builtin",
+    type: "PRE_WORKOUT",
+    defaultDose: "1 scoop",
+    iconOrType: "flash",
+    scoops: 1,
+  },
+  {
+    id: "builtin:CREATINE",
+    name: "Creatine",
+    source: "builtin",
+    type: "CREATINE",
+    defaultDose: "5g",
+    iconOrType: "pill",
+    amountGrams: 5,
+  },
+];
+
+export function mergeSupplementCatalog(
+  custom: CustomSupplementPayload[],
+): CatalogSupplement[] {
+  const customs: CatalogSupplement[] = custom.map((item) => ({
+    id: item.id,
+    name: item.name,
+    source: "custom",
+    type: "CUSTOM",
+    defaultDose: item.defaultDose,
+    iconOrType: item.iconOrType,
+  }));
+  return [...customs, ...BUILTIN_SUPPLEMENTS];
+}
+
+export function validateExerciseName(name: string): string | null {
+  const trimmed = name.trim();
+  if (trimmed.length < 2) return "Name must be at least 2 characters.";
+  if (trimmed.length > 80) return "Name must be 80 characters or fewer.";
+  return null;
+}
+
+export function validateSupplementName(name: string): string | null {
+  return validateExerciseName(name);
+}
+
+export function parseDoseHint(dose: string): {
+  amountGrams?: number;
+  scoops?: number;
+} {
+  const grams = dose.match(/(\d+(?:\.\d+)?)\s*g/i);
+  const scoops = dose.match(/(\d+(?:\.\d+)?)\s*scoop/i);
+  return {
+    amountGrams: grams ? Number(grams[1]) : undefined,
+    scoops: scoops ? Number(scoops[1]) : undefined,
+  };
+}
+
+export type ParsedCustomExercise = {
+  name: string;
+  muscleGroup: MuscleGroupKey;
+  defaultWeight: number | null;
+  defaultReps: number | null;
+};
+
+export function parseCustomExerciseInput(input: {
+  name: string;
+  muscleGroup: string;
+  defaultWeight?: number | null;
+  defaultReps?: number | null;
+}): ParsedCustomExercise {
+  const nameError = validateExerciseName(input.name);
+  if (nameError) throw new Error(nameError);
+
+  const defaultWeight =
+    input.defaultWeight == null || input.defaultWeight === undefined
+      ? null
+      : Number(input.defaultWeight);
+  if (defaultWeight != null && (!Number.isFinite(defaultWeight) || defaultWeight < 0)) {
+    throw new Error("Default weight must be a non-negative number.");
+  }
+
+  const defaultReps =
+    input.defaultReps == null || input.defaultReps === undefined
+      ? null
+      : Number(input.defaultReps);
+  if (
+    defaultReps != null &&
+    (!Number.isInteger(defaultReps) || defaultReps <= 0)
+  ) {
+    throw new Error("Default reps must be a positive integer.");
+  }
+
+  return {
+    name: input.name.trim(),
+    muscleGroup: normalizeMuscleGroup(input.muscleGroup),
+    defaultWeight,
+    defaultReps,
+  };
+}
+
+export type ParsedCustomSupplement = {
+  name: string;
+  defaultDose: string;
+  iconOrType: string;
+};
+
+export function parseCustomSupplementInput(input: {
+  name: string;
+  defaultDose: string;
+  iconOrType?: string;
+}): ParsedCustomSupplement {
+  const nameError = validateSupplementName(input.name);
+  if (nameError) throw new Error(nameError);
+  const dose = input.defaultDose.trim();
+  if (!dose) throw new Error("Default dose is required.");
+  return {
+    name: input.name.trim(),
+    defaultDose: dose,
+    iconOrType: input.iconOrType?.trim() || "pill",
+  };
+}

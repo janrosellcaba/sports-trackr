@@ -10,6 +10,12 @@ import {
   type SupplementType,
 } from "@/types/trackr";
 
+const BUILTIN_LABELS: Record<string, string> = {
+  WHEY_PROTEIN: "Whey",
+  PRE_WORKOUT: "Pre-workout",
+  CREATINE: "Creatine",
+};
+
 function startOfToday(): Date {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -19,14 +25,19 @@ function startOfToday(): Date {
 function serializeSupplement(intake: {
   id: string;
   type: string;
+  label?: string | null;
+  catalogId?: string | null;
   amountGrams: number | null;
   scoops: number | null;
   notes: string | null;
   date: Date;
 }): SupplementPayload {
+  const type = (intake.type === "CUSTOM" ? "CUSTOM" : intake.type) as SupplementType;
   return {
     id: intake.id,
-    type: intake.type as SupplementType,
+    type,
+    label: intake.label || BUILTIN_LABELS[intake.type] || (type === "CUSTOM" ? "Custom" : intake.type),
+    catalogId: intake.catalogId ?? null,
     amountGrams: intake.amountGrams,
     scoops: intake.scoops,
     notes: intake.notes,
@@ -39,8 +50,12 @@ export async function logSupplement(
 ): Promise<SupplementPayload> {
   const user = await requireUser();
 
-  if (!SUPPLEMENT_TYPES.includes(data.type)) {
+  const isCustom = data.type === "CUSTOM";
+  if (!isCustom && !SUPPLEMENT_TYPES.includes(data.type as (typeof SUPPLEMENT_TYPES)[number])) {
     throw new Error("Invalid supplement type.");
+  }
+  if (isCustom && !data.label?.trim()) {
+    throw new Error("Custom supplement label is required.");
   }
 
   if (
@@ -57,14 +72,24 @@ export async function logSupplement(
     throw new Error("Scoops must be a non-negative number.");
   }
 
+  if (data.id) {
+    const existing = await prisma.supplementIntake.findFirst({
+      where: { id: data.id, userId: user.id },
+    });
+    if (existing) return serializeSupplement(existing);
+  }
+
   const intake = await prisma.supplementIntake.create({
     data: {
+      ...(data.id ? { id: data.id } : {}),
       userId: user.id,
       type: data.type,
+      label: data.label?.trim() || BUILTIN_LABELS[data.type] || null,
+      catalogId: data.catalogId ?? null,
       amountGrams: data.amountGrams ?? null,
       scoops: data.scoops ?? null,
       notes: data.notes?.trim() || null,
-      date: new Date(),
+      date: data.date ? new Date(data.date) : new Date(),
     },
   });
 

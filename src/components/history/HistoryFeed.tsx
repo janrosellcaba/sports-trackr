@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { ChevronDown, Trash2 } from "lucide-react";
-import { deleteWorkoutSession } from "@/app/actions/analytics";
 import type { CardioHistoryItem, WorkoutHistoryItem } from "@/types/trackr";
-import { deleteCardioActivity } from "@/app/actions/activities";
+import { runMutation } from "@/lib/offline/mutate";
 import { CARD_CLS } from "@/lib/ui";
 
 type HistoryFeedProps = {
@@ -27,6 +27,7 @@ const CARDIO_LABELS: Record<string, string> = {
 export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
   const [isPending, startTransition] = useTransition();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   const items = useMemo<FeedItem[]>(() => {
     const merged: FeedItem[] = [
@@ -41,8 +42,10 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
         data,
       })),
     ];
-    return merged.sort((a, b) => b.at - a.at);
-  }, [sessions, activities]);
+    return merged
+      .filter((item) => !hidden.has(item.data.id))
+      .sort((a, b) => b.at - a.at);
+  }, [sessions, activities, hidden]);
 
   if (items.length === 0) {
     return (
@@ -128,9 +131,17 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
                   ))}
 
                   <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
-                    <p className="text-xs text-muted">
-                      Ended {formatDateTime(session.endTime)}
-                    </p>
+                    <div>
+                      <p className="text-xs text-muted">
+                        Ended {formatDateTime(session.endTime)}
+                      </p>
+                      <Link
+                        href={`/?session=${session.id}`}
+                        className="text-xs font-bold text-brand"
+                      >
+                        Continue logging
+                      </Link>
+                    </div>
                     <button
                       type="button"
                       disabled={isPending}
@@ -140,7 +151,12 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
                         );
                         if (!confirmed) return;
                         startTransition(async () => {
-                          await deleteWorkoutSession(session.id);
+                          await runMutation(
+                            "deleteSession",
+                            { id: session.id },
+                            undefined,
+                          );
+                          setHidden((current) => new Set(current).add(session.id));
                         });
                       }}
                       className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-xs font-bold text-danger hover:bg-danger/15 disabled:opacity-50"
@@ -185,7 +201,8 @@ export function HistoryFeed({ sessions, activities }: HistoryFeedProps) {
               disabled={isPending}
               onClick={() => {
                 startTransition(async () => {
-                  await deleteCardioActivity(activity.id);
+                  await runMutation("deleteCardio", { id: activity.id }, undefined);
+                  setHidden((current) => new Set(current).add(activity.id));
                 });
               }}
               className="rounded-md px-2 py-1 text-xs font-semibold text-muted hover:text-danger disabled:opacity-50"

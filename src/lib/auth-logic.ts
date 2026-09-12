@@ -16,3 +16,10 @@ export function isValidInviteCode(
 ): boolean {
   return inviteCode.trim() === expected;
 }
+
+export function confirmsUsername(
+  username: string,
+  confirmation: string,
+): boolean {
+  return normalizeUsername(confirmation) === normalizeUsername(username);
+}

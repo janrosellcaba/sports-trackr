@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assignRole,
+  confirmsUsername,
   isValidInviteCode,
   normalizeUsername,
 } from "@/lib/auth-logic";
@@ -32,5 +33,13 @@ describe("isValidInviteCode", () => {
   it("rejects invalid registration codes", () => {
     expect(isValidInviteCode("wrong", "01234")).toBe(false);
     expect(isValidInviteCode("", "01234")).toBe(false);
+  });
+});
+
+describe("confirmsUsername", () => {
+  it("matches the typed username, ignoring case and padding", () => {
+    expect(confirmsUsername("jan", "JAN")).toBe(true);
+    expect(confirmsUsername("jan", "  jan  ")).toBe(true);
+    expect(confirmsUsername("jan", "janet")).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import { RestTimerProvider } from "@/components/gym/RestTimer";
 import { AppNav } from "@/components/layout/AppNav";
 import { PageEnter } from "@/components/layout/PageEnter";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { OfflineBanner } from "@/components/offline/OfflineProvider";
 import { Logo } from "@/components/ui/Logo";
 import { isAdminUser } from "@/lib/auth";
 
@@ -24,6 +25,7 @@ export async function AppShell({
             {user ? <UserMenu user={user} /> : null}
           </div>
         </header>
+        <OfflineBanner />
 
         <main className="flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
           <div

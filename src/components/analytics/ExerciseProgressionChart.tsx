@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { getExerciseProgression } from "@/app/actions/analytics";
+import { useAccentColor } from "@/components/theme/ThemeProvider";
 import type { ProgressionPoint } from "@/types/trackr";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS } from "@/lib/ui";
 
@@ -19,16 +20,16 @@ type ExerciseProgressionChartProps = {
   initialName?: string;
 };
 
-const BRAND = "#1f7a54";
-const MUTED = "#918c7c";
-const LINE = "#e9e4d6";
-const PAPER = "#fffdf8";
-const INK = "#23221d";
+const MUTED = "#a1a1aa";
+const LINE = "rgba(255, 255, 255, 0.08)";
+const PAPER = "#18181b";
+const INK = "#f4f4f5";
 
 export function ExerciseProgressionChart({
   exerciseNames,
   initialName,
 }: ExerciseProgressionChartProps) {
+  const brand = useAccentColor();
   const [selected, setSelected] = useState(
     initialName ?? exerciseNames[0] ?? "",
   );
@@ -119,9 +120,9 @@ export function ExerciseProgressionChart({
               <Line
                 type="monotone"
                 dataKey="maxWeight"
-                stroke={BRAND}
+                stroke={brand}
                 strokeWidth={2}
-                dot={{ r: 3, fill: BRAND }}
+                dot={{ r: 3, fill: brand }}
                 activeDot={{ r: 5 }}
               />
               <Line

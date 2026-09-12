@@ -11,7 +11,9 @@ function isProtectedPath(pathname: string): boolean {
     pathname === "/analytics" ||
     pathname.startsWith("/analytics/") ||
     pathname === "/admin" ||
-    pathname.startsWith("/admin/")
+    pathname.startsWith("/admin/") ||
+    pathname === "/settings" ||
+    pathname.startsWith("/settings/")
   );
 }
 
@@ -38,6 +40,8 @@ export const config = {
     "/history/:path*",
     "/analytics/:path*",
     "/admin/:path*",
+    "/settings",
+    "/settings/:path*",
     "/login",
     "/register",
   ],

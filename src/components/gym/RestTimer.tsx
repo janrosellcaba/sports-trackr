@@ -106,7 +106,7 @@ export function RestTimer() {
               }}
               className={`rounded-full px-2 py-1 text-[10px] font-bold ${
                 timer.preset === seconds
-                  ? "bg-brand text-white"
+                  ? "bg-brand text-[color:var(--accent-fg)]"
                   : "text-muted hover:text-ink"
               }`}
             >
