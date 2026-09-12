@@ -10,20 +10,16 @@ import {
   YAxis,
 } from "recharts";
 import type { DailyActivityPoint } from "@/types/trackr";
-import { useAccentColor } from "@/components/theme/ThemeProvider";
+import { useAccentColor, useSurfaceColors } from "@/components/theme/ThemeProvider";
 import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 
 type ActivityChartProps = {
   data: DailyActivityPoint[];
 };
 
-const INK = "#f4f4f5";
-const MUTED = "#a1a1aa";
-const LINE = "rgba(255, 255, 255, 0.08)";
-const PAPER = "#18181b";
-
 export function ActivityChart({ data }: ActivityChartProps) {
   const brand = useAccentColor();
+  const { ink, muted, line, paper } = useSurfaceColors();
   return (
     <section className={`${CARD_CLS} p-4`}>
       <div className="mb-4 flex items-end justify-between gap-3">
@@ -52,31 +48,31 @@ export function ActivityChart({ data }: ActivityChartProps) {
                 <stop offset="100%" stopColor={brand} stopOpacity={0.02} />
               </linearGradient>
               <linearGradient id="cardioFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={INK} stopOpacity={0.18} />
-                <stop offset="100%" stopColor={INK} stopOpacity={0.02} />
+                <stop offset="0%" stopColor={ink} stopOpacity={0.18} />
+                <stop offset="100%" stopColor={ink} stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke={LINE} strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid stroke={line} strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="date"
               tickFormatter={formatShortDate}
-              tick={{ fill: MUTED, fontSize: 11 }}
+              tick={{ fill: muted, fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               minTickGap={28}
             />
             <YAxis
-              tick={{ fill: MUTED, fontSize: 11 }}
+              tick={{ fill: muted, fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
             />
             <Tooltip
               contentStyle={{
-                background: PAPER,
-                border: `1px solid ${LINE}`,
+                background: paper,
+                border: `1px solid ${line}`,
                 borderRadius: 12,
-                color: INK,
+                color: ink,
                 fontSize: 12,
               }}
               labelFormatter={(label) => formatShortDate(String(label))}
@@ -97,7 +93,7 @@ export function ActivityChart({ data }: ActivityChartProps) {
               type="monotone"
               dataKey="cardioMinutes"
               stackId="minutes"
-              stroke={INK}
+              stroke={ink}
               fill="url(#cardioFill)"
               strokeWidth={2}
             />

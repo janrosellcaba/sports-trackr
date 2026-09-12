@@ -7,7 +7,13 @@ import { requireUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 import { confirmsUsername } from "@/lib/auth-logic";
-import { resolveAccentTheme } from "@/lib/theme";
+import { resolveAccentTheme, resolveColorMode } from "@/lib/theme";
+
+function revalidateAppearance() {
+  revalidatePath("/");
+  revalidatePath("/settings");
+  revalidatePath("/settings/appearance");
+}
 
 export async function updateAccentTheme(themeId: string): Promise<void> {
   const user = await requireUser();
@@ -16,8 +22,16 @@ export async function updateAccentTheme(themeId: string): Promise<void> {
     where: { id: user.id },
     data: { accentTheme: theme.id },
   });
-  revalidatePath("/");
-  revalidatePath("/settings");
+  revalidateAppearance();
+}
+
+export async function updateColorMode(mode: string): Promise<void> {
+  const user = await requireUser();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { colorMode: resolveColorMode(mode) },
+  });
+  revalidateAppearance();
 }
 
 export async function deleteAccount(confirmation: string): Promise<{ error?: string }> {

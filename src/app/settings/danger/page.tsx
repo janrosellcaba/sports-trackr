@@ -1,19 +1,20 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { redirect } from "next/navigation";
-import { SettingsView } from "@/components/settings/SettingsView";
+import { DangerZoneView } from "@/components/settings/DangerZoneView";
 import { PageHeader } from "@/components/ui/PageHeader";
 
-export default async function SettingsPage() {
+export default async function DangerSettingsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   return (
     <>
       <PageHeader
-        title="Settings"
-        subtitle="Account, appearance, catalogs, and data."
+        backHref="/settings"
+        title="Danger zone"
+        subtitle="This cannot be undone."
       />
-      <SettingsView user={user} />
+      <DangerZoneView user={user} />
     </>
   );
 }

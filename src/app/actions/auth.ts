@@ -38,7 +38,13 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, username: true, role: true, accentTheme: true },
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      accentTheme: true,
+      colorMode: true,
+    },
   });
 }
 

@@ -3,7 +3,12 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import { ServiceWorkerRegister } from "@/components/offline/ServiceWorkerRegister";
-import { themeBootstrapScript, resolveAccentTheme } from "@/lib/theme";
+import {
+  resolveAccentTheme,
+  resolveColorMode,
+  themeBootstrapScript,
+  themeColorForMode,
+} from "@/lib/theme";
 import { getCurrentUser } from "@/app/actions/auth";
 import "./globals.css";
 
@@ -42,9 +47,12 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#09090b",
-};
+export async function generateViewport(): Promise<Viewport> {
+  const user = await getCurrentUser();
+  return {
+    themeColor: themeColorForMode(resolveColorMode(user?.colorMode)),
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -55,20 +63,24 @@ export default async function RootLayout({
 }>) {
   const user = await getCurrentUser();
   const accent = resolveAccentTheme(user?.accentTheme).id;
+  const colorMode = resolveColorMode(user?.colorMode);
 
   return (
-    <html lang="en" data-accent={accent}>
+    <html lang="en" data-accent={accent} data-theme={colorMode} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: themeBootstrapScript(user?.accentTheme),
+            __html: themeBootstrapScript(user?.accentTheme, user?.colorMode),
           }}
         />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased`}
       >
-        <ThemeProvider initialTheme={user?.accentTheme}>
+        <ThemeProvider
+          initialTheme={user?.accentTheme}
+          initialColorMode={user?.colorMode}
+        >
           <OfflineProvider>
             {children}
             <ServiceWorkerRegister />

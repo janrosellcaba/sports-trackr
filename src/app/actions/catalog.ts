@@ -49,6 +49,8 @@ function serializeSupplement(row: {
 function revalidateCatalog() {
   revalidatePath("/");
   revalidatePath("/settings");
+  revalidatePath("/settings/exercises");
+  revalidatePath("/settings/supplements");
 }
 
 export async function listCustomExercises(): Promise<CustomExercisePayload[]> {

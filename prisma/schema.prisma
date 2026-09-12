@@ -11,7 +11,8 @@ model User {
   username          String              @unique
   passwordHash      String
   role              String              @default("USER")
-  accentTheme       String              @default("amber")
+  accentTheme       String              @default("volt")
+  colorMode         String              @default("dark")
   createdAt         DateTime            @default(now())
   sessions          WorkoutSession[]
   activities        CardioActivity[]

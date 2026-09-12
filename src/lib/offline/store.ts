@@ -3,7 +3,7 @@ import {
   serializeQueue,
   type QueuedMutation,
 } from "@/lib/offline/queue";
-import { ACCENT_STORAGE_KEY } from "@/lib/theme";
+import { ACCENT_STORAGE_KEY, COLOR_MODE_STORAGE_KEY } from "@/lib/theme";
 
 const DB_NAME = "trackr_offline_db";
 const DB_VERSION = 1;
@@ -184,6 +184,7 @@ export async function clearLocalUserState(): Promise<void> {
   await clearOfflineData();
   try {
     localStorage.removeItem(ACCENT_STORAGE_KEY);
+    localStorage.removeItem(COLOR_MODE_STORAGE_KEY);
   } catch {
     // ignore
   }

@@ -69,6 +69,10 @@ export function SupplementBar({
     });
   }
 
+  if (catalog.length === 0 && intakes.length === 0) {
+    return null;
+  }
+
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <div className="flex items-center justify-between gap-3">
@@ -76,30 +80,33 @@ export function SupplementBar({
           <p className={LABEL_CLS}>Today</p>
           <h2 className="text-base font-bold text-ink">Supplements</h2>
         </div>
-        <Link href="/settings" className="text-xs font-bold text-muted hover:text-brand">
+        <Link
+          href="/settings/supplements"
+          className="text-xs font-bold text-muted hover:text-brand"
+        >
           Catalog
         </Link>
       </div>
 
-      <div className={`grid grid-cols-1 gap-2 ${catalog.length > 3 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
-        {catalog.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            disabled={isPending}
-            onClick={() => handleQuickLog(item)}
-            className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
-          >
-            + {item.name}
-          </button>
-        ))}
-        <Link
-          href="/settings"
-          className="flex h-12 items-center justify-center rounded-xl border border-dashed border-line text-sm font-bold text-muted transition-colors hover:border-brand hover:text-brand"
+      {catalog.length > 0 ? (
+        <div
+          className={`grid grid-cols-1 gap-2 ${
+            catalog.length > 3 ? "sm:grid-cols-2" : "sm:grid-cols-3"
+          }`}
         >
-          + Custom
-        </Link>
-      </div>
+          {catalog.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              disabled={isPending}
+              onClick={() => handleQuickLog(item)}
+              className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
+            >
+              + {item.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {intakes.length > 0 && (
         <ul className="space-y-1.5 border-t border-line pt-3">

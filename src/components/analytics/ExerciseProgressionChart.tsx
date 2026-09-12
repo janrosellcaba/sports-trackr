@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { getExerciseProgression } from "@/app/actions/analytics";
-import { useAccentColor } from "@/components/theme/ThemeProvider";
+import { useAccentColor, useSurfaceColors } from "@/components/theme/ThemeProvider";
 import type { ProgressionPoint } from "@/types/trackr";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS } from "@/lib/ui";
 
@@ -20,16 +20,12 @@ type ExerciseProgressionChartProps = {
   initialName?: string;
 };
 
-const MUTED = "#a1a1aa";
-const LINE = "rgba(255, 255, 255, 0.08)";
-const PAPER = "#18181b";
-const INK = "#f4f4f5";
-
 export function ExerciseProgressionChart({
   exerciseNames,
   initialName,
 }: ExerciseProgressionChartProps) {
   const brand = useAccentColor();
+  const { ink, muted, line, paper } = useSurfaceColors();
   const [selected, setSelected] = useState(
     initialName ?? exerciseNames[0] ?? "",
   );
@@ -89,26 +85,26 @@ export function ExerciseProgressionChart({
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={points} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={LINE} strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid stroke={line} strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={formatShortDate}
-                tick={{ fill: MUTED, fontSize: 11 }}
+                tick={{ fill: muted, fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 minTickGap={28}
               />
               <YAxis
-                tick={{ fill: MUTED, fontSize: 11 }}
+                tick={{ fill: muted, fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  background: PAPER,
-                  border: `1px solid ${LINE}`,
+                  background: paper,
+                  border: `1px solid ${line}`,
                   borderRadius: 12,
-                  color: INK,
+                  color: ink,
                   fontSize: 12,
                 }}
                 labelFormatter={(label) => formatShortDate(String(label))}
@@ -128,7 +124,7 @@ export function ExerciseProgressionChart({
               <Line
                 type="monotone"
                 dataKey="estimatedOneRm"
-                stroke={MUTED}
+                stroke={muted}
                 strokeWidth={2}
                 strokeDasharray="4 4"
                 dot={false}

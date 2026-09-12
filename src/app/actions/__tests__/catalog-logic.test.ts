@@ -81,7 +81,8 @@ describe("catalog merge", () => {
     expect(merged.some((item) => item.name === "Bench Press")).toBe(true);
   });
 
-  it("lists custom supplements ahead of whey/pre/creatine", () => {
+  it("lists only supplements the user added", () => {
+    expect(mergeSupplementCatalog([])).toEqual([]);
     const merged = mergeSupplementCatalog([
       {
         id: "s1",
@@ -91,12 +92,6 @@ describe("catalog merge", () => {
         createdAt: "2026-09-11T00:00:00.000Z",
       },
     ]);
-    expect(merged[0].name).toBe("Beta Alanine");
-    expect(merged.map((item) => item.name)).toEqual([
-      "Beta Alanine",
-      "Whey",
-      "Pre-workout",
-      "Creatine",
-    ]);
+    expect(merged.map((item) => item.name)).toEqual(["Beta Alanine"]);
   });
 });

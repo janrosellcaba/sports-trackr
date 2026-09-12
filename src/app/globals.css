@@ -18,15 +18,34 @@
   --color-chip: #27272a;
   --color-chip-hover: #3f3f46;
 
-  --accent-primary: #f97316;
-  --accent-hover: #fb923c;
-  --accent-glow: rgba(249, 115, 22, 0.38);
-  --accent-soft: rgba(249, 115, 22, 0.16);
+  --accent-primary: #84cc16;
+  --accent-hover: #eab308;
+  --accent-glow: rgba(132, 204, 22, 0.38);
+  --accent-soft: rgba(132, 204, 22, 0.16);
   --accent-fg: #09090b;
 
   --color-brand: var(--accent-primary);
   --color-brand-dark: var(--accent-hover);
   --color-brand-soft: var(--accent-soft);
+}
+
+html[data-theme="light"] {
+  --background: #f3efe6;
+  --foreground: #18181b;
+  color-scheme: light;
+
+  --color-cream: #f3efe6;
+  --color-paper: #fffcf7;
+  --color-ink: #18181b;
+  --color-muted: #5c5c66;
+  --color-line: rgba(24, 24, 27, 0.1);
+
+  --color-danger: #dc2626;
+  --color-danger-dark: #b91c1c;
+  --color-danger-soft: rgba(220, 38, 38, 0.12);
+
+  --color-chip: #ebe4d6;
+  --color-chip-hover: #ddd4c3;
 }
 
 html[data-accent="amber"] {
@@ -105,8 +124,30 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   touch-action: manipulation;
+  color-scheme: inherit;
+}
+
+input,
+select,
+textarea {
+  appearance: none;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-ink);
+  caret-color: var(--color-ink);
+  box-shadow: 0 0 0 1000px var(--color-paper) inset;
+  transition: background-color 99999s ease-out;
 }
 
 ::-webkit-scrollbar {

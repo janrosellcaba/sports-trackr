@@ -95,41 +95,10 @@ export type CatalogSupplement = {
   scoops?: number;
 };
 
-export const BUILTIN_SUPPLEMENTS: CatalogSupplement[] = [
-  {
-    id: "builtin:WHEY_PROTEIN",
-    name: "Whey",
-    source: "builtin",
-    type: "WHEY_PROTEIN",
-    defaultDose: "30g / 1 scoop",
-    iconOrType: "powder",
-    amountGrams: 30,
-    scoops: 1,
-  },
-  {
-    id: "builtin:PRE_WORKOUT",
-    name: "Pre-workout",
-    source: "builtin",
-    type: "PRE_WORKOUT",
-    defaultDose: "1 scoop",
-    iconOrType: "flash",
-    scoops: 1,
-  },
-  {
-    id: "builtin:CREATINE",
-    name: "Creatine",
-    source: "builtin",
-    type: "CREATINE",
-    defaultDose: "5g",
-    iconOrType: "pill",
-    amountGrams: 5,
-  },
-];
-
 export function mergeSupplementCatalog(
   custom: CustomSupplementPayload[],
 ): CatalogSupplement[] {
-  const customs: CatalogSupplement[] = custom.map((item) => ({
+  return custom.map((item) => ({
     id: item.id,
     name: item.name,
     source: "custom",
@@ -137,7 +106,6 @@ export function mergeSupplementCatalog(
     defaultDose: item.defaultDose,
     iconOrType: item.iconOrType,
   }));
-  return [...customs, ...BUILTIN_SUPPLEMENTS];
 }
 
 export function validateExerciseName(name: string): string | null {
