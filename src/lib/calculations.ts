@@ -1,8 +1,12 @@
+export function getTodayLocalDateISO(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function toDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return getTodayLocalDateISO(date);
 }
 
 export function startOfDay(date: Date): Date {
@@ -17,9 +21,26 @@ export function addDays(date: Date, days: number): Date {
   return copy;
 }
 
-export function sessionDurationMinutes(start: Date, end: Date | null): number {
-  if (!end) return 0;
-  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+export function addDaysISO(iso: string, days: number): string {
+  const date = parseISODate(iso);
+  date.setDate(date.getDate() + days);
+  return getTodayLocalDateISO(date);
+}
+
+export function parseISODate(iso: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return startOfDay(new Date(iso));
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+export function formatDisplayDate(iso: string): string {
+  const date = parseISODate(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function setVolume(weight: number, reps: number): number {
@@ -39,29 +60,20 @@ export function estimatedOneRm(weight: number, reps: number): number {
   return Math.round(weight * (1 + reps / 30) * 10) / 10;
 }
 
-export function computeStreak(dates: Date[], now = new Date()): number {
-  const daysWithActivity = new Set(dates.map(toDateKey));
+export function computeStreak(dateKeys: string[], now = new Date()): number {
+  const daysWithActivity = new Set(dateKeys);
   if (daysWithActivity.size === 0) return 0;
 
-  let cursor = startOfDay(now);
-  if (!daysWithActivity.has(toDateKey(cursor))) {
-    cursor = addDays(cursor, -1);
+  let cursor = getTodayLocalDateISO(startOfDay(now));
+  if (!daysWithActivity.has(cursor)) {
+    cursor = addDaysISO(cursor, -1);
   }
 
   let streak = 0;
-  while (daysWithActivity.has(toDateKey(cursor))) {
+  while (daysWithActivity.has(cursor)) {
     streak += 1;
-    cursor = addDays(cursor, -1);
+    cursor = addDaysISO(cursor, -1);
   }
 
   return streak;
 }
-
-export function formatRestTime(totalSeconds: number): string {
-  const clamped = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(clamped / 60);
-  const seconds = clamped % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
-
-export const REST_PRESETS = [60, 90, 120] as const;

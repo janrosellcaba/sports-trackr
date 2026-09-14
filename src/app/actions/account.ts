@@ -11,8 +11,6 @@ import { resolveAccentTheme, resolveColorMode } from "@/lib/theme";
 
 function revalidateAppearance() {
   revalidatePath("/");
-  revalidatePath("/settings");
-  revalidatePath("/settings/appearance");
 }
 
 export async function updateAccentTheme(themeId: string): Promise<void> {

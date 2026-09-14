@@ -3,27 +3,13 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 
 const PUBLIC_PATHS = new Set(["/login", "/register"]);
 
-function isProtectedPath(pathname: string): boolean {
-  return (
-    pathname === "/" ||
-    pathname === "/history" ||
-    pathname.startsWith("/history/") ||
-    pathname === "/analytics" ||
-    pathname.startsWith("/analytics/") ||
-    pathname === "/admin" ||
-    pathname.startsWith("/admin/") ||
-    pathname === "/settings" ||
-    pathname.startsWith("/settings/")
-  );
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const userId = await verifySessionToken(
     request.cookies.get(SESSION_COOKIE)?.value,
   );
 
-  if (!userId && isProtectedPath(pathname)) {
+  if (!userId && (pathname === "/" || pathname.startsWith("/settings"))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -35,14 +21,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/history/:path*",
-    "/analytics/:path*",
-    "/admin/:path*",
-    "/settings",
-    "/settings/:path*",
-    "/login",
-    "/register",
-  ],
+  matcher: ["/", "/login", "/register"],
 };

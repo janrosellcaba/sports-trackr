@@ -14,34 +14,32 @@ model User {
   accentTheme       String              @default("volt")
   colorMode         String              @default("dark")
   createdAt         DateTime            @default(now())
-  sessions          WorkoutSession[]
-  activities        CardioActivity[]
+  workouts          Workout[]
   supplements       SupplementIntake[]
   customExercises   CustomExercise[]
   customSupplements CustomSupplement[]
 }
 
-model WorkoutSession {
+model Workout {
   id        String        @id @default(cuid())
   userId    String
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  startTime DateTime      @default(now())
-  endTime   DateTime?
+  date      String
   notes     String?
-  mode      String        @default("LIVE")
   createdAt DateTime      @default(now())
   exercises ExerciseLog[]
 
+  @@unique([userId, date])
   @@index([userId])
 }
 
 model ExerciseLog {
-  id          String         @id @default(cuid())
-  sessionId   String
-  session     WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  machineName String
-  sets        SetLog[]
-  order       Int            @default(0)
+  id        String   @id @default(cuid())
+  workoutId String
+  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int      @default(0)
+  sets      SetLog[]
 }
 
 model SetLog {
@@ -51,35 +49,18 @@ model SetLog {
   setNumber     Int
   weight        Float
   reps          Int
-  rpe           Float?
-}
-
-model CardioActivity {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type            String
-  durationMinutes Int
-  intensity       String
-  notes           String?
-  date            DateTime @default(now())
-
-  @@index([userId])
 }
 
 model SupplementIntake {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String
-  label       String?
-  catalogId   String?
-  amountGrams Float?
-  scoops      Float?
-  notes       String?
-  date        DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  dose      String
+  date      String
+  createdAt DateTime @default(now())
 
-  @@index([userId])
+  @@index([userId, date])
 }
 
 model CustomExercise {

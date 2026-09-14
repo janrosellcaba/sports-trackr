@@ -1,41 +1,22 @@
-import { getRecentActivities } from "@/app/actions/activities";
-import { listCustomExercises, listCustomSupplements } from "@/app/actions/catalog";
-import { getActiveSession, getSession } from "@/app/actions/gym";
-import { getTodaySupplements } from "@/app/actions/supplements";
-import { TrackerView } from "@/components/gym/TrackerView";
+import { getExerciseNames, getAnalyticsSummary } from "@/app/actions/analytics";
+import { requireUser } from "@/app/actions/auth";
+import { getAppState } from "@/app/actions/data";
 import { AppShell } from "@/components/layout/AppShell";
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ session?: string | string[] }>;
-}) {
-  const params = await searchParams;
-  const requestedId = Array.isArray(params.session)
-    ? params.session[0]
-    : params.session;
-
-  const [activeSession, supplements, activities, customExercises, customSupplements] =
-    await Promise.all([
-      getActiveSession(),
-      getTodaySupplements(),
-      getRecentActivities(5),
-      listCustomExercises(),
-      listCustomSupplements(),
-    ]);
-
-  const requestedSession = requestedId ? await getSession(requestedId) : null;
-  const session = requestedSession ?? activeSession;
+export default async function Home() {
+  const user = await requireUser();
+  const [state, analytics, exerciseNames] = await Promise.all([
+    getAppState(),
+    getAnalyticsSummary(30),
+    getExerciseNames(),
+  ]);
 
   return (
-    <AppShell>
-      <TrackerView
-        initialSession={session}
-        initialSupplements={supplements}
-        initialActivities={activities}
-        customExercises={customExercises}
-        customSupplements={customSupplements}
-      />
-    </AppShell>
+    <AppShell
+      user={user}
+      initialState={state}
+      initialAnalytics={analytics}
+      exerciseNames={exerciseNames}
+    />
   );
 }

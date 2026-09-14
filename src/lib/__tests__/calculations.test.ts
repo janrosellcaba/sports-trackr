@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   computeStreak,
   estimatedOneRm,
-  sessionDurationMinutes,
   workoutTonnage,
 } from "@/lib/calculations";
 
@@ -37,23 +36,6 @@ describe("workoutTonnage", () => {
   });
 });
 
-describe("sessionDurationMinutes", () => {
-  it("returns 0 when the session is still open", () => {
-    expect(sessionDurationMinutes(new Date("2026-09-11T10:00:00Z"), null)).toBe(
-      0,
-    );
-  });
-
-  it("rounds elapsed gym time to whole minutes", () => {
-    expect(
-      sessionDurationMinutes(
-        new Date("2026-09-11T10:00:00Z"),
-        new Date("2026-09-11T11:15:20Z"),
-      ),
-    ).toBe(75);
-  });
-});
-
 describe("computeStreak", () => {
   it("returns 0 when there is no activity", () => {
     expect(computeStreak([], new Date("2026-09-11T12:00:00"))).toBe(0);
@@ -61,25 +43,11 @@ describe("computeStreak", () => {
 
   it("counts consecutive days including today", () => {
     const now = new Date("2026-09-11T18:00:00");
-    expect(
-      computeStreak(
-        [
-          new Date("2026-09-11T08:00:00"),
-          new Date("2026-09-10T22:00:00"),
-          new Date("2026-09-09T07:00:00"),
-        ],
-        now,
-      ),
-    ).toBe(3);
+    expect(computeStreak(["2026-09-11", "2026-09-10", "2026-09-09"], now)).toBe(3);
   });
 
   it("allows yesterday to start the streak if today is empty", () => {
     const now = new Date("2026-09-11T18:00:00");
-    expect(
-      computeStreak(
-        [new Date("2026-09-10T08:00:00"), new Date("2026-09-09T08:00:00")],
-        now,
-      ),
-    ).toBe(2);
+    expect(computeStreak(["2026-09-10", "2026-09-09"], now)).toBe(2);
   });
 });

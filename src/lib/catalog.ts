@@ -1,5 +1,8 @@
 import { EXERCISE_CATALOG, type MuscleGroup } from "@/lib/exercises";
-import type { CustomExercisePayload, CustomSupplementPayload } from "@/types/trackr";
+import type {
+  CustomExercisePayload,
+  CustomSupplementPayload,
+} from "@/types/trackr";
 
 export const MUSCLE_GROUP_KEYS = [
   "CHEST",
@@ -33,6 +36,12 @@ const KEY_TO_LABEL: Record<MuscleGroupKey, string> = {
   OTHER: "Other",
 };
 
+export const SUPPLEMENT_CATALOG = [
+  { name: "Whey protein", defaultDose: "1 scoop" },
+  { name: "Creatine", defaultDose: "5g" },
+  { name: "Pre-workout", defaultDose: "1 scoop" },
+] as const;
+
 export function isMuscleGroupKey(value: unknown): value is MuscleGroupKey {
   return (
     typeof value === "string" &&
@@ -43,8 +52,9 @@ export function isMuscleGroupKey(value: unknown): value is MuscleGroupKey {
 export function normalizeMuscleGroup(value: string): MuscleGroupKey {
   const upper = value.trim().toUpperCase();
   if (isMuscleGroupKey(upper)) return upper;
-  const fromLabel = (Object.entries(BUILTIN_TO_KEY) as [MuscleGroup, MuscleGroupKey][])
-    .find(([label]) => label.toLowerCase() === value.trim().toLowerCase());
+  const fromLabel = (
+    Object.entries(BUILTIN_TO_KEY) as [MuscleGroup, MuscleGroupKey][]
+  ).find(([label]) => label.toLowerCase() === value.trim().toLowerCase());
   return fromLabel?.[1] ?? "OTHER";
 }
 
@@ -88,24 +98,27 @@ export type CatalogSupplement = {
   id: string;
   name: string;
   source: "builtin" | "custom";
-  type: string;
   defaultDose: string;
-  iconOrType: string;
-  amountGrams?: number;
-  scoops?: number;
 };
 
 export function mergeSupplementCatalog(
   custom: CustomSupplementPayload[],
 ): CatalogSupplement[] {
-  return custom.map((item) => ({
+  const builtins: CatalogSupplement[] = SUPPLEMENT_CATALOG.map((item) => ({
+    id: `builtin:${item.name}`,
+    name: item.name,
+    source: "builtin",
+    defaultDose: item.defaultDose,
+  }));
+
+  const customs: CatalogSupplement[] = custom.map((item) => ({
     id: item.id,
     name: item.name,
     source: "custom",
-    type: "CUSTOM",
     defaultDose: item.defaultDose,
-    iconOrType: item.iconOrType,
   }));
+
+  return [...customs, ...builtins];
 }
 
 export function validateExerciseName(name: string): string | null {

@@ -2,57 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/app/actions/auth";
+import { getTodayLocalDateISO, workoutTonnage } from "@/lib/calculations";
 import { prisma } from "@/lib/prisma";
-import { parseSessionTimes } from "@/lib/session-times";
 import type {
   ExercisePayload,
-  SessionPayload,
   SetPayload,
+  WorkoutPayload,
 } from "@/types/trackr";
 
-function serializeSession(
-  session: {
-    id: string;
-    startTime: Date;
-    endTime: Date | null;
-    notes: string | null;
-    mode?: string | null;
-    exercises: {
-      id: string;
-      machineName: string;
-      order: number;
-      sets: {
-        id: string;
-        setNumber: number;
-        weight: number;
-        reps: number;
-        rpe: number | null;
-      }[];
-    }[];
-  },
-): SessionPayload {
-  return {
-    id: session.id,
-    startTime: session.startTime.toISOString(),
-    endTime: session.endTime?.toISOString() ?? null,
-    notes: session.notes,
-    mode: session.mode === "MANUAL" ? "MANUAL" : "LIVE",
-    exercises: session.exercises.map((exercise) => ({
-      id: exercise.id,
-      machineName: exercise.machineName,
-      order: exercise.order,
-      sets: exercise.sets.map((set) => ({
-        id: set.id,
-        setNumber: set.setNumber,
-        weight: set.weight,
-        reps: set.reps,
-        rpe: set.rpe,
-      })),
-    })),
-  };
-}
-
-const activeSessionInclude = {
+const workoutInclude = {
   exercises: {
     orderBy: { order: "asc" as const },
     include: {
@@ -63,263 +21,117 @@ const activeSessionInclude = {
   },
 };
 
-function revalidateGym() {
-  revalidatePath("/");
-  revalidatePath("/history");
-  revalidatePath("/analytics");
+function isDateKey(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-export async function startSession(options?: {
-  id?: string;
-  startTime?: string;
-}): Promise<SessionPayload> {
-  const user = await requireUser();
-
-  if (options?.id) {
-    const existingById = await prisma.workoutSession.findFirst({
-      where: { id: options.id, userId: user.id },
-      include: activeSessionInclude,
-    });
-    if (existingById) return serializeSession(existingById);
-  }
-
-  const existing = await prisma.workoutSession.findFirst({
-    where: { userId: user.id, endTime: null },
-  });
-
-  if (existing) {
-    throw new Error("An active gym session already exists.");
-  }
-
-  const times = parseSessionTimes({
-    startTime: options?.startTime ?? new Date().toISOString(),
-  });
-  if (times.error) throw new Error(times.error);
-
-  const session = await prisma.workoutSession.create({
-    data: {
-      ...(options?.id ? { id: options.id } : {}),
-      userId: user.id,
-      startTime: times.start,
-      endTime: null,
-      mode: "LIVE",
-    },
-    include: activeSessionInclude,
-  });
-
-  revalidatePath("/");
-  return serializeSession(session);
-}
-
-export async function createManualSession(options: {
-  id?: string;
-  startTime: string;
-  endTime: string;
-  notes?: string;
-}): Promise<SessionPayload> {
-  const user = await requireUser();
-  const times = parseSessionTimes({
-    startTime: options.startTime,
-    endTime: options.endTime,
-  });
-  if (times.error) throw new Error(times.error);
-  if (!times.end) throw new Error("End time is required for a past workout.");
-
-  if (options.id) {
-    const existing = await prisma.workoutSession.findFirst({
-      where: { id: options.id, userId: user.id },
-      include: activeSessionInclude,
-    });
-    if (existing) return serializeSession(existing);
-  }
-
-  const session = await prisma.workoutSession.create({
-    data: {
-      ...(options.id ? { id: options.id } : {}),
-      userId: user.id,
-      startTime: times.start,
-      endTime: times.end,
-      notes: options.notes?.trim() || null,
-      mode: "MANUAL",
-    },
-    include: activeSessionInclude,
-  });
-
-  revalidateGym();
-  return serializeSession(session);
-}
-
-export async function updateSessionTimes(
-  sessionId: string,
-  options: { startTime: string; endTime?: string | null; notes?: string },
-): Promise<SessionPayload> {
-  const user = await requireUser();
-  const existing = await prisma.workoutSession.findFirst({
-    where: { id: sessionId, userId: user.id },
-    select: { id: true },
-  });
-  if (!existing) throw new Error("Session not found.");
-
-  const times = parseSessionTimes({
-    startTime: options.startTime,
-    endTime: options.endTime,
-  });
-  if (times.error) throw new Error(times.error);
-
-  const session = await prisma.workoutSession.update({
-    where: { id: sessionId },
-    data: {
-      startTime: times.start,
-      endTime: times.end,
-      ...(options.notes !== undefined
-        ? { notes: options.notes.trim() || null }
-        : {}),
-    },
-    include: activeSessionInclude,
-  });
-
-  revalidateGym();
-  return serializeSession(session);
-}
-
-export async function endSession(
-  sessionId: string,
-  options?: { notes?: string; endTime?: string },
-): Promise<SessionPayload> {
-  const user = await requireUser();
-  const existing = await prisma.workoutSession.findFirst({
-    where: { id: sessionId, userId: user.id },
-    select: { id: true, startTime: true },
-  });
-
-  if (!existing) {
-    throw new Error("Session not found.");
-  }
-
-  const times = parseSessionTimes({
-    startTime: existing.startTime,
-    endTime: options?.endTime ?? new Date().toISOString(),
-  });
-  if (times.error) throw new Error(times.error);
-
-  const session = await prisma.workoutSession.update({
-    where: { id: sessionId },
-    data: {
-      endTime: times.end,
-      ...(options?.notes !== undefined ? { notes: options.notes } : {}),
-    },
-    include: activeSessionInclude,
-  });
-
-  revalidateGym();
-  return serializeSession(session);
-}
-
-export async function getActiveSession(): Promise<SessionPayload | null> {
-  const user = await requireUser();
-  const session = await prisma.workoutSession.findFirst({
-    where: { userId: user.id, endTime: null },
-    include: activeSessionInclude,
-    orderBy: { startTime: "desc" },
-  });
-
-  return session ? serializeSession(session) : null;
-}
-
-export async function getSession(sessionId: string): Promise<SessionPayload | null> {
-  const user = await requireUser();
-  const session = await prisma.workoutSession.findFirst({
-    where: { id: sessionId, userId: user.id },
-    include: activeSessionInclude,
-  });
-  return session ? serializeSession(session) : null;
-}
-
-export async function addExercise(
-  sessionId: string,
-  machineName: string,
-  options?: { id?: string },
-): Promise<ExercisePayload> {
-  const user = await requireUser();
-  const trimmed = machineName.trim();
-  if (!trimmed) {
-    throw new Error("Exercise name is required.");
-  }
-
-  const session = await prisma.workoutSession.findFirst({
-    where: { id: sessionId, userId: user.id },
-    select: { id: true },
-  });
-
-  if (!session) {
-    throw new Error("Session not found.");
-  }
-
-  if (options?.id) {
-    const existing = await prisma.exerciseLog.findFirst({
-      where: { id: options.id, sessionId },
-      include: { sets: { orderBy: { setNumber: "asc" } } },
-    });
-    if (existing) {
-      return {
-        id: existing.id,
-        machineName: existing.machineName,
-        order: existing.order,
-        sets: existing.sets.map((set) => ({
-          id: set.id,
-          setNumber: set.setNumber,
-          weight: set.weight,
-          reps: set.reps,
-          rpe: set.rpe,
-        })),
-      };
-    }
-  }
-
-  const lastExercise = await prisma.exerciseLog.findFirst({
-    where: { sessionId },
-    orderBy: { order: "desc" },
-    select: { order: true },
-  });
-
-  const exercise = await prisma.exerciseLog.create({
-    data: {
-      ...(options?.id ? { id: options.id } : {}),
-      sessionId,
-      machineName: trimmed,
-      order: (lastExercise?.order ?? -1) + 1,
-    },
-    include: {
-      sets: {
-        orderBy: { setNumber: "asc" },
-      },
-    },
-  });
-
-  revalidatePath("/");
-  revalidatePath("/history");
-  return {
+function serializeWorkout(workout: {
+  id: string;
+  date: string;
+  notes: string | null;
+  exercises: {
+    id: string;
+    name: string;
+    order: number;
+    sets: { id: string; setNumber: number; weight: number; reps: number }[];
+  }[];
+}): WorkoutPayload {
+  const exercises: ExercisePayload[] = workout.exercises.map((exercise) => ({
     id: exercise.id,
-    machineName: exercise.machineName,
+    name: exercise.name,
     order: exercise.order,
     sets: exercise.sets.map((set) => ({
       id: set.id,
       setNumber: set.setNumber,
       weight: set.weight,
       reps: set.reps,
-      rpe: set.rpe,
     })),
+  }));
+
+  const allSets = exercises.flatMap((exercise) => exercise.sets);
+  return {
+    id: workout.id,
+    date: workout.date,
+    notes: workout.notes,
+    exercises,
+    totalVolumeKg: Math.round(workoutTonnage(allSets)),
+    setCount: allSets.length,
   };
 }
 
-export async function addSet(
-  exerciseLogId: string,
-  weight: number,
-  reps: number,
-  rpe?: number,
-  options?: { id?: string },
-): Promise<SetPayload> {
+function revalidateApp() {
+  revalidatePath("/");
+}
+
+export async function listWorkouts(limit = 60): Promise<WorkoutPayload[]> {
   const user = await requireUser();
+  const take = Math.max(1, Math.min(limit, 200));
+  const rows = await prisma.workout.findMany({
+    where: { userId: user.id },
+    orderBy: { date: "desc" },
+    take,
+    include: workoutInclude,
+  });
+  return rows.map(serializeWorkout);
+}
+
+export async function getWorkoutByDate(
+  date = getTodayLocalDateISO(),
+): Promise<WorkoutPayload | null> {
+  const user = await requireUser();
+  if (!isDateKey(date)) throw new Error("Invalid date.");
+  const workout = await prisma.workout.findUnique({
+    where: { userId_date: { userId: user.id, date } },
+    include: workoutInclude,
+  });
+  return workout ? serializeWorkout(workout) : null;
+}
+
+async function getOrCreateWorkout(userId: string, date: string) {
+  if (!isDateKey(date)) throw new Error("Invalid date.");
+  return prisma.workout.upsert({
+    where: { userId_date: { userId, date } },
+    create: { userId, date },
+    update: {},
+    include: workoutInclude,
+  });
+}
+
+export async function addExercise(input: {
+  date?: string;
+  name: string;
+}): Promise<WorkoutPayload> {
+  const user = await requireUser();
+  const date = input.date ?? getTodayLocalDateISO();
+  const name = input.name.trim();
+  if (!name) throw new Error("Exercise name is required.");
+
+  const workout = await getOrCreateWorkout(user.id, date);
+  const last = workout.exercises[workout.exercises.length - 1];
+
+  await prisma.exerciseLog.create({
+    data: {
+      workoutId: workout.id,
+      name,
+      order: (last?.order ?? -1) + 1,
+    },
+  });
+
+  const next = await prisma.workout.findUniqueOrThrow({
+    where: { id: workout.id },
+    include: workoutInclude,
+  });
+  revalidateApp();
+  return serializeWorkout(next);
+}
+
+export async function addSet(input: {
+  exerciseLogId: string;
+  weight: number;
+  reps: number;
+}): Promise<SetPayload> {
+  const user = await requireUser();
+  const { weight, reps } = input;
 
   if (!Number.isFinite(weight) || weight < 0) {
     throw new Error("Weight must be a non-negative number.");
@@ -327,60 +139,34 @@ export async function addSet(
   if (!Number.isInteger(reps) || reps <= 0) {
     throw new Error("Reps must be a positive integer.");
   }
-  if (rpe !== undefined && (rpe < 0 || rpe > 10)) {
-    throw new Error("RPE must be between 0 and 10.");
-  }
 
   const exercise = await prisma.exerciseLog.findFirst({
-    where: { id: exerciseLogId, session: { userId: user.id } },
+    where: { id: input.exerciseLogId, workout: { userId: user.id } },
     select: { id: true },
   });
-
-  if (!exercise) {
-    throw new Error("Exercise not found.");
-  }
-
-  if (options?.id) {
-    const existing = await prisma.setLog.findFirst({
-      where: { id: options.id, exerciseLogId },
-    });
-    if (existing) {
-      return {
-        id: existing.id,
-        setNumber: existing.setNumber,
-        weight: existing.weight,
-        reps: existing.reps,
-        rpe: existing.rpe,
-      };
-    }
-  }
+  if (!exercise) throw new Error("Exercise not found.");
 
   const lastSet = await prisma.setLog.findFirst({
-    where: { exerciseLogId },
+    where: { exerciseLogId: exercise.id },
     orderBy: { setNumber: "desc" },
     select: { setNumber: true },
   });
 
   const set = await prisma.setLog.create({
     data: {
-      ...(options?.id ? { id: options.id } : {}),
-      exerciseLogId,
+      exerciseLogId: exercise.id,
       setNumber: (lastSet?.setNumber ?? 0) + 1,
       weight,
       reps,
-      rpe: rpe ?? null,
     },
   });
 
-  revalidatePath("/");
-  revalidatePath("/history");
-  revalidatePath("/analytics");
+  revalidateApp();
   return {
     id: set.id,
     setNumber: set.setNumber,
     weight: set.weight,
     reps: set.reps,
-    rpe: set.rpe,
   };
 }
 
@@ -389,16 +175,11 @@ export async function deleteSet(setId: string): Promise<void> {
   const result = await prisma.setLog.deleteMany({
     where: {
       id: setId,
-      exerciseLog: { session: { userId: user.id } },
+      exerciseLog: { workout: { userId: user.id } },
     },
   });
-
-  if (result.count === 0) {
-    throw new Error("Set not found.");
-  }
-
-  revalidatePath("/");
-  revalidatePath("/history");
+  if (result.count === 0) throw new Error("Set not found.");
+  revalidateApp();
 }
 
 export async function deleteExercise(exerciseLogId: string): Promise<void> {
@@ -406,14 +187,18 @@ export async function deleteExercise(exerciseLogId: string): Promise<void> {
   const result = await prisma.exerciseLog.deleteMany({
     where: {
       id: exerciseLogId,
-      session: { userId: user.id },
+      workout: { userId: user.id },
     },
   });
+  if (result.count === 0) throw new Error("Exercise not found.");
+  revalidateApp();
+}
 
-  if (result.count === 0) {
-    throw new Error("Exercise not found.");
-  }
-
-  revalidatePath("/");
-  revalidatePath("/history");
+export async function deleteWorkout(workoutId: string): Promise<void> {
+  const user = await requireUser();
+  const result = await prisma.workout.deleteMany({
+    where: { id: workoutId, userId: user.id },
+  });
+  if (result.count === 0) throw new Error("Workout not found.");
+  revalidateApp();
 }

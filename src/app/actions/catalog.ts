@@ -48,9 +48,6 @@ function serializeSupplement(row: {
 
 function revalidateCatalog() {
   revalidatePath("/");
-  revalidatePath("/settings");
-  revalidatePath("/settings/exercises");
-  revalidatePath("/settings/supplements");
 }
 
 export async function listCustomExercises(): Promise<CustomExercisePayload[]> {
@@ -72,7 +69,6 @@ export async function listCustomSupplements(): Promise<CustomSupplementPayload[]
 }
 
 export async function createCustomExercise(input: {
-  id?: string;
   name: string;
   muscleGroup: string;
   defaultWeight?: number | null;
@@ -80,17 +76,8 @@ export async function createCustomExercise(input: {
 }): Promise<CustomExercisePayload> {
   const user = await requireUser();
   const parsed = parseCustomExerciseInput(input);
-
-  if (input.id) {
-    const existing = await prisma.customExercise.findFirst({
-      where: { id: input.id, userId: user.id },
-    });
-    if (existing) return serializeExercise(existing);
-  }
-
   const row = await prisma.customExercise.create({
     data: {
-      ...(input.id ? { id: input.id } : {}),
       userId: user.id,
       name: parsed.name,
       muscleGroup: parsed.muscleGroup,
@@ -111,7 +98,6 @@ export async function updateCustomExercise(input: {
 }): Promise<CustomExercisePayload> {
   const user = await requireUser();
   const parsed = parseCustomExerciseInput(input);
-
   const existing = await prisma.customExercise.findFirst({
     where: { id: input.id, userId: user.id },
     select: { id: true },
@@ -141,24 +127,14 @@ export async function deleteCustomExercise(id: string): Promise<void> {
 }
 
 export async function createCustomSupplement(input: {
-  id?: string;
   name: string;
   defaultDose: string;
   iconOrType?: string;
 }): Promise<CustomSupplementPayload> {
   const user = await requireUser();
   const parsed = parseCustomSupplementInput(input);
-
-  if (input.id) {
-    const existing = await prisma.customSupplement.findFirst({
-      where: { id: input.id, userId: user.id },
-    });
-    if (existing) return serializeSupplement(existing);
-  }
-
   const row = await prisma.customSupplement.create({
     data: {
-      ...(input.id ? { id: input.id } : {}),
       userId: user.id,
       name: parsed.name,
       defaultDose: parsed.defaultDose,
@@ -177,7 +153,6 @@ export async function updateCustomSupplement(input: {
 }): Promise<CustomSupplementPayload> {
   const user = await requireUser();
   const parsed = parseCustomSupplementInput(input);
-
   const existing = await prisma.customSupplement.findFirst({
     where: { id: input.id, userId: user.id },
     select: { id: true },

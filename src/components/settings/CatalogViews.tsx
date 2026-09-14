@@ -3,12 +3,19 @@
 import { useState, useTransition } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import {
+  createCustomExercise,
+  createCustomSupplement,
+  deleteCustomExercise,
+  deleteCustomSupplement,
+  updateCustomExercise,
+  updateCustomSupplement,
+} from "@/app/actions/catalog";
+import {
   MUSCLE_GROUP_KEYS,
   muscleGroupLabel,
   parseCustomExerciseInput,
   parseCustomSupplementInput,
 } from "@/lib/catalog";
-import { runMutation } from "@/lib/offline/mutate";
 import { CARD_CLS, INPUT_CLS, PRIMARY_BTN } from "@/lib/ui";
 import type {
   CustomExercisePayload,
@@ -17,17 +24,24 @@ import type {
 
 export function ExerciseCatalogView({
   initial,
+  onChange,
 }: {
   initial: CustomExercisePayload[];
+  onChange?: (rows: CustomExercisePayload[]) => void;
 }) {
   const [exercises, setExercises] = useState(initial);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CustomExercisePayload | null>(null);
 
+  function commit(rows: CustomExercisePayload[]) {
+    setExercises(rows);
+    onChange?.(rows);
+  }
+
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Custom exercises</h2>
+        <h2 className="text-sm font-bold text-ink">Your exercises</h2>
         <button
           type="button"
           onClick={() => {
@@ -39,8 +53,11 @@ export function ExerciseCatalogView({
           + Add
         </button>
       </div>
+      <p className="text-sm text-muted">
+        Extra movements on top of the built-in list.
+      </p>
       {exercises.length === 0 ? (
-        <p className="text-sm text-muted">No custom exercises yet.</p>
+        <p className="text-sm text-muted">None yet.</p>
       ) : (
         <ul className="space-y-2">
           {exercises.map((item) => (
@@ -69,14 +86,8 @@ export function ExerciseCatalogView({
                   type="button"
                   className="text-xs font-bold text-danger"
                   onClick={async () => {
-                    await runMutation(
-                      "deleteCustomExercise",
-                      { id: item.id },
-                      undefined,
-                    );
-                    setExercises((rows) =>
-                      rows.filter((row) => row.id !== item.id),
-                    );
+                    await deleteCustomExercise(item.id);
+                    commit(exercises.filter((row) => row.id !== item.id));
                   }}
                 >
                   Del
@@ -92,10 +103,10 @@ export function ExerciseCatalogView({
           initial={editing}
           onClose={() => setSheetOpen(false)}
           onSave={(row) => {
-            setExercises((rows) =>
-              rows.some((item) => item.id === row.id)
-                ? rows.map((item) => (item.id === row.id ? row : item))
-                : [row, ...rows],
+            commit(
+              exercises.some((item) => item.id === row.id)
+                ? exercises.map((item) => (item.id === row.id ? row : item))
+                : [row, ...exercises],
             );
             setSheetOpen(false);
           }}
@@ -107,17 +118,24 @@ export function ExerciseCatalogView({
 
 export function SupplementCatalogView({
   initial,
+  onChange,
 }: {
   initial: CustomSupplementPayload[];
+  onChange?: (rows: CustomSupplementPayload[]) => void;
 }) {
   const [supplements, setSupplements] = useState(initial);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CustomSupplementPayload | null>(null);
 
+  function commit(rows: CustomSupplementPayload[]) {
+    setSupplements(rows);
+    onChange?.(rows);
+  }
+
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Custom supplements</h2>
+        <h2 className="text-sm font-bold text-ink">Your supplements</h2>
         <button
           type="button"
           onClick={() => {
@@ -129,8 +147,11 @@ export function SupplementCatalogView({
           + Add
         </button>
       </div>
+      <p className="text-sm text-muted">
+        Whey, creatine, and pre-workout are already there. Add anything else.
+      </p>
       {supplements.length === 0 ? (
-        <p className="text-sm text-muted">No custom supplements yet.</p>
+        <p className="text-sm text-muted">None yet.</p>
       ) : (
         <ul className="space-y-2">
           {supplements.map((item) => (
@@ -157,14 +178,8 @@ export function SupplementCatalogView({
                   type="button"
                   className="text-xs font-bold text-danger"
                   onClick={async () => {
-                    await runMutation(
-                      "deleteCustomSupplement",
-                      { id: item.id },
-                      undefined,
-                    );
-                    setSupplements((rows) =>
-                      rows.filter((row) => row.id !== item.id),
-                    );
+                    await deleteCustomSupplement(item.id);
+                    commit(supplements.filter((row) => row.id !== item.id));
                   }}
                 >
                   Del
@@ -180,10 +195,10 @@ export function SupplementCatalogView({
           initial={editing}
           onClose={() => setSheetOpen(false)}
           onSave={(row) => {
-            setSupplements((rows) =>
-              rows.some((item) => item.id === row.id)
-                ? rows.map((item) => (item.id === row.id ? row : item))
-                : [row, ...rows],
+            commit(
+              supplements.some((item) => item.id === row.id)
+                ? supplements.map((item) => (item.id === row.id ? row : item))
+                : [row, ...supplements],
             );
             setSheetOpen(false);
           }}
@@ -213,16 +228,10 @@ function ExerciseSheet({
     <BottomSheet title={initial ? "Edit exercise" : "Add exercise"} onClose={onClose}>
       <label className="mb-3 block">
         <span className="mb-1 block text-sm font-semibold text-ink">Name</span>
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          className={INPUT_CLS}
-        />
+        <input value={name} onChange={(event) => setName(event.target.value)} className={INPUT_CLS} />
       </label>
       <label className="mb-3 block">
-        <span className="mb-1 block text-sm font-semibold text-ink">
-          Muscle group
-        </span>
+        <span className="mb-1 block text-sm font-semibold text-ink">Muscle group</span>
         <select
           value={muscleGroup}
           onChange={(event) => setMuscleGroup(event.target.value)}
@@ -237,24 +246,12 @@ function ExerciseSheet({
       </label>
       <div className="mb-4 grid grid-cols-2 gap-2">
         <label>
-          <span className="mb-1 block text-sm font-semibold text-ink">
-            Default kg
-          </span>
-          <input
-            value={weight}
-            onChange={(event) => setWeight(event.target.value)}
-            className={INPUT_CLS}
-          />
+          <span className="mb-1 block text-sm font-semibold text-ink">Default kg</span>
+          <input value={weight} onChange={(event) => setWeight(event.target.value)} className={INPUT_CLS} />
         </label>
         <label>
-          <span className="mb-1 block text-sm font-semibold text-ink">
-            Default reps
-          </span>
-          <input
-            value={reps}
-            onChange={(event) => setReps(event.target.value)}
-            className={INPUT_CLS}
-          />
+          <span className="mb-1 block text-sm font-semibold text-ink">Default reps</span>
+          <input value={reps} onChange={(event) => setReps(event.target.value)} className={INPUT_CLS} />
         </label>
       </div>
       {error ? <p className="mb-3 text-sm text-danger">{error}</p> : null}
@@ -271,17 +268,10 @@ function ExerciseSheet({
                 defaultWeight: weight ? Number(weight) : null,
                 defaultReps: reps ? Number(reps) : null,
               });
-              const payload = {
-                id: initial?.id ?? crypto.randomUUID(),
-                ...parsed,
-              };
-              const kind = initial ? "updateCustomExercise" : "createCustomExercise";
-              const fallback: CustomExercisePayload = {
-                ...payload,
-                createdAt: initial?.createdAt ?? new Date().toISOString(),
-              };
-              const result = await runMutation(kind, payload, fallback);
-              onSave(result.data);
+              const row = initial
+                ? await updateCustomExercise({ id: initial.id, ...parsed })
+                : await createCustomExercise(parsed);
+              onSave(row);
             } catch (err) {
               setError(err instanceof Error ? err.message : "Could not save.");
             }
@@ -305,41 +295,21 @@ function SupplementSheet({
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [dose, setDose] = useState(initial?.defaultDose ?? "");
-  const [icon, setIcon] = useState(initial?.iconOrType ?? "pill");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
-    <BottomSheet
-      title={initial ? "Edit supplement" : "Add supplement"}
-      onClose={onClose}
-    >
+    <BottomSheet title={initial ? "Edit supplement" : "Add supplement"} onClose={onClose}>
       <label className="mb-3 block">
         <span className="mb-1 block text-sm font-semibold text-ink">Name</span>
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          className={INPUT_CLS}
-        />
+        <input value={name} onChange={(event) => setName(event.target.value)} className={INPUT_CLS} />
       </label>
-      <label className="mb-3 block">
-        <span className="mb-1 block text-sm font-semibold text-ink">
-          Default dose
-        </span>
+      <label className="mb-4 block">
+        <span className="mb-1 block text-sm font-semibold text-ink">Default dose</span>
         <input
           value={dose}
           onChange={(event) => setDose(event.target.value)}
-          placeholder="30g, 1 scoop…"
-          className={INPUT_CLS}
-        />
-      </label>
-      <label className="mb-4 block">
-        <span className="mb-1 block text-sm font-semibold text-ink">
-          Icon / type
-        </span>
-        <input
-          value={icon}
-          onChange={(event) => setIcon(event.target.value)}
+          placeholder="5g, 1 scoop…"
           className={INPUT_CLS}
         />
       </label>
@@ -354,21 +324,11 @@ function SupplementSheet({
               const parsed = parseCustomSupplementInput({
                 name,
                 defaultDose: dose,
-                iconOrType: icon,
               });
-              const payload = {
-                id: initial?.id ?? crypto.randomUUID(),
-                ...parsed,
-              };
-              const kind = initial
-                ? "updateCustomSupplement"
-                : "createCustomSupplement";
-              const fallback: CustomSupplementPayload = {
-                ...payload,
-                createdAt: initial?.createdAt ?? new Date().toISOString(),
-              };
-              const result = await runMutation(kind, payload, fallback);
-              onSave(result.data);
+              const row = initial
+                ? await updateCustomSupplement({ id: initial.id, ...parsed })
+                : await createCustomSupplement(parsed);
+              onSave(row);
             } catch (err) {
               setError(err instanceof Error ? err.message : "Could not save.");
             }

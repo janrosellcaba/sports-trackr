@@ -1,7 +1,7 @@
 {
   "name": "Trackr",
   "short_name": "Trackr",
-  "description": "Minimalist workout and sports logger",
+  "description": "Simple gym and supplement log",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",

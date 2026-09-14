@@ -15,20 +15,16 @@ import { useAccentColor, useSurfaceColors } from "@/components/theme/ThemeProvid
 import type { ProgressionPoint } from "@/types/trackr";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS } from "@/lib/ui";
 
-type ExerciseProgressionChartProps = {
-  exerciseNames: string[];
-  initialName?: string;
-};
-
 export function ExerciseProgressionChart({
   exerciseNames,
   initialName,
-}: ExerciseProgressionChartProps) {
+}: {
+  exerciseNames: string[];
+  initialName?: string;
+}) {
   const brand = useAccentColor();
   const { ink, muted, line, paper } = useSurfaceColors();
-  const [selected, setSelected] = useState(
-    initialName ?? exerciseNames[0] ?? "",
-  );
+  const [selected, setSelected] = useState(initialName ?? exerciseNames[0] ?? "");
   const [points, setPoints] = useState<ProgressionPoint[]>([]);
   const [isPending, startTransition] = useTransition();
 
@@ -37,7 +33,6 @@ export function ExerciseProgressionChart({
       setPoints([]);
       return;
     }
-
     startTransition(async () => {
       const data = await getExerciseProgression(selected);
       setPoints(data);
@@ -48,7 +43,7 @@ export function ExerciseProgressionChart({
     return (
       <section className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
         <p className="text-sm text-muted">
-          Log a few gym sets to unlock strength progression charts.
+          Log a few gym sets to see strength over time.
         </p>
       </section>
     );
@@ -138,6 +133,7 @@ export function ExerciseProgressionChart({
 }
 
 function formatShortDate(value: string): string {
-  const [, month, day] = value.split("-");
-  return `${month}/${day}`;
+  const parts = value.split("-");
+  if (parts.length < 3) return value;
+  return `${parts[1]}/${parts[2]}`;
 }

@@ -1,27 +1,23 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { addExercise, addSet } from "@/app/actions/gym";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { mergeExerciseCatalog, muscleGroupLabel } from "@/lib/catalog";
 import { MUSCLE_FILTERS, type MuscleFilter } from "@/lib/exercises";
-import { runMutation } from "@/lib/offline/mutate";
 import { INPUT_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
-import type {
-  CustomExercisePayload,
-  ExercisePayload,
-  SetPayload,
-} from "@/types/trackr";
+import type { CustomExercisePayload, WorkoutPayload } from "@/types/trackr";
 
 type AddExerciseModalProps = {
-  sessionId: string;
+  date: string;
   open: boolean;
   customExercises: CustomExercisePayload[];
   onClose: () => void;
-  onAdded: (exercise: ExercisePayload) => void;
+  onAdded: (workout: WorkoutPayload) => void;
 };
 
 export function AddExerciseModal({
-  sessionId,
+  date,
   open,
   customExercises,
   onClose,
@@ -29,7 +25,7 @@ export function AddExerciseModal({
 }: AddExerciseModalProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<MuscleFilter>("All");
-  const [pinToCatalog, setPinToCatalog] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const catalog = useMemo(
@@ -50,82 +46,55 @@ export function AddExerciseModal({
 
   if (!open) return null;
 
-  function submit(name: string, defaults?: { weight?: number | null; reps?: number | null }) {
+  function submit(
+    name: string,
+    defaults?: { weight?: number | null; reps?: number | null },
+  ) {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const id = crypto.randomUUID();
-    const optimistic: ExercisePayload = {
-      id,
-      machineName: trimmed,
-      order: 0,
-      sets: [],
-    };
-
+    setError(null);
     startTransition(async () => {
-      const result = await runMutation(
-        "addExercise",
-        { id, sessionId, machineName: trimmed },
-        optimistic,
-      );
-      let exercise = result.data;
-      const weight = defaults?.weight;
-      const reps = defaults?.reps;
-      if (
-        typeof weight === "number" &&
-        Number.isFinite(weight) &&
-        typeof reps === "number" &&
-        Number.isInteger(reps) &&
-        reps > 0
-      ) {
-        const setId = crypto.randomUUID();
-        const optimisticSet: SetPayload = {
-          id: setId,
-          setNumber: 1,
-          weight,
-          reps,
-          rpe: null,
-        };
-        const setResult = await runMutation(
-          "addSet",
-          {
-            id: setId,
-            exerciseLogId: exercise.id,
+      try {
+        let workout = await addExercise({ date, name: trimmed });
+        const weight = defaults?.weight;
+        const reps = defaults?.reps;
+        const added = workout.exercises[workout.exercises.length - 1];
+        if (
+          added &&
+          typeof weight === "number" &&
+          Number.isFinite(weight) &&
+          typeof reps === "number" &&
+          Number.isInteger(reps) &&
+          reps > 0
+        ) {
+          const set = await addSet({
+            exerciseLogId: added.id,
             weight,
             reps,
-          },
-          optimisticSet,
-        );
-        exercise = { ...exercise, sets: [...exercise.sets, setResult.data] };
+          });
+          workout = {
+            ...workout,
+            exercises: workout.exercises.map((exercise) =>
+              exercise.id === added.id
+                ? { ...exercise, sets: [...exercise.sets, set] }
+                : exercise,
+            ),
+            setCount: workout.setCount + 1,
+            totalVolumeKg: workout.totalVolumeKg + Math.round(weight * reps),
+          };
+        }
+        setQuery("");
+        setFilter("All");
+        onAdded(workout);
+        onClose();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not add exercise.");
       }
-      if (pinToCatalog) {
-        const catalogId = crypto.randomUUID();
-        await runMutation(
-          "createCustomExercise",
-          {
-            id: catalogId,
-            name: trimmed,
-            muscleGroup: filter === "All" ? "OTHER" : filter,
-          },
-          {
-            id: catalogId,
-            name: trimmed,
-            muscleGroup: filter === "All" ? "OTHER" : filter,
-            defaultWeight: null,
-            defaultReps: null,
-            createdAt: new Date().toISOString(),
-          },
-        );
-      }
-      setQuery("");
-      setFilter("All");
-      setPinToCatalog(false);
-      onAdded(exercise);
-      onClose();
     });
   }
 
   return (
-    <BottomSheet title="Add Exercise" onClose={onClose}>
+    <BottomSheet title="Add exercise" onClose={onClose}>
       <form
         className="mb-4 space-y-3"
         onSubmit={(event) => {
@@ -141,25 +110,17 @@ export function AddExerciseModal({
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search or type custom…"
+            placeholder="Search or type a name…"
             className={INPUT_CLS}
           />
         </label>
-        <label className="flex items-center gap-2 text-sm font-medium text-muted">
-          <input
-            type="checkbox"
-            checked={pinToCatalog}
-            onChange={(event) => setPinToCatalog(event.target.checked)}
-            className="accent-brand"
-          />
-          Save to my catalog
-        </label>
+        {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
         <button
           type="submit"
           disabled={isPending || !query.trim()}
           className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark`}
         >
-          {isPending ? "Adding…" : "Add Custom"}
+          {isPending ? "Adding…" : "Add"}
         </button>
       </form>
 
@@ -195,7 +156,7 @@ export function AddExerciseModal({
         ))}
         {suggestions.length === 0 && (
           <p className="text-sm text-muted">
-            No matches — use the input to add a custom exercise.
+            No matches — type a name and tap Add.
           </p>
         )}
       </div>

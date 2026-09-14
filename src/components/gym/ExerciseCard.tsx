@@ -1,30 +1,21 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRestTimer } from "@/components/gym/RestTimer";
-import { estimatedOneRm } from "@/lib/calculations";
-import { runMutation } from "@/lib/offline/mutate";
+import { addSet, deleteExercise, deleteSet } from "@/app/actions/gym";
 import { CARD_CLS, LABEL_CLS, PRIMARY_BTN } from "@/lib/ui";
 import type { ExercisePayload, SetPayload } from "@/types/trackr";
 
 type ExerciseCardProps = {
   exercise: ExercisePayload;
-  enableRestTimer?: boolean;
   onChange: (exercise: ExercisePayload) => void;
   onDelete: () => void;
 };
 
-export function ExerciseCard({
-  exercise,
-  enableRestTimer = true,
-  onChange,
-  onDelete,
-}: ExerciseCardProps) {
-  const restTimer = useRestTimer();
+export function ExerciseCard({ exercise, onChange, onDelete }: ExerciseCardProps) {
   const lastSet = exercise.sets[exercise.sets.length - 1];
   const [weight, setWeight] = useState(String(lastSet?.weight ?? 60));
   const [reps, setReps] = useState(String(lastSet?.reps ?? 10));
-  const [rpe, setRpe] = useState(lastSet?.rpe != null ? String(lastSet.rpe) : "");
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -32,15 +23,9 @@ export function ExerciseCard({
     if (!latest) return;
     setWeight(String(latest.weight));
     setReps(String(latest.reps));
-    setRpe(latest.rpe != null ? String(latest.rpe) : "");
   }, [exercise.sets]);
 
-  function adjustNumber(
-    value: string,
-    delta: number,
-    fallback: number,
-    min = 0,
-  ): string {
+  function adjustNumber(value: string, delta: number, fallback: number, min = 0): string {
     const current = Number(value);
     const base = Number.isFinite(current) ? current : fallback;
     return String(Math.max(min, Math.round((base + delta) * 10) / 10));
@@ -49,46 +34,40 @@ export function ExerciseCard({
   function handleAddSet() {
     const parsedWeight = Number(weight);
     const parsedReps = Number(reps);
-    const parsedRpe = rpe.trim() === "" ? undefined : Number(rpe);
-
+    if (!Number.isFinite(parsedWeight) || parsedWeight < 0) {
+      setError("Enter a valid weight.");
+      return;
+    }
+    if (!Number.isInteger(parsedReps) || parsedReps <= 0) {
+      setError("Reps must be a whole number.");
+      return;
+    }
+    setError(null);
     startTransition(async () => {
-      const id = crypto.randomUUID();
-      const optimistic: SetPayload = {
-        id,
-        setNumber: exercise.sets.length + 1,
-        weight: parsedWeight,
-        reps: parsedReps,
-        rpe: parsedRpe ?? null,
-      };
-      const result = await runMutation(
-        "addSet",
-        {
-          id,
+      try {
+        const set = await addSet({
           exerciseLogId: exercise.id,
           weight: parsedWeight,
           reps: parsedReps,
-          rpe: parsedRpe,
-        },
-        optimistic,
-      );
-      onChange({ ...exercise, sets: [...exercise.sets, result.data] });
-      if (enableRestTimer) restTimer?.start();
+        });
+        onChange({ ...exercise, sets: [...exercise.sets, set] });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not add set.");
+      }
     });
   }
 
   function handleDeleteExercise() {
-    const confirmed = window.confirm(`Remove ${exercise.machineName}?`);
-    if (!confirmed) return;
-
+    if (!window.confirm(`Remove ${exercise.name}?`)) return;
     startTransition(async () => {
-      await runMutation("deleteExercise", { exerciseLogId: exercise.id }, undefined);
+      await deleteExercise(exercise.id);
       onDelete();
     });
   }
 
   function handleDeleteSet(setId: string) {
     startTransition(async () => {
-      await runMutation("deleteSet", { setId }, undefined);
+      await deleteSet(setId);
       onChange({
         ...exercise,
         sets: exercise.sets.filter((set) => set.id !== setId),
@@ -99,12 +78,12 @@ export function ExerciseCard({
   return (
     <article className={`${CARD_CLS} p-4`}>
       <header className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="text-base font-bold text-ink">{exercise.machineName}</h3>
+        <h3 className="text-base font-bold text-ink">{exercise.name}</h3>
         <button
           type="button"
           onClick={handleDeleteExercise}
           disabled={isPending}
-          aria-label={`Delete ${exercise.machineName}`}
+          aria-label={`Delete ${exercise.name}`}
           className="flex h-10 w-10 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-danger-soft hover:text-danger disabled:opacity-50"
         >
           ×
@@ -112,26 +91,24 @@ export function ExerciseCard({
       </header>
 
       <div className="mb-3 overflow-x-auto">
-        <table className="w-full min-w-[280px] text-left text-sm">
+        <table className="w-full min-w-[220px] text-left text-sm">
           <thead>
             <tr className={LABEL_CLS}>
               <th className="pb-2 font-bold">Set</th>
               <th className="pb-2 font-bold">kg</th>
               <th className="pb-2 font-bold">Reps</th>
-              <th className="pb-2 font-bold">1RM</th>
-              <th className="pb-2 font-bold">RPE</th>
               <th className="pb-2 font-bold" />
             </tr>
           </thead>
           <tbody>
             {exercise.sets.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-3 text-muted">
-                  No sets yet — log your first below.
+                <td colSpan={4} className="py-3 text-muted">
+                  No sets yet.
                 </td>
               </tr>
             ) : (
-              exercise.sets.map((set) => (
+              exercise.sets.map((set: SetPayload) => (
                 <tr key={set.id} className="border-t border-line">
                   <td className="py-2.5 font-mono tabular-nums text-muted">
                     {set.setNumber}
@@ -141,14 +118,6 @@ export function ExerciseCard({
                   </td>
                   <td className="py-2.5 font-mono font-semibold tabular-nums text-ink">
                     {set.reps}
-                  </td>
-                  <td className="py-2.5">
-                    <span className="rounded-full bg-brand-soft px-1.5 py-0.5 font-mono text-[10px] font-bold tabular-nums text-brand">
-                      {estimatedOneRm(set.weight, set.reps)}
-                    </span>
-                  </td>
-                  <td className="py-2.5 font-mono tabular-nums text-muted">
-                    {set.rpe ?? "—"}
                   </td>
                   <td className="py-2.5 text-right">
                     <button
@@ -168,7 +137,7 @@ export function ExerciseCard({
       </div>
 
       <div className="space-y-3 rounded-2xl border border-line bg-cream/60 p-3">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <NumberStepper
             label="Weight"
             value={weight}
@@ -187,22 +156,8 @@ export function ExerciseCard({
             inputMode="numeric"
             step="1"
           />
-          <NumberStepper
-            label="RPE"
-            value={rpe}
-            onChange={setRpe}
-            onMinus={() =>
-              setRpe((v) => (v === "" ? "7" : adjustNumber(v, -0.5, 7, 0)))
-            }
-            onPlus={() =>
-              setRpe((v) => (v === "" ? "7.5" : adjustNumber(v, 0.5, 7, 0)))
-            }
-            inputMode="decimal"
-            step="0.5"
-            placeholder="—"
-          />
         </div>
-
+        {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
         <button
           type="button"
           onClick={handleAddSet}
@@ -210,7 +165,7 @@ export function ExerciseCard({
           className={`${PRIMARY_BTN} flex w-full items-center justify-center gap-2 bg-brand py-3 text-base hover:bg-brand-dark`}
         >
           <span className="text-lg leading-none">+</span>
-          Add Set
+          Add set
           <span className="font-mono text-xs opacity-80">
             {weight || "0"}kg × {reps || "0"}
           </span>
@@ -220,17 +175,6 @@ export function ExerciseCard({
   );
 }
 
-type NumberStepperProps = {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  onMinus: () => void;
-  onPlus: () => void;
-  inputMode: "decimal" | "numeric";
-  step: string;
-  placeholder?: string;
-};
-
 function NumberStepper({
   label,
   value,
@@ -239,8 +183,15 @@ function NumberStepper({
   onPlus,
   inputMode,
   step,
-  placeholder,
-}: NumberStepperProps) {
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onMinus: () => void;
+  onPlus: () => void;
+  inputMode: "decimal" | "numeric";
+  step: string;
+}) {
   return (
     <label className="block space-y-1.5">
       <span className={LABEL_CLS}>{label}</span>
@@ -258,7 +209,6 @@ function NumberStepper({
           onChange={(event) => onChange(event.target.value)}
           inputMode={inputMode}
           step={step}
-          placeholder={placeholder}
           className="h-11 w-full min-w-0 rounded-xl border border-line bg-paper text-center font-mono text-sm text-ink outline-none transition-colors duration-150 placeholder:text-muted focus:border-brand focus:ring-4 focus:ring-brand/10"
         />
         <button

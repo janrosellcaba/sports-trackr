@@ -1,12 +1,8 @@
 "use client";
 
-import { Activity, Dumbbell, Flame, Pill } from "lucide-react";
+import { Dumbbell, Flame, Layers, Pill } from "lucide-react";
 import type { AnalyticsSummary } from "@/types/trackr";
 import { CARD_CLS } from "@/lib/ui";
-
-type KpiGridProps = {
-  summary: AnalyticsSummary;
-};
 
 function TrendBadge({ value }: { value: number }) {
   const positive = value > 0;
@@ -26,33 +22,33 @@ function TrendBadge({ value }: { value: number }) {
   );
 }
 
-export function KpiGrid({ summary }: KpiGridProps) {
+export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   const cards = [
     {
-      label: "Total Sessions",
-      value: String(summary.totalSessions),
-      hint: `Last ${summary.days}d`,
-      trend: summary.trends.sessions,
+      label: "Gym days",
+      value: String(summary.totalWorkouts),
+      hint: `${summary.gymStreak}d streak`,
+      trend: summary.trends.workouts,
       icon: Dumbbell,
     },
     {
-      label: "Sports Active Time",
-      value: formatMinutes(summary.totalCardioMinutes),
-      hint: "Cardio / racquet",
-      trend: summary.trends.cardioMinutes,
-      icon: Activity,
-    },
-    {
-      label: "Total Volume Lifted",
+      label: "Volume",
       value: formatVolume(summary.totalVolumeKg),
       hint: "Weight × reps",
       trend: summary.trends.volumeKg,
       icon: Flame,
     },
     {
-      label: "Supplement Streak",
+      label: "Sets",
+      value: String(summary.totalSets),
+      hint: "Logged working sets",
+      trend: summary.trends.sets,
+      icon: Layers,
+    },
+    {
+      label: "Supplements",
       value: `${summary.supplementStreak}d`,
-      hint: `${summary.supplementComplianceDays} days logged`,
+      hint: `${summary.supplementDays} days taken`,
       trend: summary.trends.supplements,
       icon: Pill,
     },
@@ -75,13 +71,6 @@ export function KpiGrid({ summary }: KpiGridProps) {
       ))}
     </section>
   );
-}
-
-function formatMinutes(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const rem = minutes % 60;
-  return rem === 0 ? `${hours}h` : `${hours}h ${rem}m`;
 }
 
 function formatVolume(kg: number): string {

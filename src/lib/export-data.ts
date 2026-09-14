@@ -1,35 +1,21 @@
 type ExportPayload = {
-  sessions?: Array<{
+  workouts?: Array<{
     id: string;
-    startTime: Date | string;
-    endTime: Date | string | null;
+    date: string;
     notes: string | null;
-    mode?: string;
     exercises?: Array<{
-      id: string;
-      machineName: string;
+      name: string;
       sets?: Array<{
         setNumber: number;
         weight: number;
         reps: number;
-        rpe: number | null;
       }>;
     }>;
   }>;
-  activities?: Array<{
-    type: string;
-    durationMinutes: number;
-    intensity: string;
-    notes: string | null;
-    date: Date | string;
-  }>;
   supplements?: Array<{
-    type: string;
-    label?: string | null;
-    amountGrams: number | null;
-    scoops: number | null;
-    notes: string | null;
-    date: Date | string;
+    name: string;
+    dose: string;
+    date: string;
   }>;
   customExercises?: Array<{
     name: string;
@@ -40,7 +26,6 @@ type ExportPayload = {
   customSupplements?: Array<{
     name: string;
     defaultDose: string;
-    iconOrType: string;
   }>;
 };
 
@@ -48,12 +33,6 @@ function csvEscape(value: unknown): string {
   const raw = value == null ? "" : String(value);
   if (/[",\n]/.test(raw)) return `"${raw.replace(/"/g, '""')}"`;
   return raw;
-}
-
-function toIso(value: Date | string | null | undefined): string {
-  if (!value) return "";
-  const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
 }
 
 function rowsToCsv(headers: string[], rows: Array<Array<unknown>>): string {
@@ -64,68 +43,40 @@ function rowsToCsv(headers: string[], rows: Array<Array<unknown>>): string {
 }
 
 export function buildExportCsv(data: ExportPayload): string {
-  const sessionRows: Array<Array<unknown>> = [];
+  const workoutRows: Array<Array<unknown>> = [];
   const setRows: Array<Array<unknown>> = [];
 
-  for (const session of data.sessions ?? []) {
-    sessionRows.push([
-      session.id,
-      toIso(session.startTime),
-      toIso(session.endTime),
-      session.mode ?? "LIVE",
-      session.notes ?? "",
-      session.exercises?.length ?? 0,
+  for (const workout of data.workouts ?? []) {
+    workoutRows.push([
+      workout.id,
+      workout.date,
+      workout.notes ?? "",
+      workout.exercises?.length ?? 0,
     ]);
-    for (const exercise of session.exercises ?? []) {
+    for (const exercise of workout.exercises ?? []) {
       for (const set of exercise.sets ?? []) {
         setRows.push([
-          session.id,
-          exercise.machineName,
+          workout.date,
+          exercise.name,
           set.setNumber,
           set.weight,
           set.reps,
-          set.rpe ?? "",
         ]);
       }
     }
   }
 
-  const sections = [
-    "# sessions",
-    rowsToCsv(
-      ["id", "startTime", "endTime", "mode", "notes", "exerciseCount"],
-      sessionRows,
-    ),
+  return [
+    "# workouts",
+    rowsToCsv(["id", "date", "notes", "exerciseCount"], workoutRows),
     "",
     "# sets",
-    rowsToCsv(
-      ["sessionId", "exercise", "setNumber", "weight", "reps", "rpe"],
-      setRows,
-    ),
-    "",
-    "# cardio",
-    rowsToCsv(
-      ["type", "durationMinutes", "intensity", "notes", "date"],
-      (data.activities ?? []).map((item) => [
-        item.type,
-        item.durationMinutes,
-        item.intensity,
-        item.notes ?? "",
-        toIso(item.date),
-      ]),
-    ),
+    rowsToCsv(["date", "exercise", "setNumber", "weight", "reps"], setRows),
     "",
     "# supplements",
     rowsToCsv(
-      ["type", "label", "amountGrams", "scoops", "notes", "date"],
-      (data.supplements ?? []).map((item) => [
-        item.type,
-        item.label ?? "",
-        item.amountGrams ?? "",
-        item.scoops ?? "",
-        item.notes ?? "",
-        toIso(item.date),
-      ]),
+      ["name", "dose", "date"],
+      (data.supplements ?? []).map((item) => [item.name, item.dose, item.date]),
     ),
     "",
     "# customExercises",
@@ -141,14 +92,8 @@ export function buildExportCsv(data: ExportPayload): string {
     "",
     "# customSupplements",
     rowsToCsv(
-      ["name", "defaultDose", "iconOrType"],
-      (data.customSupplements ?? []).map((item) => [
-        item.name,
-        item.defaultDose,
-        item.iconOrType,
-      ]),
+      ["name", "defaultDose"],
+      (data.customSupplements ?? []).map((item) => [item.name, item.defaultDose]),
     ),
-  ];
-
-  return sections.join("\n");
+  ].join("\n");
 }

@@ -81,8 +81,13 @@ describe("catalog merge", () => {
     expect(merged.some((item) => item.name === "Bench Press")).toBe(true);
   });
 
-  it("lists only supplements the user added", () => {
-    expect(mergeSupplementCatalog([])).toEqual([]);
+  it("lists custom supplements ahead of builtins", () => {
+    const empty = mergeSupplementCatalog([]);
+    expect(empty.map((item) => item.name)).toEqual([
+      "Whey protein",
+      "Creatine",
+      "Pre-workout",
+    ]);
     const merged = mergeSupplementCatalog([
       {
         id: "s1",
@@ -92,6 +97,11 @@ describe("catalog merge", () => {
         createdAt: "2026-09-11T00:00:00.000Z",
       },
     ]);
-    expect(merged.map((item) => item.name)).toEqual(["Beta Alanine"]);
+    expect(merged.map((item) => item.name)).toEqual([
+      "Beta Alanine",
+      "Whey protein",
+      "Creatine",
+      "Pre-workout",
+    ]);
   });
 });

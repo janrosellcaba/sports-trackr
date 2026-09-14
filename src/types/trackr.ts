@@ -1,88 +1,31 @@
-export const CARDIO_TYPES = [
-  "RUNNING",
-  "CYCLING",
-  "SWIMMING",
-  "PADEL",
-  "TENNIS",
-] as const;
-
-export const INTENSITY_LEVELS = ["LOW", "MODERATE", "HIGH"] as const;
-
-export type CardioType = (typeof CARDIO_TYPES)[number];
-export type IntensityLevel = (typeof INTENSITY_LEVELS)[number];
-
-export type CardioActivityPayload = {
-  id: string;
-  type: CardioType;
-  durationMinutes: number;
-  intensity: IntensityLevel;
-  notes: string | null;
-  date: string;
-};
-
-export type LogCardioActivityInput = {
-  id?: string;
-  type: CardioType;
-  durationMinutes: number;
-  intensity: IntensityLevel;
-  notes?: string;
-  date?: Date | string;
-};
-
 export type SetPayload = {
   id: string;
   setNumber: number;
   weight: number;
   reps: number;
-  rpe: number | null;
 };
 
 export type ExercisePayload = {
   id: string;
-  machineName: string;
+  name: string;
   order: number;
   sets: SetPayload[];
 };
 
-export type SessionMode = "LIVE" | "MANUAL";
-
-export type SessionPayload = {
+export type WorkoutPayload = {
   id: string;
-  startTime: string;
-  endTime: string | null;
+  date: string;
   notes: string | null;
-  mode: SessionMode;
   exercises: ExercisePayload[];
+  totalVolumeKg: number;
+  setCount: number;
 };
-
-export const SUPPLEMENT_TYPES = [
-  "WHEY_PROTEIN",
-  "PRE_WORKOUT",
-  "CREATINE",
-] as const;
-
-export type SupplementType = (typeof SUPPLEMENT_TYPES)[number] | "CUSTOM";
 
 export type SupplementPayload = {
   id: string;
-  type: SupplementType;
-  label: string;
-  catalogId: string | null;
-  amountGrams: number | null;
-  scoops: number | null;
-  notes: string | null;
+  name: string;
+  dose: string;
   date: string;
-};
-
-export type LogSupplementInput = {
-  id?: string;
-  type: SupplementType;
-  label?: string;
-  catalogId?: string;
-  amountGrams?: number;
-  scoops?: number;
-  notes?: string;
-  date?: Date | string;
 };
 
 export type CustomExercisePayload = {
@@ -102,69 +45,39 @@ export type CustomSupplementPayload = {
   createdAt: string;
 };
 
+export type AnalyticsPeriod = 7 | 30 | 90 | 0;
+
 export type DailyActivityPoint = {
   date: string;
-  gymMinutes: number;
-  cardioMinutes: number;
   volumeKg: number;
+  workouts: number;
+  supplements: number;
+};
+
+export type TopExercise = {
+  name: string;
+  volumeKg: number;
+  sets: number;
+  workouts: number;
 };
 
 export type AnalyticsSummary = {
   days: number;
-  totalSessions: number;
-  totalCardioMinutes: number;
+  periodLabel: string;
+  totalWorkouts: number;
+  totalSets: number;
   totalVolumeKg: number;
-  supplementComplianceDays: number;
+  supplementDays: number;
   supplementStreak: number;
+  gymStreak: number;
   trends: {
-    sessions: number;
-    cardioMinutes: number;
+    workouts: number;
+    sets: number;
     volumeKg: number;
     supplements: number;
   };
   daily: DailyActivityPoint[];
-};
-
-export type HistorySet = {
-  id: string;
-  setNumber: number;
-  weight: number;
-  reps: number;
-  rpe: number | null;
-};
-
-export type HistoryExercise = {
-  id: string;
-  machineName: string;
-  order: number;
-  sets: HistorySet[];
-  volumeKg: number;
-};
-
-export type WorkoutHistoryItem = {
-  id: string;
-  startTime: string;
-  endTime: string;
-  notes: string | null;
-  durationMinutes: number;
-  totalVolumeKg: number;
-  exerciseCount: number;
-  setCount: number;
-  exercises: HistoryExercise[];
-};
-
-export type CardioHistoryItem = {
-  id: string;
-  type: string;
-  durationMinutes: number;
-  intensity: string;
-  notes: string | null;
-  date: string;
-};
-
-export type WorkoutHistoryFeed = {
-  sessions: WorkoutHistoryItem[];
-  activities: CardioHistoryItem[];
+  topExercises: TopExercise[];
 };
 
 export type ProgressionPoint = {
@@ -174,20 +87,14 @@ export type ProgressionPoint = {
   bestSetReps: number;
 };
 
-export type AdminUserRow = {
-  id: string;
-  username: string;
-  role: string;
-  createdAt: string;
-  _count: {
-    sessions: number;
-    activities: number;
-  };
-};
+export type AppTab = "home" | "log" | "analytics" | "settings";
 
-export type AdminStats = {
-  totalUsers: number;
-  totalWorkouts: number;
-  totalCardio: number;
-  usersList: AdminUserRow[];
+export type AppState = {
+  today: string;
+  todayWorkout: WorkoutPayload | null;
+  todaySupplements: SupplementPayload[];
+  workouts: WorkoutPayload[];
+  supplements: SupplementPayload[];
+  customExercises: CustomExercisePayload[];
+  customSupplements: CustomSupplementPayload[];
 };

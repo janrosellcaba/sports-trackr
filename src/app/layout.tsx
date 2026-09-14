@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { OfflineProvider } from "@/components/offline/OfflineProvider";
 import { ServiceWorkerRegister } from "@/components/offline/ServiceWorkerRegister";
 import {
   resolveAccentTheme,
@@ -30,7 +29,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Trackr",
-  description: "Minimalist workout & activity logger",
+  description: "Simple gym and supplement log",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -81,10 +80,8 @@ export default async function RootLayout({
           initialTheme={user?.accentTheme}
           initialColorMode={user?.colorMode}
         >
-          <OfflineProvider>
-            {children}
-            <ServiceWorkerRegister />
-          </OfflineProvider>
+          {children}
+          <ServiceWorkerRegister />
         </ThemeProvider>
       </body>
     </html>
