@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { addExercise, addSet } from "@/app/actions/gym";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { DateField } from "@/components/ui/DayPicker";
 import { mergeExerciseCatalog, muscleGroupLabel } from "@/lib/catalog";
 import { MUSCLE_FILTERS, type MuscleFilter } from "@/lib/exercises";
 import { INPUT_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
@@ -24,9 +25,14 @@ export function AddExerciseModal({
   onAdded,
 }: AddExerciseModalProps) {
   const [query, setQuery] = useState("");
+  const [logDate, setLogDate] = useState(date);
   const [filter, setFilter] = useState<MuscleFilter>("All");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (open) setLogDate(date);
+  }, [open, date]);
 
   const catalog = useMemo(
     () => mergeExerciseCatalog(customExercises),
@@ -55,7 +61,7 @@ export function AddExerciseModal({
     setError(null);
     startTransition(async () => {
       try {
-        let workout = await addExercise({ date, name: trimmed });
+        let workout = await addExercise({ date: logDate, name: trimmed });
         const weight = defaults?.weight;
         const reps = defaults?.reps;
         const added = workout.exercises[workout.exercises.length - 1];
@@ -102,6 +108,7 @@ export function AddExerciseModal({
           submit(query);
         }}
       >
+        <DateField value={logDate} onChange={setLogDate} />
         <label className="block">
           <span className="mb-1 block text-sm font-semibold text-ink">
             Exercise

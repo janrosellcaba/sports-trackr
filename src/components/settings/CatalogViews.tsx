@@ -45,7 +45,7 @@ export function ExerciseCatalogView({
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Exercises</h2>
+        <h2 className="text-sm font-bold text-ink">Catalog</h2>
         <button
           type="button"
           onClick={() => {
@@ -58,7 +58,7 @@ export function ExerciseCatalogView({
         </button>
       </div>
       <p className="text-sm text-muted">
-        Every exercise you can log. Edit or delete the defaults, or add your own.
+        Shown when you add an exercise on Home.
       </p>
       {exercises.length === 0 ? (
         <p className="text-sm text-muted">None yet. Add one to log gym.</p>
@@ -145,7 +145,7 @@ export function SupplementCatalogView({
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Supplements</h2>
+        <h2 className="text-sm font-bold text-ink">Catalog</h2>
         <button
           type="button"
           onClick={() => {
@@ -158,7 +158,7 @@ export function SupplementCatalogView({
         </button>
       </div>
       <p className="text-sm text-muted">
-        Every supplement on Home. Edit or delete the defaults, or add your own.
+        Shown as tap targets on Home.
       </p>
       {supplements.length === 0 ? (
         <p className="text-sm text-muted">None yet. Add one to log from Home.</p>

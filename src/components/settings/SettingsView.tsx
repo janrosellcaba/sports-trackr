@@ -18,6 +18,14 @@ import type {
   CustomSupplementPayload,
 } from "@/types/trackr";
 
+const SECTIONS = [
+  { id: "settings-exercises", label: "Exercises" },
+  { id: "settings-supplements", label: "Supplements" },
+  { id: "settings-appearance", label: "Appearance" },
+  { id: "settings-data", label: "Data" },
+  { id: "settings-account", label: "Account" },
+] as const;
+
 export function SettingsView({
   user,
   customExercises,
@@ -32,36 +40,110 @@ export function SettingsView({
   onSupplementsChange: (rows: CustomSupplementPayload[]) => void;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <div>
         <p className={LABEL_CLS}>Settings</p>
         <h1 className="text-2xl font-extrabold tracking-tight text-ink">Make it yours</h1>
+        <nav className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
+          {SECTIONS.map((section) => (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              onClick={(event) => {
+                event.preventDefault();
+                document
+                  .getElementById(section.id)
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="shrink-0 rounded-full bg-chip px-3 py-1.5 text-xs font-bold text-ink hover:bg-chip-hover"
+            >
+              {section.label}
+            </a>
+          ))}
+        </nav>
       </div>
 
-      <section className={`${CARD_CLS} space-y-3 p-4`}>
-        <p className={LABEL_CLS}>Account</p>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-lg font-extrabold text-ink">{user.username}</p>
-            <p className="text-sm text-muted">Signed in</p>
-          </div>
-          <form action={() => logout()}>
-            <button
-              type="submit"
-              className="rounded-xl bg-chip px-4 py-2 text-sm font-bold text-ink hover:bg-chip-hover"
-            >
-              Log out
-            </button>
-          </form>
-        </div>
-      </section>
+      <SettingsSection
+        id="settings-exercises"
+        title="Exercises"
+        description="Add, rename, or delete anything in the gym picker — including the defaults."
+      >
+        <ExerciseCatalogView initial={customExercises} onChange={onExercisesChange} />
+      </SettingsSection>
 
-      <AppearanceView />
-      <ExerciseCatalogView initial={customExercises} onChange={onExercisesChange} />
-      <SupplementCatalogView initial={customSupplements} onChange={onSupplementsChange} />
-      <ExportSection />
-      <DangerZone user={user} />
+      <SettingsSection
+        id="settings-supplements"
+        title="Supplements"
+        description="These become the tap buttons on Home. Edit dose or remove ones you don’t use."
+      >
+        <SupplementCatalogView
+          initial={customSupplements}
+          onChange={onSupplementsChange}
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        id="settings-appearance"
+        title="Appearance"
+        description="Dark or light, plus the accent used on buttons and charts."
+      >
+        <AppearanceView />
+      </SettingsSection>
+
+      <SettingsSection
+        id="settings-data"
+        title="Data"
+        description="Download your gym, sports, and supplement history."
+      >
+        <ExportSection />
+      </SettingsSection>
+
+      <SettingsSection
+        id="settings-account"
+        title="Account"
+        description="Signed in as this user. Deleting the account cannot be undone."
+      >
+        <section className={`${CARD_CLS} space-y-3 p-4`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-lg font-extrabold text-ink">{user.username}</p>
+              <p className="text-sm text-muted">Signed in</p>
+            </div>
+            <form action={() => logout()}>
+              <button
+                type="submit"
+                className="rounded-xl bg-chip px-4 py-2 text-sm font-bold text-ink hover:bg-chip-hover"
+              >
+                Log out
+              </button>
+            </form>
+          </div>
+        </section>
+        <DangerZone user={user} />
+      </SettingsSection>
     </div>
+  );
+}
+
+function SettingsSection({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="scroll-mt-6 space-y-3">
+      <div>
+        <h2 className="text-lg font-extrabold tracking-tight text-ink">{title}</h2>
+        <p className="mt-0.5 text-sm text-muted">{description}</p>
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -102,7 +184,6 @@ function ExportSection() {
 
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <p className={LABEL_CLS}>Export</p>
       <button
         type="button"
         disabled={isPending}

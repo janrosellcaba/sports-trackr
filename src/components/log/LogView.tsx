@@ -34,7 +34,7 @@ export function LogView({
   supplements,
   customExercises,
   onWorkoutChange,
-  onSportsChange,
+  onSportLogged,
   onDeleteWorkout,
   onDeleteSport,
   onDeleteSupplement,
@@ -45,7 +45,7 @@ export function LogView({
   supplements: SupplementPayload[];
   customExercises: CustomExercisePayload[];
   onWorkoutChange: (workout: WorkoutPayload) => void;
-  onSportsChange: (date: string, sessions: SportSessionPayload[]) => void;
+  onSportLogged: (session: SportSessionPayload) => void;
   onDeleteWorkout: (id: string) => void;
   onDeleteSport: (id: string) => void;
   onDeleteSupplement: (id: string) => void;
@@ -307,7 +307,8 @@ export function LogView({
             <SportsBar
               date={pastDate}
               sessions={pastSports}
-              onChange={(sessions) => onSportsChange(pastDate, sessions)}
+              onLogged={onSportLogged}
+              onRemoved={onDeleteSport}
             />
             <WorkoutEditor
               date={pastDate}

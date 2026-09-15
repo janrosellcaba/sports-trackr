@@ -12,17 +12,21 @@ import {
   type SportDefinition,
   type SportTypeId,
 } from "@/lib/sports";
+import { DateField } from "@/components/ui/DayPicker";
+import { formatDisplayDate, getTodayLocalDateISO } from "@/lib/calculations";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
 import type { SportSessionPayload } from "@/types/trackr";
 
 export function SportsBar({
   date,
   sessions,
-  onChange,
+  onLogged,
+  onRemoved,
 }: {
   date: string;
   sessions: SportSessionPayload[];
-  onChange: (sessions: SportSessionPayload[]) => void;
+  onLogged: (session: SportSessionPayload) => void;
+  onRemoved: (id: string) => void;
 }) {
   const [isPending, startTransition] = useTransition();
   const [active, setActive] = useState<SportDefinition | null>(null);
@@ -30,7 +34,7 @@ export function SportsBar({
   function handleUndo(id: string) {
     startTransition(async () => {
       await deleteSport(id);
-      onChange(sessions.filter((item) => item.id !== id));
+      onRemoved(id);
     });
   }
 
@@ -39,6 +43,9 @@ export function SportsBar({
       <div>
         <p className={LABEL_CLS}>Sports session</p>
         <h2 className="text-base font-bold text-ink">Tap to log</h2>
+        {date !== getTodayLocalDateISO() ? (
+          <p className="mt-0.5 text-xs text-muted">{formatDisplayDate(date)}</p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -90,7 +97,7 @@ export function SportsBar({
           sport={active}
           onClose={() => setActive(null)}
           onSave={(session) => {
-            onChange([session, ...sessions]);
+            onLogged(session);
             setActive(null);
           }}
         />
@@ -110,6 +117,7 @@ function SportSheet({
   onClose: () => void;
   onSave: (session: SportSessionPayload) => void;
 }) {
+  const [logDate, setLogDate] = useState(date);
   const [distanceKm, setDistanceKm] = useState("");
   const [distanceM, setDistanceM] = useState("");
   const [duration, setDuration] = useState("");
@@ -121,6 +129,7 @@ function SportSheet({
 
   return (
     <BottomSheet title={sport.label} onClose={onClose}>
+      <DateField value={logDate} onChange={setLogDate} />
       {fields.has("distanceKm") ? (
         <label className="mb-3 block">
           <span className="mb-1 block text-sm font-semibold text-ink">
@@ -209,7 +218,7 @@ function SportSheet({
             try {
               const session = await logSport({
                 type: sport.id as SportTypeId,
-                date,
+                date: logDate,
                 distanceKm: fields.has("distanceKm") ? Number(distanceKm.replace(",", ".")) : null,
                 distanceMeters: fields.has("distanceM")
                   ? Number(distanceM.replace(",", "."))

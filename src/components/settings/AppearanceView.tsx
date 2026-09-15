@@ -12,7 +12,7 @@ export function AppearanceView() {
   const { theme, setTheme, colorMode, setColorMode } = useAccentTheme();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <section className={`${CARD_CLS} space-y-3 p-4`}>
         <p className={LABEL_CLS}>Mode</p>
         <div className="grid grid-cols-2 gap-2">

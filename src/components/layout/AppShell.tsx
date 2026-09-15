@@ -32,6 +32,7 @@ export function AppShell({
 }) {
   const [tab, setTab] = useState<AppTab>("home");
   const [state, setState] = useState(initialState);
+  const [selectedDate, setSelectedDate] = useState(initialState.today);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -53,27 +54,32 @@ export function AppShell({
         workouts,
       };
     });
+    setSelectedDate(workout.date);
   }
 
-  function setSportsForDate(date: string, sessions: SportSessionPayload[]) {
-    setState((current) => ({
-      ...current,
-      todaySports: date === current.today ? sessions : current.todaySports,
-      sports: [
-        ...sessions,
-        ...current.sports.filter((item) => item.date !== date),
-      ].sort((a, b) => b.date.localeCompare(a.date)),
-    }));
+  function addSport(session: SportSessionPayload) {
+    setState((current) => {
+      const sports = [session, ...current.sports.filter((item) => item.id !== session.id)].sort(
+        (a, b) => b.date.localeCompare(a.date),
+      );
+      return {
+        ...current,
+        todaySports: sports.filter((item) => item.date === current.today),
+        sports,
+      };
+    });
+    setSelectedDate(session.date);
   }
 
-  function setTodaySupplements(intakes: SupplementPayload[]) {
+  function setSupplementsForDate(date: string, intakes: SupplementPayload[]) {
     setState((current) => ({
       ...current,
-      todaySupplements: intakes,
+      todaySupplements:
+        date === current.today ? intakes : current.todaySupplements,
       supplements: [
         ...intakes,
-        ...current.supplements.filter((item) => item.date !== current.today),
-      ],
+        ...current.supplements.filter((item) => item.date !== date),
+      ].sort((a, b) => b.date.localeCompare(a.date)),
     }));
   }
 
@@ -109,7 +115,17 @@ export function AppShell({
     setState((current) => ({ ...current, customSupplements: rows }));
   }
 
-  const recentWorkouts = state.workouts.filter((workout) => workout.date !== state.today);
+  const dayWorkout =
+    selectedDate === state.today
+      ? state.todayWorkout
+      : (state.workouts.find((workout) => workout.date === selectedDate) ?? null);
+  const daySports = state.sports.filter((session) => session.date === selectedDate);
+  const daySupplements = state.supplements.filter(
+    (intake) => intake.date === selectedDate,
+  );
+  const recentWorkouts = state.workouts.filter(
+    (workout) => workout.date !== selectedDate,
+  );
 
   return (
     <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col bg-cream">
@@ -132,15 +148,20 @@ export function AppShell({
           {tab === "home" && (
             <HomeView
               today={state.today}
-              todayWorkout={state.todayWorkout}
-              todaySports={state.todaySports}
-              todaySupplements={state.todaySupplements}
+              date={selectedDate}
+              onDateChange={setSelectedDate}
+              workout={dayWorkout}
+              sports={daySports}
+              supplements={daySupplements}
               recentWorkouts={recentWorkouts}
               customExercises={state.customExercises}
               customSupplements={state.customSupplements}
               onWorkoutChange={upsertWorkout}
-              onSportsChange={(sessions) => setSportsForDate(state.today, sessions)}
-              onSupplementsChange={setTodaySupplements}
+              onSportLogged={addSport}
+              onSportRemoved={deleteSport}
+              onSupplementsChange={(intakes) =>
+                setSupplementsForDate(selectedDate, intakes)
+              }
             />
           )}
           {tab === "log" && (
@@ -151,7 +172,7 @@ export function AppShell({
               supplements={state.supplements}
               customExercises={state.customExercises}
               onWorkoutChange={(workout) => upsertWorkout(workout)}
-              onSportsChange={setSportsForDate}
+              onSportLogged={addSport}
               onDeleteWorkout={deleteWorkout}
               onDeleteSport={deleteSport}
               onDeleteSupplement={deleteSupplement}

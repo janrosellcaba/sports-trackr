@@ -3,6 +3,7 @@
 import { useMemo, useTransition } from "react";
 import { deleteSupplement, logSupplement } from "@/app/actions/supplements";
 import { mergeSupplementCatalog } from "@/lib/catalog";
+import { formatDisplayDate, getTodayLocalDateISO } from "@/lib/calculations";
 import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 import type {
   CustomSupplementPayload,
@@ -49,6 +50,9 @@ export function SupplementBar({
       <div>
         <p className={LABEL_CLS}>Supplements</p>
         <h2 className="text-base font-bold text-ink">Tap to log</h2>
+        {date !== getTodayLocalDateISO() ? (
+          <p className="mt-0.5 text-xs text-muted">{formatDisplayDate(date)}</p>
+        ) : null}
       </div>
 
       {catalog.length === 0 ? (
