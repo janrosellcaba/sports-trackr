@@ -6,7 +6,7 @@ import { deleteWorkout } from "@/app/actions/gym";
 import { deleteSport } from "@/app/actions/sports";
 import { deleteSupplement, updateSupplement } from "@/app/actions/supplements";
 import { WorkoutEditor } from "@/components/gym/WorkoutEditor";
-import { SportFormSheet, SportsBar } from "@/components/sports/SportsBar";
+import { SportFormSheet } from "@/components/sports/SportsBar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { DateField } from "@/components/ui/DayPicker";
 import { formatDisplayDate } from "@/lib/calculations";
@@ -55,8 +55,6 @@ export function LogView({
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [openDate, setOpenDate] = useState<string | null>(null);
-  const [pastOpen, setPastOpen] = useState(false);
-  const [pastDate, setPastDate] = useState(today);
   const [editingSport, setEditingSport] = useState<SportSessionPayload | null>(null);
   const [editingSupplement, setEditingSupplement] = useState<SupplementPayload | null>(
     null,
@@ -99,38 +97,13 @@ export function LogView({
     return true;
   });
 
-  const pastWorkout =
-    workouts.find((workout) => workout.date === pastDate) ??
-    (pastDate === today
-      ? null
-      : {
-          id: `draft-${pastDate}`,
-          date: pastDate,
-          notes: null,
-          exercises: [],
-          totalVolumeKg: 0,
-          setCount: 0,
-        });
-  const pastSports = sports.filter((session) => session.date === pastDate);
   const editingSportDef = editingSport ? sportDefinition(editingSport.type) : null;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className={LABEL_CLS}>History</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink">Log</h1>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setPastDate(today);
-            setPastOpen(true);
-          }}
-          className="rounded-xl bg-chip px-3 py-2 text-sm font-bold text-ink hover:bg-chip-hover"
-        >
-          Other day
-        </button>
+      <div>
+        <p className={LABEL_CLS}>History</p>
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Log</h1>
       </div>
 
       <p className="text-sm text-muted">
@@ -361,39 +334,6 @@ export function LogView({
           })}
         </section>
       )}
-
-      {pastOpen ? (
-        <BottomSheet title="Log another day" onClose={() => setPastOpen(false)}>
-          <DateField value={pastDate} onChange={setPastDate} />
-          <div className="space-y-4">
-            <SportsBar
-              date={pastDate}
-              sessions={pastSports}
-              onLogged={onSportLogged}
-              onRemoved={onDeleteSport}
-            />
-            <WorkoutEditor
-              date={pastDate}
-              workout={
-                pastWorkout && pastWorkout.id.startsWith("draft-")
-                  ? null
-                  : pastWorkout
-              }
-              customExercises={customExercises}
-              onChange={(workout) => {
-                if (workout) onWorkoutChange(workout);
-              }}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setPastOpen(false)}
-            className={`${PRIMARY_BTN} mt-4 w-full bg-brand hover:bg-brand-dark`}
-          >
-            Done
-          </button>
-        </BottomSheet>
-      ) : null}
 
       {editingSport && editingSportDef ? (
         <SportFormSheet
