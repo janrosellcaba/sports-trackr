@@ -44,13 +44,14 @@ describe("parseSportSessionInput", () => {
         type: "PADEL",
         date: "2026-09-15",
         durationMinutes: 90,
-        effort: "HARD",
+        effort: "EASY",
+        notes: "Good match with Jan",
       }),
     ).toMatchObject({
       type: "PADEL",
       durationMinutes: 90,
-      effort: "HARD",
-      distanceKm: null,
+      effort: "EASY",
+      notes: "Good match with Jan",
     });
   });
 

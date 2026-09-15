@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { deleteSport, logSport } from "@/app/actions/sports";
+import { deleteSport, logSport, updateSport } from "@/app/actions/sports";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { DateField } from "@/components/ui/DayPicker";
+import { formatDisplayDate, getTodayLocalDateISO } from "@/lib/calculations";
 import {
   EFFORT_LEVELS,
   SPORTS,
   effortLabel,
   formatSportSummary,
+  sportDefinition,
   sportLabel,
   type SportDefinition,
   type SportTypeId,
 } from "@/lib/sports";
-import { DateField } from "@/components/ui/DayPicker";
-import { formatDisplayDate, getTodayLocalDateISO } from "@/lib/calculations";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
 import type { SportSessionPayload } from "@/types/trackr";
 
@@ -29,7 +30,9 @@ export function SportsBar({
   onRemoved: (id: string) => void;
 }) {
   const [isPending, startTransition] = useTransition();
-  const [active, setActive] = useState<SportDefinition | null>(null);
+  const [creating, setCreating] = useState<SportDefinition | null>(null);
+  const [editing, setEditing] = useState<SportSessionPayload | null>(null);
+  const editingSport = editing ? sportDefinition(editing.type) : null;
 
   function handleUndo(id: string) {
     startTransition(async () => {
@@ -54,7 +57,7 @@ export function SportsBar({
             key={item.id}
             type="button"
             disabled={isPending}
-            onClick={() => setActive(item)}
+            onClick={() => setCreating(item)}
             className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
           >
             + {item.label}
@@ -67,14 +70,20 @@ export function SportsBar({
           {sessions.map((session) => {
             const summary = formatSportSummary(session);
             return (
-              <li
-                key={session.id}
-                className="flex items-center justify-between gap-3 text-sm"
-              >
-                <span className="min-w-0 font-medium text-ink">
-                  {sportLabel(session.type)}
-                  {summary ? ` · ${summary}` : ""}
-                </span>
+              <li key={session.id} className="flex items-start justify-between gap-3 text-sm">
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 text-left"
+                  onClick={() => setEditing(session)}
+                >
+                  <span className="font-medium text-ink">
+                    {sportLabel(session.type)}
+                    {summary ? ` · ${summary}` : ""}
+                  </span>
+                  {session.notes ? (
+                    <span className="mt-0.5 block text-xs text-muted">{session.notes}</span>
+                  ) : null}
+                </button>
                 <button
                   type="button"
                   disabled={isPending}
@@ -91,14 +100,27 @@ export function SportsBar({
         <p className="text-sm text-muted">Nothing logged yet.</p>
       )}
 
-      {active ? (
-        <SportSheet
+      {creating ? (
+        <SportFormSheet
           date={date}
-          sport={active}
-          onClose={() => setActive(null)}
+          sport={creating}
+          onClose={() => setCreating(null)}
           onSave={(session) => {
             onLogged(session);
-            setActive(null);
+            setCreating(null);
+          }}
+        />
+      ) : null}
+
+      {editing && editingSport ? (
+        <SportFormSheet
+          date={editing.date}
+          sport={editingSport}
+          initial={editing}
+          onClose={() => setEditing(null)}
+          onSave={(session) => {
+            onLogged(session);
+            setEditing(null);
           }}
         />
       ) : null}
@@ -106,29 +128,42 @@ export function SportsBar({
   );
 }
 
-function SportSheet({
+export function SportFormSheet({
   date,
   sport,
+  initial,
   onClose,
   onSave,
 }: {
   date: string;
   sport: SportDefinition;
+  initial?: SportSessionPayload | null;
   onClose: () => void;
   onSave: (session: SportSessionPayload) => void;
 }) {
-  const [logDate, setLogDate] = useState(date);
-  const [distanceKm, setDistanceKm] = useState("");
-  const [distanceM, setDistanceM] = useState("");
-  const [duration, setDuration] = useState("");
-  const [pace, setPace] = useState("");
-  const [effort, setEffort] = useState<(typeof EFFORT_LEVELS)[number] | "">("");
+  const [logDate, setLogDate] = useState(initial?.date ?? date);
+  const [distanceKm, setDistanceKm] = useState(
+    initial?.distanceKm != null ? String(initial.distanceKm) : "",
+  );
+  const [distanceM, setDistanceM] = useState(
+    initial?.distanceMeters != null ? String(initial.distanceMeters) : "",
+  );
+  const [duration, setDuration] = useState(
+    initial?.durationMinutes != null ? String(initial.durationMinutes) : "",
+  );
+  const [pace, setPace] = useState(initial?.pace ?? "");
+  const [effort, setEffort] = useState<(typeof EFFORT_LEVELS)[number] | "">(
+    initial?.effort && EFFORT_LEVELS.includes(initial.effort as (typeof EFFORT_LEVELS)[number])
+      ? (initial.effort as (typeof EFFORT_LEVELS)[number])
+      : "",
+  );
+  const [notes, setNotes] = useState(initial?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const fields = new Set(sport.fields);
 
   return (
-    <BottomSheet title={sport.label} onClose={onClose}>
+    <BottomSheet title={initial ? `Edit ${sport.label}` : sport.label} onClose={onClose}>
       <DateField value={logDate} onChange={setLogDate} />
       {fields.has("distanceKm") ? (
         <label className="mb-3 block">
@@ -190,7 +225,7 @@ function SportSheet({
       ) : null}
 
       {fields.has("effort") ? (
-        <div className="mb-4">
+        <div className="mb-3">
           <p className="mb-2 text-sm font-semibold text-ink">Effort</p>
           <div className="grid grid-cols-3 gap-2">
             {EFFORT_LEVELS.map((level) => (
@@ -207,6 +242,20 @@ function SportSheet({
         </div>
       ) : null}
 
+      <label className="mb-4 block">
+        <span className="mb-1 block text-sm font-semibold text-ink">
+          Comment <span className="font-normal text-muted">(optional)</span>
+        </span>
+        <textarea
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          placeholder="How it felt, who you played…"
+          rows={3}
+          maxLength={280}
+          className={`${INPUT_CLS} resize-none`}
+        />
+      </label>
+
       {error ? <p className="mb-3 text-sm text-danger">{error}</p> : null}
 
       <button
@@ -216,17 +265,23 @@ function SportSheet({
         onClick={() => {
           startTransition(async () => {
             try {
-              const session = await logSport({
+              const payload = {
                 type: sport.id as SportTypeId,
                 date: logDate,
-                distanceKm: fields.has("distanceKm") ? Number(distanceKm.replace(",", ".")) : null,
+                distanceKm: fields.has("distanceKm")
+                  ? Number(distanceKm.replace(",", "."))
+                  : null,
                 distanceMeters: fields.has("distanceM")
                   ? Number(distanceM.replace(",", "."))
                   : null,
                 durationMinutes: fields.has("durationMinutes") ? Number(duration) : null,
                 pace: fields.has("pace") ? pace : null,
                 effort: fields.has("effort") ? effort : null,
-              });
+                notes,
+              };
+              const session = initial
+                ? await updateSport(initial.id, payload)
+                : await logSport(payload);
               onSave(session);
             } catch (err) {
               setError(err instanceof Error ? err.message : "Could not save.");

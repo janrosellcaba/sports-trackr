@@ -66,24 +66,24 @@ export function HomeView({
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl border border-line bg-paper p-6 text-center shadow-sm">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand/10 via-transparent to-transparent" />
-        <p className={`relative ${LABEL_CLS}`}>
-          {isToday ? "Today" : formatDisplayDate(date)}
-        </p>
-        <p className="relative mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {empty ? "Log it" : sets > 0 ? `${sets} sets` : "Logged"}
-        </p>
-        <p className="relative mt-1 text-sm text-muted">
-          {empty
-            ? isToday
-              ? "Gym, supplements, then sports. No timers."
-              : "Logging a past day."
-            : summaryParts.join(" · ")}
-        </p>
-        <div className="relative mt-4">
-          <DayPicker today={today} date={date} onChange={onDateChange} />
+      <div className="space-y-3">
+        <div className="relative overflow-hidden rounded-3xl border border-line bg-paper p-6 text-center shadow-sm">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand/10 via-transparent to-transparent" />
+          <p className={`relative ${LABEL_CLS}`}>
+            {isToday ? "Today" : formatDisplayDate(date)}
+          </p>
+          <p className="relative mt-2 text-3xl font-extrabold tracking-tight text-ink">
+            {empty ? "Log it" : sets > 0 ? `${sets} sets` : "Logged"}
+          </p>
+          <p className="relative mt-1 text-sm text-muted">
+            {empty
+              ? isToday
+                ? "Gym, supplements, then sports. No timers."
+                : "Logging a past day."
+              : summaryParts.join(" · ")}
+          </p>
         </div>
+        <DayPicker today={today} date={date} onChange={onDateChange} />
       </div>
 
       <div>

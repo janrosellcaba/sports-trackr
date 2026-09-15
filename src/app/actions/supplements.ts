@@ -78,6 +78,36 @@ export async function getSupplementsForDate(
   return rows.map(serialize);
 }
 
+export async function updateSupplement(input: {
+  id: string;
+  name: string;
+  dose: string;
+  date?: string;
+}): Promise<SupplementPayload> {
+  const user = await requireUser();
+  const name = input.name.trim();
+  const dose = input.dose.trim();
+  const date = input.date ?? getTodayLocalDateISO();
+
+  if (!name) throw new Error("Supplement name is required.");
+  if (!dose) throw new Error("Dose is required.");
+  if (!isDateKey(date)) throw new Error("Invalid date.");
+
+  const existing = await prisma.supplementIntake.findFirst({
+    where: { id: input.id, userId: user.id },
+    select: { id: true },
+  });
+  if (!existing) throw new Error("Supplement entry not found.");
+
+  const row = await prisma.supplementIntake.update({
+    where: { id: input.id },
+    data: { name, dose, date },
+  });
+
+  revalidateApp();
+  return serialize(row);
+}
+
 export async function deleteSupplement(id: string): Promise<void> {
   const user = await requireUser();
   const result = await prisma.supplementIntake.deleteMany({

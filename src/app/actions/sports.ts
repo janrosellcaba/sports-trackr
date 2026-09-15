@@ -69,6 +69,49 @@ export async function logSport(input: {
   return serialize(row);
 }
 
+export async function updateSport(
+  id: string,
+  input: {
+    type: string;
+    date?: string;
+    durationMinutes?: number | null;
+    distanceKm?: number | null;
+    distanceMeters?: number | null;
+    pace?: string | null;
+    effort?: string | null;
+    notes?: string | null;
+  },
+): Promise<SportSessionPayload> {
+  const user = await requireUser();
+  const parsed = parseSportSessionInput({
+    ...input,
+    date: input.date ?? getTodayLocalDateISO(),
+  });
+
+  const existing = await prisma.sportSession.findFirst({
+    where: { id, userId: user.id },
+    select: { id: true },
+  });
+  if (!existing) throw new Error("Sport session not found.");
+
+  const row = await prisma.sportSession.update({
+    where: { id },
+    data: {
+      date: parsed.date,
+      type: parsed.type,
+      durationMinutes: parsed.durationMinutes,
+      distanceKm: parsed.distanceKm,
+      distanceMeters: parsed.distanceMeters,
+      pace: parsed.pace,
+      effort: parsed.effort,
+      notes: parsed.notes,
+    },
+  });
+
+  revalidateApp();
+  return serialize(row);
+}
+
 export async function listSports(limit = 80): Promise<SportSessionPayload[]> {
   const user = await requireUser();
   const take = Math.max(1, Math.min(limit, 200));

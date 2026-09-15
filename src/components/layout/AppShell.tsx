@@ -39,7 +39,10 @@ export function AppShell({
     mainRef.current?.scrollTo(0, 0);
   }, [tab]);
 
-  function upsertWorkout(workout: WorkoutPayload | null) {
+  function upsertWorkout(
+    workout: WorkoutPayload | null,
+    options?: { keepDate?: boolean },
+  ) {
     if (!workout) return;
     setState((current) => {
       const workouts = [
@@ -54,21 +57,40 @@ export function AppShell({
         workouts,
       };
     });
-    setSelectedDate(workout.date);
+    if (!options?.keepDate) setSelectedDate(workout.date);
   }
 
-  function addSport(session: SportSessionPayload) {
+  function upsertSport(
+    session: SportSessionPayload,
+    options?: { keepDate?: boolean },
+  ) {
     setState((current) => {
-      const sports = [session, ...current.sports.filter((item) => item.id !== session.id)].sort(
-        (a, b) => b.date.localeCompare(a.date),
-      );
+      const sports = [
+        session,
+        ...current.sports.filter((item) => item.id !== session.id),
+      ].sort((a, b) => b.date.localeCompare(a.date));
       return {
         ...current,
         todaySports: sports.filter((item) => item.date === current.today),
         sports,
       };
     });
-    setSelectedDate(session.date);
+    if (!options?.keepDate) setSelectedDate(session.date);
+  }
+
+  function upsertSupplement(intake: SupplementPayload) {
+    setState((current) => {
+      const exists = current.supplements.some((item) => item.id === intake.id);
+      const supplements = exists
+        ? current.supplements.map((item) => (item.id === intake.id ? intake : item))
+        : [intake, ...current.supplements];
+      const sorted = [...supplements].sort((a, b) => b.date.localeCompare(a.date));
+      return {
+        ...current,
+        todaySupplements: sorted.filter((item) => item.date === current.today),
+        supplements: sorted,
+      };
+    });
   }
 
   function setSupplementsForDate(date: string, intakes: SupplementPayload[]) {
@@ -157,7 +179,7 @@ export function AppShell({
               customExercises={state.customExercises}
               customSupplements={state.customSupplements}
               onWorkoutChange={upsertWorkout}
-              onSportLogged={addSport}
+              onSportLogged={upsertSport}
               onSportRemoved={deleteSport}
               onSupplementsChange={(intakes) =>
                 setSupplementsForDate(selectedDate, intakes)
@@ -171,8 +193,9 @@ export function AppShell({
               sports={state.sports}
               supplements={state.supplements}
               customExercises={state.customExercises}
-              onWorkoutChange={(workout) => upsertWorkout(workout)}
-              onSportLogged={addSport}
+              onWorkoutChange={(workout) => upsertWorkout(workout, { keepDate: true })}
+              onSportLogged={(session) => upsertSport(session, { keepDate: true })}
+              onSupplementUpsert={upsertSupplement}
               onDeleteWorkout={deleteWorkout}
               onDeleteSport={deleteSport}
               onDeleteSupplement={deleteSupplement}

@@ -130,8 +130,8 @@ export function parseSportSessionInput(input: {
     notes: input.notes?.trim() || null,
   };
 
-  if (parsed.notes && parsed.notes.length > 200) {
-    throw new Error("Notes must be 200 characters or fewer.");
+  if (parsed.notes && parsed.notes.length > 280) {
+    throw new Error("Comment must be 280 characters or fewer.");
   }
 
   for (const field of definition.fields) {
