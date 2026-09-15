@@ -1,6 +1,6 @@
 "use client";
 
-import { Dumbbell, Flame, Layers, Pill } from "lucide-react";
+import { Activity, Dumbbell, Flame, Pill } from "lucide-react";
 import type { AnalyticsSummary } from "@/types/trackr";
 import { CARD_CLS } from "@/lib/ui";
 
@@ -39,11 +39,11 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
       icon: Flame,
     },
     {
-      label: "Sets",
-      value: String(summary.totalSets),
-      hint: "Logged working sets",
-      trend: summary.trends.sets,
-      icon: Layers,
+      label: "Sports",
+      value: String(summary.totalSports),
+      hint: sportHint(summary.totalSportMinutes, summary.totalSportKm),
+      trend: summary.trends.sports,
+      icon: Activity,
     },
     {
       label: "Supplements",
@@ -76,4 +76,12 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
 function formatVolume(kg: number): string {
   if (kg >= 1000) return `${(kg / 1000).toFixed(1)}t`;
   return `${kg.toLocaleString()}kg`;
+}
+
+function sportHint(minutes: number, km: number): string {
+  const parts: string[] = [];
+  if (minutes > 0) parts.push(`${minutes} min`);
+  if (km > 0) parts.push(`${km} km`);
+  if (parts.length === 0) return "Sessions logged";
+  return parts.join(" · ");
 }

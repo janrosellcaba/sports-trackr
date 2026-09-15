@@ -36,6 +36,7 @@ function buildDailySkeleton(days: number, endISO: string): DailyActivityPoint[] 
       date: addDaysISO(endISO, -i),
       volumeKg: 0,
       workouts: 0,
+      sports: 0,
       supplements: 0,
     });
   }
@@ -53,7 +54,7 @@ export async function getAnalyticsSummary(
   const previousStart = addDaysISO(rangeStart, -rangeDays);
   const chartStart = addDaysISO(today, -(chartDays - 1));
 
-  const [workouts, supplements, previousWorkouts, previousSupplements] =
+  const [workouts, supplements, sports, previousWorkouts, previousSupplements, previousSports] =
     await Promise.all([
       prisma.workout.findMany({
         where: { userId: user.id, date: { gte: rangeStart } },
@@ -63,6 +64,9 @@ export async function getAnalyticsSummary(
         where: { userId: user.id, date: { gte: rangeStart } },
         select: { date: true },
       }),
+      prisma.sportSession.findMany({
+        where: { userId: user.id, date: { gte: rangeStart } },
+      }),
       prisma.workout.findMany({
         where: {
           userId: user.id,
@@ -76,6 +80,13 @@ export async function getAnalyticsSummary(
           date: { gte: previousStart, lt: rangeStart },
         },
         select: { date: true },
+      }),
+      prisma.sportSession.findMany({
+        where: {
+          userId: user.id,
+          date: { gte: previousStart, lt: rangeStart },
+        },
+        select: { id: true },
       }),
     ]);
 
@@ -124,6 +135,24 @@ export async function getAnalyticsSummary(
     }
   }
 
+  let totalSportMinutes = 0;
+  let totalSportKm = 0;
+  for (const session of sports) {
+    const point = dailyMap.get(session.date);
+    if (point && session.date >= chartStart) {
+      point.sports += 1;
+    }
+    if (session.durationMinutes != null) {
+      totalSportMinutes += session.durationMinutes;
+    }
+    if (session.distanceKm != null) {
+      totalSportKm += session.distanceKm;
+    }
+    if (session.distanceMeters != null) {
+      totalSportKm += session.distanceMeters / 1000;
+    }
+  }
+
   let previousVolume = 0;
   let previousSets = 0;
   for (const workout of previousWorkouts) {
@@ -140,7 +169,7 @@ export async function getAnalyticsSummary(
     previousSupplements.map((item) => item.date),
   );
 
-  const [allGymDates, allSupplementDates] = await Promise.all([
+  const [allGymDates, allSupplementDates, allSportDates] = await Promise.all([
     prisma.workout.findMany({
       where: { userId: user.id },
       select: { date: true },
@@ -148,6 +177,12 @@ export async function getAnalyticsSummary(
       take: 400,
     }),
     prisma.supplementIntake.findMany({
+      where: { userId: user.id },
+      select: { date: true },
+      orderBy: { date: "desc" },
+      take: 400,
+    }),
+    prisma.sportSession.findMany({
       where: { userId: user.id },
       select: { date: true },
       orderBy: { date: "desc" },
@@ -166,13 +201,18 @@ export async function getAnalyticsSummary(
     totalWorkouts: workouts.length,
     totalSets,
     totalVolumeKg: Math.round(totalVolumeKg),
+    totalSports: sports.length,
+    totalSportMinutes,
+    totalSportKm: Math.round(totalSportKm * 10) / 10,
     supplementDays: supplementDays.size,
     supplementStreak: computeStreak(allSupplementDates.map((item) => item.date)),
     gymStreak: computeStreak(allGymDates.map((item) => item.date)),
+    sportStreak: computeStreak(allSportDates.map((item) => item.date)),
     trends: {
       workouts: percentChange(workouts.length, previousWorkouts.length),
       sets: percentChange(totalSets, previousSets),
       volumeKg: percentChange(totalVolumeKg, previousVolume),
+      sports: percentChange(sports.length, previousSports.length),
       supplements: percentChange(supplementDays.size, previousSupplementDays.size),
     },
     daily: Array.from(dailyMap.values()).map((point) => ({
@@ -248,7 +288,7 @@ export async function getExerciseProgression(
 export async function exportMyData() {
   const user = await requireUser();
 
-  const [workouts, supplements, customExercises, customSupplements] =
+  const [workouts, supplements, sports, customExercises, customSupplements] =
     await Promise.all([
       prisma.workout.findMany({
         where: { userId: user.id },
@@ -261,6 +301,10 @@ export async function exportMyData() {
         },
       }),
       prisma.supplementIntake.findMany({
+        where: { userId: user.id },
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+      }),
+      prisma.sportSession.findMany({
         where: { userId: user.id },
         orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       }),
@@ -294,6 +338,16 @@ export async function exportMyData() {
       name: item.name,
       dose: item.dose,
       date: item.date,
+    })),
+    sports: sports.map((item) => ({
+      date: item.date,
+      type: item.type,
+      durationMinutes: item.durationMinutes,
+      distanceKm: item.distanceKm,
+      distanceMeters: item.distanceMeters,
+      pace: item.pace,
+      effort: item.effort,
+      notes: item.notes,
     })),
     customExercises: customExercises.map((item) => ({
       name: item.name,

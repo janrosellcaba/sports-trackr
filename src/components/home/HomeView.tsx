@@ -3,10 +3,12 @@
 import { formatDisplayDate } from "@/lib/calculations";
 import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 import { WorkoutEditor } from "@/components/gym/WorkoutEditor";
+import { SportsBar } from "@/components/sports/SportsBar";
 import { SupplementBar } from "@/components/supplements/SupplementBar";
 import type {
   CustomExercisePayload,
   CustomSupplementPayload,
+  SportSessionPayload,
   SupplementPayload,
   WorkoutPayload,
 } from "@/types/trackr";
@@ -14,25 +16,48 @@ import type {
 export function HomeView({
   today,
   todayWorkout,
+  todaySports,
   todaySupplements,
   recentWorkouts,
   customExercises,
   customSupplements,
   onWorkoutChange,
+  onSportsChange,
   onSupplementsChange,
 }: {
   today: string;
   todayWorkout: WorkoutPayload | null;
+  todaySports: SportSessionPayload[];
   todaySupplements: SupplementPayload[];
   recentWorkouts: WorkoutPayload[];
   customExercises: CustomExercisePayload[];
   customSupplements: CustomSupplementPayload[];
   onWorkoutChange: (workout: WorkoutPayload | null) => void;
+  onSportsChange: (sessions: SportSessionPayload[]) => void;
   onSupplementsChange: (intakes: SupplementPayload[]) => void;
 }) {
   const volume = todayWorkout?.totalVolumeKg ?? 0;
   const sets = todayWorkout?.setCount ?? 0;
   const exercises = todayWorkout?.exercises.length ?? 0;
+  const empty =
+    exercises === 0 && todaySupplements.length === 0 && todaySports.length === 0;
+
+  const summaryParts: string[] = [];
+  if (exercises > 0) {
+    summaryParts.push(
+      `${exercises} exercise${exercises === 1 ? "" : "s"} · ${volume.toLocaleString()}kg`,
+    );
+  }
+  if (todaySports.length > 0) {
+    summaryParts.push(
+      `${todaySports.length} sport${todaySports.length === 1 ? "" : "s"}`,
+    );
+  }
+  if (todaySupplements.length > 0) {
+    summaryParts.push(
+      `${todaySupplements.length} supplement${todaySupplements.length === 1 ? "" : "s"}`,
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -40,14 +65,12 @@ export function HomeView({
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand/10 via-transparent to-transparent" />
         <p className={`relative ${LABEL_CLS}`}>Today</p>
         <p className="relative mt-2 text-3xl font-extrabold tracking-tight text-ink">
-          {exercises === 0 && todaySupplements.length === 0
-            ? "Log it"
-            : `${sets} sets`}
+          {empty ? "Log it" : sets > 0 ? `${sets} sets` : "Logged"}
         </p>
         <p className="relative mt-1 text-sm text-muted">
-          {exercises === 0 && todaySupplements.length === 0
-            ? "Gym and supplements. No timers."
-            : `${exercises} exercise${exercises === 1 ? "" : "s"} · ${volume.toLocaleString()}kg · ${todaySupplements.length} supplement${todaySupplements.length === 1 ? "" : "s"}`}
+          {empty
+            ? "Gym, sports, and supplements. No timers."
+            : summaryParts.join(" · ")}
         </p>
       </div>
 
@@ -57,6 +80,8 @@ export function HomeView({
         customSupplements={customSupplements}
         onChange={onSupplementsChange}
       />
+
+      <SportsBar date={today} sessions={todaySports} onChange={onSportsChange} />
 
       <div>
         <h2 className={`mb-3 ${LABEL_CLS}`}>Gym</h2>

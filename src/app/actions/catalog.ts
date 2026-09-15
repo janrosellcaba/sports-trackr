@@ -54,7 +54,7 @@ export async function listCustomExercises(): Promise<CustomExercisePayload[]> {
   const user = await requireUser();
   const rows = await prisma.customExercise.findMany({
     where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
+    orderBy: { name: "asc" },
   });
   return rows.map(serializeExercise);
 }
@@ -63,7 +63,7 @@ export async function listCustomSupplements(): Promise<CustomSupplementPayload[]
   const user = await requireUser();
   const rows = await prisma.customSupplement.findMany({
     where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
+    orderBy: { name: "asc" },
   });
   return rows.map(serializeSupplement);
 }

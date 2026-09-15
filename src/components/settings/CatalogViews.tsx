@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import {
   createCustomExercise,
@@ -33,6 +33,10 @@ export function ExerciseCatalogView({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CustomExercisePayload | null>(null);
 
+  useEffect(() => {
+    setExercises(initial);
+  }, [initial]);
+
   function commit(rows: CustomExercisePayload[]) {
     setExercises(rows);
     onChange?.(rows);
@@ -41,7 +45,7 @@ export function ExerciseCatalogView({
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Your exercises</h2>
+        <h2 className="text-sm font-bold text-ink">Exercises</h2>
         <button
           type="button"
           onClick={() => {
@@ -54,12 +58,12 @@ export function ExerciseCatalogView({
         </button>
       </div>
       <p className="text-sm text-muted">
-        Extra movements on top of the built-in list.
+        Every exercise you can log. Edit or delete the defaults, or add your own.
       </p>
       {exercises.length === 0 ? (
-        <p className="text-sm text-muted">None yet.</p>
+        <p className="text-sm text-muted">None yet. Add one to log gym.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="max-h-80 space-y-2 overflow-y-auto">
           {exercises.map((item) => (
             <li
               key={item.id}
@@ -104,9 +108,11 @@ export function ExerciseCatalogView({
           onClose={() => setSheetOpen(false)}
           onSave={(row) => {
             commit(
-              exercises.some((item) => item.id === row.id)
-                ? exercises.map((item) => (item.id === row.id ? row : item))
-                : [row, ...exercises],
+              sortByName(
+                exercises.some((item) => item.id === row.id)
+                  ? exercises.map((item) => (item.id === row.id ? row : item))
+                  : [row, ...exercises],
+              ),
             );
             setSheetOpen(false);
           }}
@@ -127,6 +133,10 @@ export function SupplementCatalogView({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CustomSupplementPayload | null>(null);
 
+  useEffect(() => {
+    setSupplements(initial);
+  }, [initial]);
+
   function commit(rows: CustomSupplementPayload[]) {
     setSupplements(rows);
     onChange?.(rows);
@@ -135,7 +145,7 @@ export function SupplementCatalogView({
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Your supplements</h2>
+        <h2 className="text-sm font-bold text-ink">Supplements</h2>
         <button
           type="button"
           onClick={() => {
@@ -148,12 +158,12 @@ export function SupplementCatalogView({
         </button>
       </div>
       <p className="text-sm text-muted">
-        Whey, creatine, and pre-workout are already there. Add anything else.
+        Every supplement on Home. Edit or delete the defaults, or add your own.
       </p>
       {supplements.length === 0 ? (
-        <p className="text-sm text-muted">None yet.</p>
+        <p className="text-sm text-muted">None yet. Add one to log from Home.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="max-h-80 space-y-2 overflow-y-auto">
           {supplements.map((item) => (
             <li
               key={item.id}
@@ -196,9 +206,11 @@ export function SupplementCatalogView({
           onClose={() => setSheetOpen(false)}
           onSave={(row) => {
             commit(
-              supplements.some((item) => item.id === row.id)
-                ? supplements.map((item) => (item.id === row.id ? row : item))
-                : [row, ...supplements],
+              sortByName(
+                supplements.some((item) => item.id === row.id)
+                  ? supplements.map((item) => (item.id === row.id ? row : item))
+                  : [row, ...supplements],
+              ),
             );
             setSheetOpen(false);
           }}
@@ -339,4 +351,8 @@ function SupplementSheet({
       </button>
     </BottomSheet>
   );
+}
+
+function sortByName<T extends { name: string }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => a.name.localeCompare(b.name));
 }

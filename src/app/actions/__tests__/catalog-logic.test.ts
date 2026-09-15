@@ -62,7 +62,7 @@ describe("custom supplement CRUD validation", () => {
 });
 
 describe("catalog merge", () => {
-  it("lists custom exercises ahead of builtins", () => {
+  it("lists only saved catalog rows, sorted by name", () => {
     const merged = mergeExerciseCatalog([
       {
         id: "c1",
@@ -73,21 +73,17 @@ describe("catalog merge", () => {
         createdAt: "2026-09-11T00:00:00.000Z",
       },
     ]);
+    expect(merged).toHaveLength(1);
     expect(merged[0]).toMatchObject({
       id: "c1",
       name: "Pendlay Row",
       source: "custom",
     });
-    expect(merged.some((item) => item.name === "Bench Press")).toBe(true);
+    expect(merged.some((item) => item.name === "Bench Press")).toBe(false);
   });
 
-  it("lists custom supplements ahead of builtins", () => {
-    const empty = mergeSupplementCatalog([]);
-    expect(empty.map((item) => item.name)).toEqual([
-      "Whey protein",
-      "Creatine",
-      "Pre-workout",
-    ]);
+  it("lists only saved supplements", () => {
+    expect(mergeSupplementCatalog([])).toEqual([]);
     const merged = mergeSupplementCatalog([
       {
         id: "s1",
@@ -96,12 +92,14 @@ describe("catalog merge", () => {
         iconOrType: "pill",
         createdAt: "2026-09-11T00:00:00.000Z",
       },
+      {
+        id: "s2",
+        name: "Creatine",
+        defaultDose: "5g",
+        iconOrType: "pill",
+        createdAt: "2026-09-11T00:00:00.000Z",
+      },
     ]);
-    expect(merged.map((item) => item.name)).toEqual([
-      "Beta Alanine",
-      "Whey protein",
-      "Creatine",
-      "Pre-workout",
-    ]);
+    expect(merged.map((item) => item.name)).toEqual(["Beta Alanine", "Creatine"]);
   });
 });

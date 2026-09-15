@@ -28,6 +28,18 @@ export type SupplementPayload = {
   date: string;
 };
 
+export type SportSessionPayload = {
+  id: string;
+  date: string;
+  type: string;
+  durationMinutes: number | null;
+  distanceKm: number | null;
+  distanceMeters: number | null;
+  pace: string | null;
+  effort: string | null;
+  notes: string | null;
+};
+
 export type CustomExercisePayload = {
   id: string;
   name: string;
@@ -51,6 +63,7 @@ export type DailyActivityPoint = {
   date: string;
   volumeKg: number;
   workouts: number;
+  sports: number;
   supplements: number;
 };
 
@@ -67,13 +80,18 @@ export type AnalyticsSummary = {
   totalWorkouts: number;
   totalSets: number;
   totalVolumeKg: number;
+  totalSports: number;
+  totalSportMinutes: number;
+  totalSportKm: number;
   supplementDays: number;
   supplementStreak: number;
   gymStreak: number;
+  sportStreak: number;
   trends: {
     workouts: number;
     sets: number;
     volumeKg: number;
+    sports: number;
     supplements: number;
   };
   daily: DailyActivityPoint[];
@@ -92,8 +110,10 @@ export type AppTab = "home" | "log" | "analytics" | "settings";
 export type AppState = {
   today: string;
   todayWorkout: WorkoutPayload | null;
+  todaySports: SportSessionPayload[];
   todaySupplements: SupplementPayload[];
   workouts: WorkoutPayload[];
+  sports: SportSessionPayload[];
   supplements: SupplementPayload[];
   customExercises: CustomExercisePayload[];
   customSupplements: CustomSupplementPayload[];

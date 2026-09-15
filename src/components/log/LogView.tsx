@@ -3,38 +3,51 @@
 import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { deleteWorkout } from "@/app/actions/gym";
+import { deleteSport } from "@/app/actions/sports";
 import { deleteSupplement } from "@/app/actions/supplements";
 import { WorkoutEditor } from "@/components/gym/WorkoutEditor";
+import { SportsBar } from "@/components/sports/SportsBar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { formatDisplayDate, getTodayLocalDateISO } from "@/lib/calculations";
+import { formatSportSummary, sportLabel } from "@/lib/sports";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS, PRIMARY_BTN } from "@/lib/ui";
 import type {
   CustomExercisePayload,
+  SportSessionPayload,
   SupplementPayload,
   WorkoutPayload,
 } from "@/types/trackr";
 
-type Filter = "all" | "gym" | "supplements";
+type Filter = "all" | "gym" | "sports" | "supplements";
 
 type FeedItem =
   | { kind: "workout"; at: string; data: WorkoutPayload }
+  | { kind: "sport"; at: string; data: SportSessionPayload }
   | { kind: "supplement"; at: string; data: SupplementPayload };
+
+const KIND_ORDER = { workout: 0, sport: 1, supplement: 2 } as const;
 
 export function LogView({
   today,
   workouts,
+  sports,
   supplements,
   customExercises,
   onWorkoutChange,
+  onSportsChange,
   onDeleteWorkout,
+  onDeleteSport,
   onDeleteSupplement,
 }: {
   today: string;
   workouts: WorkoutPayload[];
+  sports: SportSessionPayload[];
   supplements: SupplementPayload[];
   customExercises: CustomExercisePayload[];
   onWorkoutChange: (workout: WorkoutPayload) => void;
+  onSportsChange: (date: string, sessions: SportSessionPayload[]) => void;
   onDeleteWorkout: (id: string) => void;
+  onDeleteSport: (id: string) => void;
   onDeleteSupplement: (id: string) => void;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
@@ -50,6 +63,11 @@ export function LogView({
         at: data.date,
         data,
       })),
+      ...sports.map((data) => ({
+        kind: "sport" as const,
+        at: data.date,
+        data,
+      })),
       ...supplements.map((data) => ({
         kind: "supplement" as const,
         at: data.date,
@@ -58,13 +76,13 @@ export function LogView({
     ];
     return merged.sort((a, b) => {
       if (a.at !== b.at) return b.at.localeCompare(a.at);
-      if (a.kind === b.kind) return 0;
-      return a.kind === "workout" ? -1 : 1;
+      return KIND_ORDER[a.kind] - KIND_ORDER[b.kind];
     });
-  }, [workouts, supplements]);
+  }, [workouts, sports, supplements]);
 
   const visible = items.filter((item) => {
     if (filter === "gym") return item.kind === "workout";
+    if (filter === "sports") return item.kind === "sport";
     if (filter === "supplements") return item.kind === "supplement";
     return true;
   });
@@ -81,6 +99,8 @@ export function LogView({
           totalVolumeKg: 0,
           setCount: 0,
         });
+
+  const pastSports = sports.filter((session) => session.date === pastDate);
 
   return (
     <div className="space-y-4">
@@ -101,11 +121,12 @@ export function LogView({
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-chip/80 p-1">
+      <div className="grid grid-cols-4 gap-1 rounded-xl bg-chip/80 p-1">
         {(
           [
             ["all", "All"],
             ["gym", "Gym"],
+            ["sports", "Sport"],
             ["supplements", "Supps"],
           ] as const
         ).map(([key, label]) => (
@@ -125,7 +146,7 @@ export function LogView({
       {visible.length === 0 ? (
         <section className={`${CARD_CLS} border-dashed px-4 py-10 text-center`}>
           <p className="text-sm text-muted">
-            Nothing here yet. Log gym sets or tap a supplement on Home.
+            Nothing here yet. Log gym, a sport, or a supplement on Home.
           </p>
         </section>
       ) : (
@@ -193,6 +214,45 @@ export function LogView({
               );
             }
 
+            if (item.kind === "sport") {
+              const session = item.data;
+              const summary = formatSportSummary(session);
+              return (
+                <article
+                  key={`sp-${session.id}`}
+                  className={`${CARD_CLS} flex items-start justify-between gap-3 px-4 py-3.5`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-chip px-2 py-0.5 text-[11px] font-bold text-ink">
+                        Sport
+                      </span>
+                      <span className="text-xs text-muted">
+                        {formatDisplayDate(session.date)}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-bold text-ink">
+                      {sportLabel(session.type)}
+                      {summary ? ` · ${summary}` : ""}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        await deleteSport(session.id);
+                        onDeleteSport(session.id);
+                      });
+                    }}
+                    className="rounded-md px-2 py-1 text-xs font-semibold text-muted hover:text-danger disabled:opacity-50"
+                  >
+                    Del
+                  </button>
+                </article>
+              );
+            }
+
             const intake = item.data;
             return (
               <article
@@ -243,18 +303,25 @@ export function LogView({
               className={INPUT_CLS}
             />
           </label>
-          <WorkoutEditor
-            date={pastDate}
-            workout={
-              pastWorkout && pastWorkout.id.startsWith("draft-")
-                ? null
-                : pastWorkout
-            }
-            customExercises={customExercises}
-            onChange={(workout) => {
-              if (workout) onWorkoutChange(workout);
-            }}
-          />
+          <div className="space-y-4">
+            <SportsBar
+              date={pastDate}
+              sessions={pastSports}
+              onChange={(sessions) => onSportsChange(pastDate, sessions)}
+            />
+            <WorkoutEditor
+              date={pastDate}
+              workout={
+                pastWorkout && pastWorkout.id.startsWith("draft-")
+                  ? null
+                  : pastWorkout
+              }
+              customExercises={customExercises}
+              onChange={(workout) => {
+                if (workout) onWorkoutChange(workout);
+              }}
+            />
+          </div>
           <button
             type="button"
             onClick={() => setPastOpen(false)}

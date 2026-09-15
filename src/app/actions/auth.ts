@@ -13,6 +13,7 @@ import {
   type AuthActionResult,
   type AuthUser,
 } from "@/lib/auth";
+import { seedUserCatalog } from "@/lib/seed-catalog";
 import {
   assignRole,
   isValidInviteCode,
@@ -91,6 +92,7 @@ export async function register(
     },
   });
 
+  await seedUserCatalog(user.id);
   await createSession(user.id);
   redirect("/");
 }

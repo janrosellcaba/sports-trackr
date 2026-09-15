@@ -72,26 +72,39 @@ export type CatalogExercise = {
   defaultReps?: number | null;
 };
 
+export function defaultExerciseSeeds(): Array<{
+  name: string;
+  muscleGroup: MuscleGroupKey;
+}> {
+  return EXERCISE_CATALOG.map((item) => ({
+    name: item.name,
+    muscleGroup: BUILTIN_TO_KEY[item.category],
+  }));
+}
+
+export function defaultSupplementSeeds(): Array<{
+  name: string;
+  defaultDose: string;
+}> {
+  return SUPPLEMENT_CATALOG.map((item) => ({
+    name: item.name,
+    defaultDose: item.defaultDose,
+  }));
+}
+
 export function mergeExerciseCatalog(
   custom: CustomExercisePayload[],
 ): CatalogExercise[] {
-  const builtins: CatalogExercise[] = EXERCISE_CATALOG.map((item) => ({
-    id: `builtin:${item.name}`,
-    name: item.name,
-    muscleGroup: BUILTIN_TO_KEY[item.category],
-    source: "builtin",
-  }));
-
-  const customs: CatalogExercise[] = custom.map((item) => ({
-    id: item.id,
-    name: item.name,
-    muscleGroup: normalizeMuscleGroup(item.muscleGroup),
-    source: "custom",
-    defaultWeight: item.defaultWeight,
-    defaultReps: item.defaultReps,
-  }));
-
-  return [...customs, ...builtins];
+  return [...custom]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      muscleGroup: normalizeMuscleGroup(item.muscleGroup),
+      source: "custom" as const,
+      defaultWeight: item.defaultWeight,
+      defaultReps: item.defaultReps,
+    }));
 }
 
 export type CatalogSupplement = {
@@ -104,21 +117,14 @@ export type CatalogSupplement = {
 export function mergeSupplementCatalog(
   custom: CustomSupplementPayload[],
 ): CatalogSupplement[] {
-  const builtins: CatalogSupplement[] = SUPPLEMENT_CATALOG.map((item) => ({
-    id: `builtin:${item.name}`,
-    name: item.name,
-    source: "builtin",
-    defaultDose: item.defaultDose,
-  }));
-
-  const customs: CatalogSupplement[] = custom.map((item) => ({
-    id: item.id,
-    name: item.name,
-    source: "custom",
-    defaultDose: item.defaultDose,
-  }));
-
-  return [...customs, ...builtins];
+  return [...custom]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      source: "custom" as const,
+      defaultDose: item.defaultDose,
+    }));
 }
 
 export function validateExerciseName(name: string): string | null {

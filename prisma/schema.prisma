@@ -14,7 +14,9 @@ model User {
   accentTheme       String              @default("volt")
   colorMode         String              @default("dark")
   createdAt         DateTime            @default(now())
+  catalogSeeded     Boolean             @default(false)
   workouts          Workout[]
+  sports            SportSession[]
   supplements       SupplementIntake[]
   customExercises   CustomExercise[]
   customSupplements CustomSupplement[]
@@ -59,6 +61,23 @@ model SupplementIntake {
   dose      String
   date      String
   createdAt DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+model SportSession {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             String
+  type             String
+  durationMinutes  Int?
+  distanceKm       Float?
+  distanceMeters   Float?
+  pace             String?
+  effort           String?
+  notes            String?
+  createdAt        DateTime @default(now())
 
   @@index([userId, date])
 }

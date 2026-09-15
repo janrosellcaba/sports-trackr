@@ -17,6 +17,16 @@ type ExportPayload = {
     dose: string;
     date: string;
   }>;
+  sports?: Array<{
+    date: string;
+    type: string;
+    durationMinutes: number | null;
+    distanceKm: number | null;
+    distanceMeters: number | null;
+    pace: string | null;
+    effort: string | null;
+    notes: string | null;
+  }>;
   customExercises?: Array<{
     name: string;
     muscleGroup: string;
@@ -77,6 +87,30 @@ export function buildExportCsv(data: ExportPayload): string {
     rowsToCsv(
       ["name", "dose", "date"],
       (data.supplements ?? []).map((item) => [item.name, item.dose, item.date]),
+    ),
+    "",
+    "# sports",
+    rowsToCsv(
+      [
+        "date",
+        "type",
+        "durationMinutes",
+        "distanceKm",
+        "distanceMeters",
+        "pace",
+        "effort",
+        "notes",
+      ],
+      (data.sports ?? []).map((item) => [
+        item.date,
+        item.type,
+        item.durationMinutes ?? "",
+        item.distanceKm ?? "",
+        item.distanceMeters ?? "",
+        item.pace ?? "",
+        item.effort ?? "",
+        item.notes ?? "",
+      ]),
     ),
     "",
     "# customExercises",

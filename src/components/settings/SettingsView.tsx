@@ -132,7 +132,7 @@ function DangerZone({ user }: { user: AuthUser }) {
     <section className={`${CARD_CLS} space-y-3 border-danger/30 p-4`}>
       <p className={LABEL_CLS}>Delete account</p>
       <p className="text-sm text-muted">
-        Permanently delete your account and every gym and supplement log. Type{" "}
+        Permanently delete your account and every gym, sport, and supplement log. Type{" "}
         <span className="font-mono text-ink">{user.username}</span> to confirm.
       </p>
       <input

@@ -151,7 +151,7 @@ export function AddExerciseModal({
             }
             className="rounded-full bg-chip px-4 py-2.5 text-sm font-medium text-ink transition-colors duration-150 hover:bg-chip-hover disabled:opacity-50"
           >
-            {exercise.source === "custom" ? `★ ${exercise.name}` : exercise.name}
+            {exercise.name}
           </button>
         ))}
         {suggestions.length === 0 && (

@@ -14,6 +14,7 @@ import type {
   AppTab,
   CustomExercisePayload,
   CustomSupplementPayload,
+  SportSessionPayload,
   SupplementPayload,
   WorkoutPayload,
 } from "@/types/trackr";
@@ -54,6 +55,17 @@ export function AppShell({
     });
   }
 
+  function setSportsForDate(date: string, sessions: SportSessionPayload[]) {
+    setState((current) => ({
+      ...current,
+      todaySports: date === current.today ? sessions : current.todaySports,
+      sports: [
+        ...sessions,
+        ...current.sports.filter((item) => item.date !== date),
+      ].sort((a, b) => b.date.localeCompare(a.date)),
+    }));
+  }
+
   function setTodaySupplements(intakes: SupplementPayload[]) {
     setState((current) => ({
       ...current,
@@ -70,6 +82,14 @@ export function AppShell({
       ...current,
       todayWorkout: current.todayWorkout?.id === id ? null : current.todayWorkout,
       workouts: current.workouts.filter((item) => item.id !== id),
+    }));
+  }
+
+  function deleteSport(id: string) {
+    setState((current) => ({
+      ...current,
+      todaySports: current.todaySports.filter((item) => item.id !== id),
+      sports: current.sports.filter((item) => item.id !== id),
     }));
   }
 
@@ -113,11 +133,13 @@ export function AppShell({
             <HomeView
               today={state.today}
               todayWorkout={state.todayWorkout}
+              todaySports={state.todaySports}
               todaySupplements={state.todaySupplements}
               recentWorkouts={recentWorkouts}
               customExercises={state.customExercises}
               customSupplements={state.customSupplements}
               onWorkoutChange={upsertWorkout}
+              onSportsChange={(sessions) => setSportsForDate(state.today, sessions)}
               onSupplementsChange={setTodaySupplements}
             />
           )}
@@ -125,10 +147,13 @@ export function AppShell({
             <LogView
               today={state.today}
               workouts={state.workouts}
+              sports={state.sports}
               supplements={state.supplements}
               customExercises={state.customExercises}
               onWorkoutChange={(workout) => upsertWorkout(workout)}
+              onSportsChange={setSportsForDate}
               onDeleteWorkout={deleteWorkout}
+              onDeleteSport={deleteSport}
               onDeleteSupplement={deleteSupplement}
             />
           )}

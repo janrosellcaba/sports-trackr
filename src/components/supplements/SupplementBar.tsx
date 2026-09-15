@@ -51,23 +51,29 @@ export function SupplementBar({
         <h2 className="text-base font-bold text-ink">Tap to log</h2>
       </div>
 
-      <div
-        className={`grid grid-cols-1 gap-2 ${
-          catalog.length > 3 ? "sm:grid-cols-2" : "sm:grid-cols-3"
-        }`}
-      >
-        {catalog.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            disabled={isPending}
-            onClick={() => handleQuickLog(item)}
-            className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
-          >
-            + {item.name}
-          </button>
-        ))}
-      </div>
+      {catalog.length === 0 ? (
+        <p className="text-sm text-muted">
+          Add supplements in Settings, then tap to log them here.
+        </p>
+      ) : (
+        <div
+          className={`grid grid-cols-1 gap-2 ${
+            catalog.length > 3 ? "sm:grid-cols-2" : "sm:grid-cols-3"
+          }`}
+        >
+          {catalog.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              disabled={isPending}
+              onClick={() => handleQuickLog(item)}
+              className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
+            >
+              + {item.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {intakes.length > 0 ? (
         <ul className="space-y-1.5 border-t border-line pt-3">
