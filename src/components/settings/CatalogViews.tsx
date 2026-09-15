@@ -57,9 +57,6 @@ export function ExerciseCatalogView({
           + Add
         </button>
       </div>
-      <p className="text-sm text-muted">
-        Shown when you add an exercise on Home.
-      </p>
       {exercises.length === 0 ? (
         <p className="text-sm text-muted">None yet. Add one to log gym.</p>
       ) : (
@@ -157,9 +154,6 @@ export function SupplementCatalogView({
           + Add
         </button>
       </div>
-      <p className="text-sm text-muted">
-        Shown as tap targets on Home.
-      </p>
       {supplements.length === 0 ? (
         <p className="text-sm text-muted">None yet. Add one to log from Home.</p>
       ) : (

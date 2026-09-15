@@ -9,8 +9,9 @@ export const INK_BTN =
 
 export const CARD_CLS = "rounded-2xl border border-line bg-paper shadow-sm";
 
-export const LABEL_CLS =
-  "text-xs font-bold uppercase tracking-wider text-muted";
+export const PAGE_TITLE = "text-xl font-semibold tracking-tight text-ink";
+
+export const LABEL_CLS = "text-xs font-medium text-muted";
 
 export const CHIP_INACTIVE =
   "rounded-xl bg-chip px-4 py-2.5 text-sm font-bold text-muted transition-colors duration-150 select-none hover:bg-chip-hover";

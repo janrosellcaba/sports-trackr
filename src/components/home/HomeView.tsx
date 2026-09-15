@@ -45,45 +45,21 @@ export function HomeView({
 }) {
   const volume = workout?.totalVolumeKg ?? 0;
   const sets = workout?.setCount ?? 0;
-  const exercises = workout?.exercises.length ?? 0;
-  const empty = exercises === 0 && supplements.length === 0 && sports.length === 0;
-  const isToday = date === today;
-
-  const summaryParts: string[] = [];
-  if (exercises > 0) {
-    summaryParts.push(
-      `${exercises} exercise${exercises === 1 ? "" : "s"} · ${volume.toLocaleString()}kg`,
-    );
-  }
-  if (supplements.length > 0) {
-    summaryParts.push(
-      `${supplements.length} supplement${supplements.length === 1 ? "" : "s"}`,
-    );
-  }
-  if (sports.length > 0) {
-    summaryParts.push(`${sports.length} sport${sports.length === 1 ? "" : "s"}`);
-  }
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <div className="relative overflow-hidden rounded-3xl border border-line bg-paper p-6 text-center shadow-sm">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand/10 via-transparent to-transparent" />
-          <p className={`relative ${LABEL_CLS}`}>
-            {isToday ? "Today" : formatDisplayDate(date)}
-          </p>
-          <p className="relative mt-2 text-3xl font-extrabold tracking-tight text-ink">
-            {empty ? "Log it" : sets > 0 ? `${sets} sets` : "Logged"}
-          </p>
-          <p className="relative mt-1 text-sm text-muted">
-            {empty
-              ? isToday
-                ? "Gym, supplements, then sports. No timers."
-                : "Logging a past day."
-              : summaryParts.join(" · ")}
-          </p>
-        </div>
         <DayPicker today={today} date={date} onChange={onDateChange} />
+        <div className={`${CARD_CLS} grid grid-cols-4 divide-x divide-line py-3`}>
+          <DayStat label="Sets" value={String(sets)} />
+          <DayStat
+            label="kg"
+            value={volume === 0 ? "0" : volume.toLocaleString()}
+            accent={volume > 0}
+          />
+          <DayStat label="Sports" value={String(sports.length)} />
+          <DayStat label="Supps" value={String(supplements.length)} />
+        </div>
       </div>
 
       <div>
@@ -121,7 +97,7 @@ export function HomeView({
                 onClick={() => onDateChange(item.date)}
                 className={`${CARD_CLS} w-full px-4 py-3 text-left hover:bg-chip/40`}
               >
-                <p className="text-sm font-bold text-ink">
+                <p className="text-sm font-semibold text-ink">
                   {formatDisplayDate(item.date)}
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
@@ -133,6 +109,29 @@ export function HomeView({
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function DayStat({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="min-w-0 px-2 text-center">
+      <p
+        className={`truncate text-lg font-semibold tabular-nums ${
+          accent ? "text-brand" : "text-ink"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-[11px] text-muted">{label}</p>
     </div>
   );
 }

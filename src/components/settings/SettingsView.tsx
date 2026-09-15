@@ -1,6 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Dumbbell,
+  LogOut,
+  Palette,
+  Pill,
+  User,
+} from "lucide-react";
 import { logout } from "@/app/actions/auth";
 import { deleteAccount } from "@/app/actions/account";
 import { exportMyData } from "@/app/actions/analytics";
@@ -11,20 +21,58 @@ import {
 } from "@/components/settings/CatalogViews";
 import { confirmsUsername } from "@/lib/auth-logic";
 import { buildExportCsv } from "@/lib/export-data";
-import { CARD_CLS, INPUT_CLS, LABEL_CLS, PRIMARY_BTN } from "@/lib/ui";
+import { CARD_CLS, INPUT_CLS, LABEL_CLS, PAGE_TITLE, PRIMARY_BTN } from "@/lib/ui";
 import type { AuthUser } from "@/lib/auth";
 import type {
   CustomExercisePayload,
   CustomSupplementPayload,
 } from "@/types/trackr";
 
-const SECTIONS = [
-  { id: "settings-exercises", label: "Exercises" },
-  { id: "settings-supplements", label: "Supplements" },
-  { id: "settings-appearance", label: "Appearance" },
-  { id: "settings-data", label: "Data" },
-  { id: "settings-account", label: "Account" },
-] as const;
+type SettingsPage =
+  | "menu"
+  | "supplements"
+  | "exercises"
+  | "appearance"
+  | "data"
+  | "account";
+
+const PAGES: {
+  id: Exclude<SettingsPage, "menu">;
+  label: string;
+  hint: string;
+  icon: typeof Pill;
+}[] = [
+  {
+    id: "supplements",
+    label: "Supplements",
+    hint: "Tap buttons on Home",
+    icon: Pill,
+  },
+  {
+    id: "exercises",
+    label: "Exercises",
+    hint: "Gym picker list",
+    icon: Dumbbell,
+  },
+  {
+    id: "appearance",
+    label: "Appearance",
+    hint: "Dark, light, accent",
+    icon: Palette,
+  },
+  {
+    id: "data",
+    label: "Data",
+    hint: "Export JSON or CSV",
+    icon: Download,
+  },
+  {
+    id: "account",
+    label: "Account",
+    hint: "Username and delete",
+    icon: User,
+  },
+];
 
 export function SettingsView({
   user,
@@ -39,111 +87,140 @@ export function SettingsView({
   onExercisesChange: (rows: CustomExercisePayload[]) => void;
   onSupplementsChange: (rows: CustomSupplementPayload[]) => void;
 }) {
-  return (
-    <div className="space-y-8">
-      <div>
-        <p className={LABEL_CLS}>Settings</p>
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Make it yours</h1>
-        <nav className="mt-4 flex gap-1.5 overflow-x-auto pb-1">
-          {SECTIONS.map((section) => (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              onClick={(event) => {
-                event.preventDefault();
-                document
-                  .getElementById(section.id)
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              }}
-              className="shrink-0 rounded-full bg-chip px-3 py-1.5 text-xs font-bold text-ink hover:bg-chip-hover"
-            >
-              {section.label}
-            </a>
-          ))}
-        </nav>
-      </div>
+  const [page, setPage] = useState<SettingsPage>("menu");
 
-      <SettingsSection
-        id="settings-exercises"
-        title="Exercises"
-        description="Add, rename, or delete anything in the gym picker — including the defaults."
-      >
-        <ExerciseCatalogView initial={customExercises} onChange={onExercisesChange} />
-      </SettingsSection>
+  useEffect(() => {
+    document.querySelector("main")?.scrollTo({ top: 0 });
+  }, [page]);
 
-      <SettingsSection
-        id="settings-supplements"
-        title="Supplements"
-        description="These become the tap buttons on Home. Edit dose or remove ones you don’t use."
-      >
-        <SupplementCatalogView
-          initial={customSupplements}
-          onChange={onSupplementsChange}
-        />
-      </SettingsSection>
+  if (page !== "menu") {
+    return (
+      <div className="space-y-4">
+        <button
+          type="button"
+          onClick={() => setPage("menu")}
+          className="inline-flex items-center gap-1 text-sm font-bold text-muted hover:text-ink"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Settings
+        </button>
 
-      <SettingsSection
-        id="settings-appearance"
-        title="Appearance"
-        description="Dark or light, plus the accent used on buttons and charts."
-      >
-        <AppearanceView />
-      </SettingsSection>
+        {page === "supplements" ? (
+          <SectionIntro
+            title="Supplements"
+            description="These become the tap buttons on Home. Edit dose or remove ones you don’t use."
+          >
+            <SupplementCatalogView
+              initial={customSupplements}
+              onChange={onSupplementsChange}
+            />
+          </SectionIntro>
+        ) : null}
 
-      <SettingsSection
-        id="settings-data"
-        title="Data"
-        description="Download your gym, sports, and supplement history."
-      >
-        <ExportSection />
-      </SettingsSection>
+        {page === "exercises" ? (
+          <SectionIntro
+            title="Exercises"
+            description="Add, rename, or delete anything in the gym picker — including the defaults."
+          >
+            <ExerciseCatalogView
+              initial={customExercises}
+              onChange={onExercisesChange}
+            />
+          </SectionIntro>
+        ) : null}
 
-      <SettingsSection
-        id="settings-account"
-        title="Account"
-        description="Signed in as this user. Deleting the account cannot be undone."
-      >
-        <section className={`${CARD_CLS} space-y-3 p-4`}>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-lg font-extrabold text-ink">{user.username}</p>
+        {page === "appearance" ? (
+          <SectionIntro
+            title="Appearance"
+            description="Dark or light, plus the accent used on buttons and charts."
+          >
+            <AppearanceView />
+          </SectionIntro>
+        ) : null}
+
+        {page === "data" ? (
+          <SectionIntro
+            title="Data"
+            description="Download your gym, sports, and supplement history."
+          >
+            <ExportSection />
+          </SectionIntro>
+        ) : null}
+
+        {page === "account" ? (
+          <SectionIntro
+            title="Account"
+            description="Signed in as this user. Deleting the account cannot be undone."
+          >
+            <section className={`${CARD_CLS} p-4`}>
+              <p className="text-lg font-semibold text-ink">{user.username}</p>
               <p className="text-sm text-muted">Signed in</p>
-            </div>
-            <form action={() => logout()}>
-              <button
-                type="submit"
-                className="rounded-xl bg-chip px-4 py-2 text-sm font-bold text-ink hover:bg-chip-hover"
-              >
-                Log out
-              </button>
-            </form>
-          </div>
-        </section>
-        <DangerZone user={user} />
-      </SettingsSection>
+            </section>
+            <DangerZone user={user} />
+          </SectionIntro>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h1 className={PAGE_TITLE}>Settings</h1>
+
+      <div className={`${CARD_CLS} overflow-hidden`}>
+        <form action={() => logout()}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-chip/40"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-chip text-ink">
+              <LogOut className="h-5 w-5" />
+            </span>
+            <span className="flex-1 text-base font-bold text-ink">Log out</span>
+          </button>
+        </form>
+        {PAGES.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setPage(item.id)}
+              className="flex w-full items-center gap-3 border-t border-line px-4 py-3 text-left hover:bg-chip/40"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-chip text-ink">
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-bold text-ink">{item.label}</span>
+                <span className="block text-xs text-muted">{item.hint}</span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function SettingsSection({
-  id,
+function SectionIntro({
   title,
   description,
   children,
 }: {
-  id: string;
   title: string;
   description: string;
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-6 space-y-3">
+    <div className="space-y-3">
       <div>
-        <h2 className="text-lg font-extrabold tracking-tight text-ink">{title}</h2>
-        <p className="mt-0.5 text-sm text-muted">{description}</p>
+        <h1 className={PAGE_TITLE}>{title}</h1>
+        <p className="mt-1 text-sm text-muted">{description}</p>
       </div>
       {children}
-    </section>
+    </div>
   );
 }
 

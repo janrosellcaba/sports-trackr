@@ -54,7 +54,6 @@ export function ExerciseProgressionChart({
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className={LABEL_CLS}>Progression</h2>
-          <p className="mt-1 text-base font-bold text-ink">Strength over time</p>
         </div>
         <label className="block w-full sm:w-56">
           <span className="sr-only">Exercise</span>

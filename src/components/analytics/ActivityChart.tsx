@@ -21,7 +21,6 @@ export function ActivityChart({ data }: { data: DailyActivityPoint[] }) {
     <section className={`${CARD_CLS} p-4`}>
       <div className="mb-4">
         <h2 className={LABEL_CLS}>Volume</h2>
-        <p className="mt-1 text-base font-bold text-ink">Kg lifted per day</p>
       </div>
 
       <div className="h-56 w-full">

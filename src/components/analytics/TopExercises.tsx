@@ -10,8 +10,7 @@ export function TopExercises({ items }: { items: TopExercise[] }) {
 
   return (
     <section className={`${CARD_CLS} p-4`}>
-      <h2 className={LABEL_CLS}>Top lifts</h2>
-      <p className="mt-1 mb-4 text-base font-bold text-ink">By volume</p>
+      <h2 className={`${LABEL_CLS} mb-4`}>Top lifts</h2>
       <ul className="space-y-3">
         {items.map((item) => (
           <li key={item.name}>

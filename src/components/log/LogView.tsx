@@ -11,7 +11,7 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { DateField } from "@/components/ui/DayPicker";
 import { formatDisplayDate } from "@/lib/calculations";
 import { formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
-import { CARD_CLS, INPUT_CLS, LABEL_CLS, PRIMARY_BTN } from "@/lib/ui";
+import { CARD_CLS, INPUT_CLS, LABEL_CLS, PAGE_TITLE, PRIMARY_BTN } from "@/lib/ui";
 import type {
   CustomExercisePayload,
   SportSessionPayload,
@@ -101,14 +101,7 @@ export function LogView({
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className={LABEL_CLS}>History</p>
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink">Log</h1>
-      </div>
-
-      <p className="text-sm text-muted">
-        One card per day. Gym that day is a single workout. Open a day to edit.
-      </p>
+      <h1 className={PAGE_TITLE}>Log</h1>
 
       <div className="grid grid-cols-4 gap-1 rounded-xl bg-chip/80 p-1">
         {(
@@ -156,7 +149,7 @@ export function LogView({
                   className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-extrabold text-ink">
+                    <p className="text-sm font-semibold text-ink">
                       {formatDisplayDate(day.date)}
                       {day.date === today ? (
                         <span className="ml-2 text-xs font-bold text-brand">Today</span>

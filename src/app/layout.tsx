@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  weight: ["700", "800"],
 });
 
 export const metadata: Metadata = {

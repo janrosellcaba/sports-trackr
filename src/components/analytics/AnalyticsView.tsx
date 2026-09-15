@@ -9,7 +9,7 @@ import { ActivityChart } from "@/components/analytics/ActivityChart";
 import { ExerciseProgressionChart } from "@/components/analytics/ExerciseProgressionChart";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
 import { TopExercises } from "@/components/analytics/TopExercises";
-import { LABEL_CLS } from "@/lib/ui";
+import { PAGE_TITLE } from "@/lib/ui";
 import type { AnalyticsPeriod, AnalyticsSummary } from "@/types/trackr";
 
 const PERIODS: { key: AnalyticsPeriod; label: string }[] = [
@@ -46,10 +46,7 @@ export function AnalyticsView({
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className={LABEL_CLS}>Analytics</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-ink">
-            How you’re doing
-          </h1>
+          <h1 className={PAGE_TITLE}>Analytics</h1>
           <p className="mt-1 text-sm text-muted">{summary.periodLabel}</p>
         </div>
         <div className="grid grid-cols-4 gap-1 rounded-xl bg-chip/80 p-1">

@@ -12,12 +12,9 @@ export default async function RegisterPage() {
         <div className="mb-3 flex justify-center">
           <Logo />
         </div>
-        <h1 className="text-center text-3xl font-extrabold tracking-tight text-ink">
-          Trackr
+        <h1 className="mb-6 text-center text-xl font-semibold tracking-tight text-ink">
+          Create account
         </h1>
-        <p className="mb-6 text-center text-sm text-muted">
-          Create your account.
-        </p>
         <RegisterForm />
       </div>
     </main>

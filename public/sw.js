@@ -1,5 +1,5 @@
-const STATIC_CACHE = "trackr-static-v2";
-const PAGE_CACHE = "trackr-pages-v2";
+const STATIC_CACHE = "trackr-static-v3";
+const PAGE_CACHE = "trackr-pages-v3";
 
 const PRECACHE = [
   "/icons/icon.svg",

@@ -62,7 +62,7 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
             <card.icon className="h-4 w-4 text-brand" />
             <TrendBadge value={card.trend} />
           </div>
-          <p className="text-2xl font-extrabold tracking-tight text-ink tabular-nums">
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-ink">
             {card.value}
           </p>
           <p className="mt-1 text-xs font-semibold text-ink">{card.label}</p>

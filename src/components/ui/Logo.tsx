@@ -46,11 +46,11 @@ export function Logo({ compact = false, className = "" }: LogoProps) {
       {compact ? (
         <span className="sr-only">Trackr</span>
       ) : (
-        <span className="flex items-baseline leading-none">
+        <span className="flex items-baseline font-display leading-none">
           <span className="text-lg font-extrabold tracking-[0.28em] text-ink">
             TRACK
           </span>
-          <span className="font-mono text-lg font-extrabold tracking-[0.08em] text-brand">
+          <span className="text-lg font-extrabold tracking-[0.08em] text-brand">
             R
           </span>
         </span>
