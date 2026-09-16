@@ -1,9 +1,13 @@
 "use server";
 
+import {
+  listCustomExercises,
+  listCustomSupplements,
+  listMuscles,
+} from "@/app/actions/catalog";
 import { requireUser } from "@/app/actions/auth";
-import { listCustomExercises, listCustomSupplements } from "@/app/actions/catalog";
 import { seedUserCatalog } from "@/lib/seed-catalog";
-import { getWorkoutByDate, listWorkouts } from "@/app/actions/gym";
+import { getGymSessionByDate, listGymSessions } from "@/app/actions/gym";
 import { getSportsForDate, listSports } from "@/app/actions/sports";
 import {
   getSupplementsForDate,
@@ -17,33 +21,36 @@ export async function getAppState(): Promise<AppState> {
   await seedUserCatalog(user.id);
   const today = getTodayLocalDateISO();
   const [
-    todayWorkout,
+    todayGym,
     todaySports,
     todaySupplements,
-    workouts,
+    gymSessions,
     sports,
     supplements,
+    muscles,
     customExercises,
     customSupplements,
   ] = await Promise.all([
-    getWorkoutByDate(today),
+    getGymSessionByDate(today),
     getSportsForDate(today),
     getSupplementsForDate(today),
-    listWorkouts(),
+    listGymSessions(),
     listSports(),
     listSupplements(),
+    listMuscles(),
     listCustomExercises(),
     listCustomSupplements(),
   ]);
 
   return {
     today,
-    todayWorkout,
+    todayGym,
     todaySports,
     todaySupplements,
-    workouts,
+    gymSessions,
     sports,
     supplements,
+    muscles,
     customExercises,
     customSupplements,
   };

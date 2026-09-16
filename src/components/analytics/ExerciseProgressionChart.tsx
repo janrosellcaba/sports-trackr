@@ -43,7 +43,7 @@ export function ExerciseProgressionChart({
     return (
       <section className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
         <p className="text-sm text-muted">
-          Log a few gym sets to see strength over time.
+          Log working weights or PRs to see strength over time.
         </p>
       </section>
     );
@@ -74,7 +74,7 @@ export function ExerciseProgressionChart({
       <div className={`h-56 w-full ${isPending ? "opacity-60" : ""}`}>
         {points.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
-            No sets recorded for this exercise yet.
+            No working weight or PR recorded for this lift yet.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
@@ -103,13 +103,17 @@ export function ExerciseProgressionChart({
                 }}
                 labelFormatter={(label) => formatShortDate(String(label))}
                 formatter={(value, name) => [
-                  `${value ?? 0} kg`,
-                  name === "estimatedOneRm" ? "Est. 1RM" : "Max weight",
+                  value == null ? "—" : `${value} kg`,
+                  name === "estimatedOneRm"
+                    ? "Est. 1RM"
+                    : name === "prWeight"
+                      ? "PR"
+                      : "Working",
                 ]}
               />
               <Line
                 type="monotone"
-                dataKey="maxWeight"
+                dataKey="workingWeight"
                 stroke={brand}
                 strokeWidth={2}
                 dot={{ r: 3, fill: brand }}
@@ -117,7 +121,7 @@ export function ExerciseProgressionChart({
               />
               <Line
                 type="monotone"
-                dataKey="estimatedOneRm"
+                dataKey="prWeight"
                 stroke={muted}
                 strokeWidth={2}
                 strokeDasharray="4 4"

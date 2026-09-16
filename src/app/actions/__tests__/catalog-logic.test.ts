@@ -5,34 +5,42 @@ import {
   parseCustomExerciseInput,
   parseCustomSupplementInput,
   parseDoseHint,
+  parsePersonalRecordInput,
+  isImprovedPersonalRecord,
   validateExerciseName,
 } from "@/lib/catalog";
 
 describe("custom exercise CRUD validation", () => {
-  it("accepts a well-formed custom exercise", () => {
+  it("accepts a well-formed strength notebook row", () => {
     expect(
       parseCustomExerciseInput({
         name: "  Belt Squat  ",
-        muscleGroup: "legs",
-        defaultWeight: 80,
-        defaultReps: 8,
+        muscleId: "m1",
+        workingWeight: 80,
+        workingReps: 8,
+        prWeight: 100,
+        prReps: 5,
+        prDate: "2026-09-16",
       }),
     ).toEqual({
       name: "Belt Squat",
-      muscleGroup: "LEGS",
-      defaultWeight: 80,
-      defaultReps: 8,
+      muscleId: "m1",
+      workingWeight: 80,
+      workingReps: 8,
+      prWeight: 100,
+      prReps: 5,
+      prDate: "2026-09-16",
     });
   });
 
-  it("rejects short names and invalid defaults", () => {
+  it("rejects short names and invalid numbers", () => {
     expect(validateExerciseName("x")).toBe("Name must be at least 2 characters.");
     expect(() =>
-      parseCustomExerciseInput({ name: "Hack Squat", muscleGroup: "LEGS", defaultWeight: -1 }),
-    ).toThrow("Default weight must be a non-negative number.");
+      parseCustomExerciseInput({ name: "Hack Squat", workingWeight: -1 }),
+    ).toThrow("Working weight must be a non-negative number.");
     expect(() =>
-      parseCustomExerciseInput({ name: "Hack Squat", muscleGroup: "LEGS", defaultReps: 0 }),
-    ).toThrow("Default reps must be a positive integer.");
+      parseCustomExerciseInput({ name: "Hack Squat", workingReps: 0 }),
+    ).toThrow("Working reps must be a positive integer.");
   });
 });
 
@@ -67,9 +75,13 @@ describe("catalog merge", () => {
       {
         id: "c1",
         name: "Pendlay Row",
-        muscleGroup: "BACK",
-        defaultWeight: 70,
-        defaultReps: 6,
+        muscleId: "m-back",
+        muscleName: "Back",
+        workingWeight: 70,
+        workingReps: 6,
+        prWeight: 90,
+        prReps: 3,
+        prDate: "2026-09-11",
         createdAt: "2026-09-11T00:00:00.000Z",
       },
     ]);
@@ -77,7 +89,7 @@ describe("catalog merge", () => {
     expect(merged[0]).toMatchObject({
       id: "c1",
       name: "Pendlay Row",
-      source: "custom",
+      muscleName: "Back",
     });
     expect(merged.some((item) => item.name === "Bench Press")).toBe(false);
   });
@@ -101,5 +113,53 @@ describe("catalog merge", () => {
       },
     ]);
     expect(merged.map((item) => item.name)).toEqual(["Beta Alanine", "Creatine"]);
+  });
+});
+
+describe("personal records", () => {
+  it("requires an existing exercise plus weight and reps", () => {
+    expect(
+      parsePersonalRecordInput({
+        exerciseId: "e1",
+        prWeight: 100,
+        prReps: 5,
+        prDate: "2026-09-16",
+      }),
+    ).toEqual({
+      exerciseId: "e1",
+      prWeight: 100,
+      prReps: 5,
+      prDate: "2026-09-16",
+    });
+    expect(() =>
+      parsePersonalRecordInput({ prWeight: 100, prReps: 5 }),
+    ).toThrow("Pick an exercise.");
+    expect(() =>
+      parsePersonalRecordInput({ exerciseId: "e1", prReps: 5 }),
+    ).toThrow("PR weight is required.");
+  });
+
+  it("treats a first or heavier lift as a new PR", () => {
+    expect(
+      isImprovedPersonalRecord(null, { prWeight: 100, prReps: 5 }),
+    ).toBe(true);
+    expect(
+      isImprovedPersonalRecord(
+        { prWeight: 90, prReps: 3 },
+        { prWeight: 92, prReps: 2 },
+      ),
+    ).toBe(true);
+    expect(
+      isImprovedPersonalRecord(
+        { prWeight: 90, prReps: 3 },
+        { prWeight: 90, prReps: 5 },
+      ),
+    ).toBe(true);
+    expect(
+      isImprovedPersonalRecord(
+        { prWeight: 90, prReps: 3 },
+        { prWeight: 90, prReps: 3 },
+      ),
+    ).toBe(false);
   });
 });

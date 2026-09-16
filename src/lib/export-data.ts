@@ -1,15 +1,11 @@
 type ExportPayload = {
-  workouts?: Array<{
+  gymSessions?: Array<{
     id: string;
     date: string;
     notes: string | null;
-    exercises?: Array<{
-      name: string;
-      sets?: Array<{
-        setNumber: number;
-        weight: number;
-        reps: number;
-      }>;
+    hits?: Array<{
+      muscleName: string;
+      intensity: number;
     }>;
   }>;
   supplements?: Array<{
@@ -27,11 +23,18 @@ type ExportPayload = {
     effort: string | null;
     notes: string | null;
   }>;
+  muscles?: Array<{
+    name: string;
+    sortOrder: number;
+  }>;
   customExercises?: Array<{
     name: string;
-    muscleGroup: string;
-    defaultWeight: number | null;
-    defaultReps: number | null;
+    muscleName: string | null;
+    workingWeight: number | null;
+    workingReps: number | null;
+    prWeight: number | null;
+    prReps: number | null;
+    prDate: string | null;
   }>;
   customSupplements?: Array<{
     name: string;
@@ -53,35 +56,27 @@ function rowsToCsv(headers: string[], rows: Array<Array<unknown>>): string {
 }
 
 export function buildExportCsv(data: ExportPayload): string {
-  const workoutRows: Array<Array<unknown>> = [];
-  const setRows: Array<Array<unknown>> = [];
+  const sessionRows: Array<Array<unknown>> = [];
+  const hitRows: Array<Array<unknown>> = [];
 
-  for (const workout of data.workouts ?? []) {
-    workoutRows.push([
-      workout.id,
-      workout.date,
-      workout.notes ?? "",
-      workout.exercises?.length ?? 0,
+  for (const session of data.gymSessions ?? []) {
+    sessionRows.push([
+      session.id,
+      session.date,
+      session.notes ?? "",
+      session.hits?.length ?? 0,
     ]);
-    for (const exercise of workout.exercises ?? []) {
-      for (const set of exercise.sets ?? []) {
-        setRows.push([
-          workout.date,
-          exercise.name,
-          set.setNumber,
-          set.weight,
-          set.reps,
-        ]);
-      }
+    for (const hit of session.hits ?? []) {
+      hitRows.push([session.date, hit.muscleName, hit.intensity]);
     }
   }
 
   return [
-    "# workouts",
-    rowsToCsv(["id", "date", "notes", "exerciseCount"], workoutRows),
+    "# gymSessions",
+    rowsToCsv(["id", "date", "notes", "hitCount"], sessionRows),
     "",
-    "# sets",
-    rowsToCsv(["date", "exercise", "setNumber", "weight", "reps"], setRows),
+    "# muscleHits",
+    rowsToCsv(["date", "muscle", "intensity"], hitRows),
     "",
     "# supplements",
     rowsToCsv(
@@ -113,14 +108,31 @@ export function buildExportCsv(data: ExportPayload): string {
       ]),
     ),
     "",
+    "# muscles",
+    rowsToCsv(
+      ["name", "sortOrder"],
+      (data.muscles ?? []).map((item) => [item.name, item.sortOrder]),
+    ),
+    "",
     "# customExercises",
     rowsToCsv(
-      ["name", "muscleGroup", "defaultWeight", "defaultReps"],
+      [
+        "name",
+        "muscleName",
+        "workingWeight",
+        "workingReps",
+        "prWeight",
+        "prReps",
+        "prDate",
+      ],
       (data.customExercises ?? []).map((item) => [
         item.name,
-        item.muscleGroup,
-        item.defaultWeight ?? "",
-        item.defaultReps ?? "",
+        item.muscleName ?? "",
+        item.workingWeight ?? "",
+        item.workingReps ?? "",
+        item.prWeight ?? "",
+        item.prReps ?? "",
+        item.prDate ?? "",
       ]),
     ),
     "",

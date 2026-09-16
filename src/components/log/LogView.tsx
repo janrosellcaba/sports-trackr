@@ -2,54 +2,55 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, Trash2 } from "lucide-react";
-import { deleteWorkout } from "@/app/actions/gym";
+import { deleteGymSession } from "@/app/actions/gym";
 import { deleteSport } from "@/app/actions/sports";
 import { deleteSupplement, updateSupplement } from "@/app/actions/supplements";
-import { WorkoutEditor } from "@/components/gym/WorkoutEditor";
+import { GymBar } from "@/components/gym/GymBar";
 import { SportFormSheet } from "@/components/sports/SportsBar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { DateField } from "@/components/ui/DayPicker";
 import { formatDisplayDate } from "@/lib/calculations";
+import { formatGymSummary } from "@/lib/muscles";
 import { formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS, PAGE_TITLE, PRIMARY_BTN } from "@/lib/ui";
 import type {
-  CustomExercisePayload,
+  GymSessionPayload,
+  MusclePayload,
   SportSessionPayload,
   SupplementPayload,
-  WorkoutPayload,
 } from "@/types/trackr";
 
 type Filter = "all" | "gym" | "sports" | "supplements";
 
 type DayGroup = {
   date: string;
-  workout: WorkoutPayload | null;
+  gym: GymSessionPayload | null;
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
 };
 
 export function LogView({
   today,
-  workouts,
+  gymSessions,
   sports,
   supplements,
-  customExercises,
-  onWorkoutChange,
+  muscles,
+  onGymChange,
   onSportLogged,
   onSupplementUpsert,
-  onDeleteWorkout,
+  onDeleteGym,
   onDeleteSport,
   onDeleteSupplement,
 }: {
   today: string;
-  workouts: WorkoutPayload[];
+  gymSessions: GymSessionPayload[];
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
-  customExercises: CustomExercisePayload[];
-  onWorkoutChange: (workout: WorkoutPayload) => void;
+  muscles: MusclePayload[];
+  onGymChange: (session: GymSessionPayload | null, date: string) => void;
   onSportLogged: (session: SportSessionPayload) => void;
   onSupplementUpsert: (intake: SupplementPayload) => void;
-  onDeleteWorkout: (id: string) => void;
+  onDeleteGym: (id: string) => void;
   onDeleteSport: (id: string) => void;
   onDeleteSupplement: (id: string) => void;
 }) {
@@ -69,7 +70,7 @@ export function LogView({
       if (existing) return existing;
       const created: DayGroup = {
         date,
-        workout: null,
+        gym: null,
         sports: [],
         supplements: [],
       };
@@ -77,8 +78,8 @@ export function LogView({
       return created;
     }
 
-    for (const workout of workouts) {
-      group(workout.date).workout = workout;
+    for (const session of gymSessions) {
+      group(session.date).gym = session;
     }
     for (const session of sports) {
       group(session.date).sports.push(session);
@@ -88,10 +89,10 @@ export function LogView({
     }
 
     return Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
-  }, [workouts, sports, supplements]);
+  }, [gymSessions, sports, supplements]);
 
   const visible = days.filter((day) => {
-    if (filter === "gym") return day.workout != null;
+    if (filter === "gym") return day.gym != null;
     if (filter === "sports") return day.sports.length > 0;
     if (filter === "supplements") return day.supplements.length > 0;
     return true;
@@ -135,11 +136,7 @@ export function LogView({
         <section className="space-y-3">
           {visible.map((day) => {
             const open = openDate === day.date;
-            const gymLine = day.workout
-              ? `${day.workout.exercises.length} exercise${
-                  day.workout.exercises.length === 1 ? "" : "s"
-                } · ${day.workout.setCount} sets · ${day.workout.totalVolumeKg.toLocaleString()}kg`
-              : null;
+            const gymLine = day.gym ? formatGymSummary(day.gym.hits) : null;
 
             return (
               <article key={day.date} className={`${CARD_CLS} overflow-hidden`}>
@@ -156,9 +153,9 @@ export function LogView({
                       ) : null}
                     </p>
                     <div className="mt-2 space-y-1">
-                      {day.workout ? (
+                      {day.gym ? (
                         <p className="text-sm font-bold text-ink">
-                          Gym · {gymLine}
+                          Gym{gymLine ? ` · ${gymLine}` : ""}
                         </p>
                       ) : null}
                       {day.sports.map((session) => {
@@ -188,27 +185,22 @@ export function LogView({
                   <div className="space-y-5 border-t border-line px-4 py-4">
                     {(filter === "all" || filter === "gym") && (
                       <section className="space-y-2">
-                        <p className={LABEL_CLS}>Gym workout</p>
-                        <p className="text-xs text-muted">
-                          Every exercise this day is one workout.
-                        </p>
-                        <WorkoutEditor
+                        <p className={LABEL_CLS}>Gym</p>
+                        <GymBar
                           date={day.date}
-                          workout={day.workout}
-                          customExercises={customExercises}
-                          onChange={(next) => {
-                            if (next) onWorkoutChange(next);
-                          }}
+                          session={day.gym}
+                          muscles={muscles}
+                          onChange={(next) => onGymChange(next, day.date)}
                         />
-                        {day.workout ? (
+                        {day.gym ? (
                           <button
                             type="button"
                             disabled={isPending}
                             onClick={() => {
-                              if (!window.confirm("Delete this gym workout?")) return;
+                              if (!window.confirm("Delete this gym session?")) return;
                               startTransition(async () => {
-                                await deleteWorkout(day.workout!.id);
-                                onDeleteWorkout(day.workout!.id);
+                                await deleteGymSession(day.gym!.id);
+                                onDeleteGym(day.gym!.id);
                               });
                             }}
                             className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-xs font-bold text-danger hover:bg-danger/15 disabled:opacity-50"

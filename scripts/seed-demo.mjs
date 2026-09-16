@@ -6,31 +6,46 @@ import { PrismaClient } from "@prisma/client";
 const DEMO_USERNAME = "test";
 const DEMO_PASSWORD = "test";
 
+const MUSCLES = [
+  "Chest",
+  "Back",
+  "Shoulders",
+  "Biceps",
+  "Triceps",
+  "Forearms",
+  "Abs",
+  "Quads",
+  "Hamstrings",
+  "Abductors",
+  "Glutes",
+  "Calves",
+  "Other",
+];
+
 const EXERCISES = [
-  { name: "Bench Press", muscleGroup: "CHEST", defaultWeight: 80, defaultReps: 6 },
-  { name: "Incline Dumbbell Press", muscleGroup: "CHEST", defaultWeight: 28, defaultReps: 10 },
-  { name: "Chest Fly", muscleGroup: "CHEST", defaultWeight: 12, defaultReps: 12 },
-  { name: "Push-Up", muscleGroup: "CHEST", defaultWeight: 0, defaultReps: 15 },
-  { name: "Lat Pulldown", muscleGroup: "BACK", defaultWeight: 55, defaultReps: 10 },
-  { name: "Cable Row", muscleGroup: "BACK", defaultWeight: 50, defaultReps: 10 },
-  { name: "Pull-Up", muscleGroup: "BACK", defaultWeight: 0, defaultReps: 8 },
-  { name: "Deadlift", muscleGroup: "BACK", defaultWeight: 110, defaultReps: 5 },
-  { name: "Squat", muscleGroup: "LEGS", defaultWeight: 90, defaultReps: 6 },
-  { name: "Leg Press", muscleGroup: "LEGS", defaultWeight: 160, defaultReps: 10 },
-  { name: "Romanian Deadlift", muscleGroup: "LEGS", defaultWeight: 80, defaultReps: 8 },
-  { name: "Leg Curl", muscleGroup: "LEGS", defaultWeight: 40, defaultReps: 12 },
-  { name: "Calf Raise", muscleGroup: "LEGS", defaultWeight: 60, defaultReps: 15 },
-  { name: "Lateral Raises", muscleGroup: "SHOULDERS", defaultWeight: 10, defaultReps: 15 },
-  { name: "Overhead Press", muscleGroup: "SHOULDERS", defaultWeight: 42, defaultReps: 8 },
-  { name: "Face Pull", muscleGroup: "SHOULDERS", defaultWeight: 18, defaultReps: 15 },
-  { name: "Bicep Curl", muscleGroup: "ARMS", defaultWeight: 14, defaultReps: 12 },
-  { name: "Tricep Pushdown", muscleGroup: "ARMS", defaultWeight: 22, defaultReps: 12 },
-  { name: "Skull Crusher", muscleGroup: "ARMS", defaultWeight: 20, defaultReps: 10 },
-  { name: "Hammer Curl", muscleGroup: "ARMS", defaultWeight: 12, defaultReps: 12 },
-  { name: "Plank", muscleGroup: "CORE", defaultWeight: 0, defaultReps: 45 },
-  { name: "Cable Crunch", muscleGroup: "CORE", defaultWeight: 25, defaultReps: 15 },
-  { name: "Hanging Leg Raise", muscleGroup: "CORE", defaultWeight: 0, defaultReps: 10 },
-  { name: "Hack Squat", muscleGroup: "LEGS", defaultWeight: 80, defaultReps: 8 },
+  { name: "Bench Press", muscle: "Chest", workingWeight: 80, workingReps: 6, prWeight: 90, prReps: 3 },
+  { name: "Incline Dumbbell Press", muscle: "Chest", workingWeight: 28, workingReps: 10, prWeight: 32, prReps: 8 },
+  { name: "Chest Fly", muscle: "Chest", workingWeight: 12, workingReps: 12, prWeight: 14, prReps: 10 },
+  { name: "Push-Up", muscle: "Chest", workingWeight: 0, workingReps: 15, prWeight: 0, prReps: 25 },
+  { name: "Lat Pulldown", muscle: "Back", workingWeight: 55, workingReps: 10, prWeight: 65, prReps: 8 },
+  { name: "Cable Row", muscle: "Back", workingWeight: 50, workingReps: 10, prWeight: 60, prReps: 8 },
+  { name: "Pull-Up", muscle: "Back", workingWeight: 0, workingReps: 8, prWeight: 0, prReps: 12 },
+  { name: "Deadlift", muscle: "Back", workingWeight: 110, workingReps: 5, prWeight: 130, prReps: 3 },
+  { name: "Squat", muscle: "Quads", workingWeight: 90, workingReps: 6, prWeight: 110, prReps: 3 },
+  { name: "Leg Press", muscle: "Quads", workingWeight: 160, workingReps: 10, prWeight: 200, prReps: 8 },
+  { name: "Romanian Deadlift", muscle: "Hamstrings", workingWeight: 80, workingReps: 8, prWeight: 95, prReps: 6 },
+  { name: "Leg Curl", muscle: "Hamstrings", workingWeight: 40, workingReps: 12, prWeight: 50, prReps: 10 },
+  { name: "Calf Raise", muscle: "Calves", workingWeight: 60, workingReps: 15, prWeight: 80, prReps: 12 },
+  { name: "Lateral Raises", muscle: "Shoulders", workingWeight: 10, workingReps: 15, prWeight: 12, prReps: 12 },
+  { name: "Overhead Press", muscle: "Shoulders", workingWeight: 42, workingReps: 8, prWeight: 50, prReps: 5 },
+  { name: "Face Pull", muscle: "Shoulders", workingWeight: 18, workingReps: 15, prWeight: 22, prReps: 12 },
+  { name: "Bicep Curl", muscle: "Biceps", workingWeight: 14, workingReps: 12, prWeight: 18, prReps: 8 },
+  { name: "Tricep Pushdown", muscle: "Triceps", workingWeight: 22, workingReps: 12, prWeight: 28, prReps: 10 },
+  { name: "Skull Crusher", muscle: "Triceps", workingWeight: 20, workingReps: 10, prWeight: 25, prReps: 8 },
+  { name: "Hammer Curl", muscle: "Biceps", workingWeight: 12, workingReps: 12, prWeight: 16, prReps: 10 },
+  { name: "Plank", muscle: "Abs", workingWeight: 0, workingReps: 45, prWeight: 0, prReps: 90 },
+  { name: "Cable Crunch", muscle: "Abs", workingWeight: 25, workingReps: 15, prWeight: 35, prReps: 12 },
+  { name: "Hanging Leg Raise", muscle: "Abs", workingWeight: 0, workingReps: 10, prWeight: 0, prReps: 15 },
 ];
 
 const SUPPLEMENTS = [
@@ -42,36 +57,32 @@ const SUPPLEMENTS = [
 ];
 
 const PUSH = [
-  ["Bench Press", 70, 6],
-  ["Incline Dumbbell Press", 26, 10],
-  ["Overhead Press", 40, 8],
-  ["Lateral Raises", 9, 15],
-  ["Tricep Pushdown", 20, 12],
+  ["Chest", 4],
+  ["Shoulders", 3],
+  ["Triceps", 3],
 ];
 
 const PULL = [
-  ["Deadlift", 100, 5],
-  ["Lat Pulldown", 50, 10],
-  ["Cable Row", 45, 10],
-  ["Face Pull", 16, 15],
-  ["Bicep Curl", 12, 12],
+  ["Back", 5],
+  ["Biceps", 3],
+  ["Forearms", 2],
 ];
 
 const LEGS = [
-  ["Squat", 85, 6],
-  ["Romanian Deadlift", 75, 8],
-  ["Leg Press", 140, 10],
-  ["Leg Curl", 35, 12],
-  ["Calf Raise", 50, 15],
+  ["Quads", 5],
+  ["Hamstrings", 4],
+  ["Glutes", 3],
+  ["Calves", 2],
+  ["Abductors", 2],
 ];
 
 const UPPER = [
-  ["Bench Press", 65, 8],
-  ["Pull-Up", 0, 6],
-  ["Overhead Press", 38, 8],
-  ["Hammer Curl", 12, 12],
-  ["Skull Crusher", 18, 10],
-  ["Plank", 0, 40],
+  ["Chest", 3],
+  ["Back", 3],
+  ["Shoulders", 3],
+  ["Biceps", 2],
+  ["Triceps", 2],
+  ["Abs", 2],
 ];
 
 function pad(value) {
@@ -92,19 +103,8 @@ function round(value, step = 0.5) {
   return Math.round(value / step) * step;
 }
 
-function setsFor(name, baseWeight, baseReps, week, setCount = 3) {
-  const isBodyweight = name === "Pull-Up" || name === "Push-Up" || name === "Plank" || name === "Hanging Leg Raise";
-  const weight = isBodyweight ? 0 : round(baseWeight + week * (name === "Deadlift" || name === "Squat" ? 1.5 : 1));
-  const rows = [];
-  for (let i = 0; i < setCount; i += 1) {
-    const drop = i === setCount - 1 ? 1 : 0;
-    rows.push({
-      setNumber: i + 1,
-      weight,
-      reps: Math.max(4, baseReps - drop + (week % 3 === 0 && i === 0 ? 1 : 0)),
-    });
-  }
-  return rows;
+function clampIntensity(value) {
+  return Math.max(1, Math.min(5, Math.round(value)));
 }
 
 function createPrisma() {
@@ -139,14 +139,66 @@ async function main() {
         passwordHash,
         role: "USER",
         catalogSeeded: true,
-        customExercises: {
-          create: EXERCISES,
+        muscles: {
+          create: MUSCLES.map((name, sortOrder) => ({ name, sortOrder })),
         },
         customSupplements: {
           create: SUPPLEMENTS,
         },
       },
     });
+
+    const muscles = await prisma.muscle.findMany({
+      where: { userId: user.id },
+    });
+    const muscleIdByName = new Map(muscles.map((item) => [item.name, item.id]));
+
+    await prisma.customExercise.createMany({
+      data: EXERCISES.map((item) => ({
+        userId: user.id,
+        name: item.name,
+        muscleId: muscleIdByName.get(item.muscle) ?? null,
+        workingWeight: item.workingWeight,
+        workingReps: item.workingReps,
+        prWeight: item.prWeight,
+        prReps: item.prReps,
+        prDate: toISO(daysAgo(3)),
+      })),
+    });
+
+    const notebook = await prisma.customExercise.findMany({
+      where: { userId: user.id },
+      select: { id: true, name: true, workingWeight: true, workingReps: true, prWeight: true, prReps: true },
+    });
+    const snapshots = [];
+    for (const exercise of notebook) {
+      if (exercise.workingWeight == null) continue;
+      snapshots.push({
+        exerciseId: exercise.id,
+        date: toISO(daysAgo(60)),
+        workingWeight: round(exercise.workingWeight * 0.9),
+        workingReps: exercise.workingReps,
+        prWeight: exercise.prWeight == null ? null : round(exercise.prWeight * 0.88),
+        prReps: exercise.prReps,
+      });
+      snapshots.push({
+        exerciseId: exercise.id,
+        date: toISO(daysAgo(30)),
+        workingWeight: round(exercise.workingWeight * 0.96),
+        workingReps: exercise.workingReps,
+        prWeight: exercise.prWeight == null ? null : round(exercise.prWeight * 0.95),
+        prReps: exercise.prReps,
+      });
+      snapshots.push({
+        exerciseId: exercise.id,
+        date: toISO(daysAgo(3)),
+        workingWeight: exercise.workingWeight,
+        workingReps: exercise.workingReps,
+        prWeight: exercise.prWeight,
+        prReps: exercise.prReps,
+      });
+    }
+    await prisma.exerciseSnapshot.createMany({ data: snapshots });
 
     const supplements = [];
     const sports = [];
@@ -167,17 +219,15 @@ async function main() {
       }
 
       if (template) {
-        await prisma.workout.create({
+        await prisma.gymSession.create({
           data: {
             userId: user.id,
             date,
-            exercises: {
-              create: template.map(([name, baseWeight, baseReps], order) => ({
-                name,
-                order,
-                sets: {
-                  create: setsFor(name, baseWeight, baseReps, week, name === "Deadlift" ? 3 : 4),
-                },
+            hits: {
+              create: template.map(([name, base]) => ({
+                muscleId: muscleIdByName.get(name) ?? null,
+                muscleName: name,
+                intensity: clampIntensity(base + (week % 3 === 0 ? 1 : 0) - (week % 5 === 0 ? 1 : 0)),
               })),
             },
           },
@@ -288,20 +338,20 @@ async function main() {
     await prisma.sportSession.createMany({ data: sports });
 
     const today = toISO(new Date());
-    const todayWorkout = await prisma.workout.findFirst({
+    const todayGym = await prisma.gymSession.findFirst({
       where: { userId: user.id, date: today },
       select: { id: true },
     });
-    if (!todayWorkout) {
-      await prisma.workout.create({
+    if (!todayGym) {
+      await prisma.gymSession.create({
         data: {
           userId: user.id,
           date: today,
-          exercises: {
-            create: PUSH.slice(0, 3).map(([name, baseWeight, baseReps], order) => ({
-              name,
-              order,
-              sets: { create: setsFor(name, baseWeight, baseReps, 12, 3) },
+          hits: {
+            create: PUSH.map(([name, intensity]) => ({
+              muscleId: muscleIdByName.get(name) ?? null,
+              muscleName: name,
+              intensity,
             })),
           },
         },
@@ -328,8 +378,8 @@ async function main() {
       where: { username: { not: DEMO_USERNAME } },
       select: { username: true },
     });
-    const [workoutCount, sportCount, suppCount] = await Promise.all([
-      prisma.workout.count({ where: { userId: user.id } }),
+    const [gymCount, sportCount, suppCount] = await Promise.all([
+      prisma.gymSession.count({ where: { userId: user.id } }),
       prisma.sportSession.count({ where: { userId: user.id } }),
       prisma.supplementIntake.count({ where: { userId: user.id } }),
     ]);
@@ -337,7 +387,7 @@ async function main() {
     console.log("Demo user ready.");
     console.log(`  username: ${DEMO_USERNAME}`);
     console.log(`  password: ${DEMO_PASSWORD}`);
-    console.log(`  gym days: ${workoutCount}`);
+    console.log(`  gym days: ${gymCount}`);
     console.log(`  sports:   ${sportCount}`);
     console.log(`  supps:    ${suppCount}`);
     console.log("Other accounts still here:", leftover.map((row) => row.username).join(", ") || "(none)");

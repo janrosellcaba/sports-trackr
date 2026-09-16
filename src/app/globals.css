@@ -196,3 +196,35 @@ select:-webkit-autofill {
 .page-enter {
   animation: page-enter 180ms ease-out;
 }
+
+@keyframes confetti-label {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.86);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.08);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(0.98);
+  }
+}
+
+.confetti-label {
+  animation: confetti-label 1.35s ease-out forwards;
+  text-shadow: 0 0 28px var(--accent-glow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-label {
+    animation: none;
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

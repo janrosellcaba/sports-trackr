@@ -32,10 +32,10 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
       icon: Dumbbell,
     },
     {
-      label: "Volume",
-      value: formatVolume(summary.totalVolumeKg),
-      hint: "Weight × reps",
-      trend: summary.trends.volumeKg,
+      label: "Muscle load",
+      value: String(summary.totalGymLoad),
+      hint: `${summary.totalHits} hits`,
+      trend: summary.trends.gymLoad,
       icon: Flame,
     },
     {
@@ -71,11 +71,6 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
       ))}
     </section>
   );
-}
-
-function formatVolume(kg: number): string {
-  if (kg >= 1000) return `${(kg / 1000).toFixed(1)}t`;
-  return `${kg.toLocaleString()}kg`;
 }
 
 function sportHint(minutes: number, km: number): string {

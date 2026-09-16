@@ -1,40 +1,6 @@
-import { EXERCISE_CATALOG, type MuscleGroup } from "@/lib/exercises";
-import type {
-  CustomExercisePayload,
-  CustomSupplementPayload,
-} from "@/types/trackr";
-
-export const MUSCLE_GROUP_KEYS = [
-  "CHEST",
-  "BACK",
-  "LEGS",
-  "SHOULDERS",
-  "ARMS",
-  "CORE",
-  "OTHER",
-] as const;
-
-export type MuscleGroupKey = (typeof MUSCLE_GROUP_KEYS)[number];
-
-const BUILTIN_TO_KEY: Record<MuscleGroup, MuscleGroupKey> = {
-  Chest: "CHEST",
-  Back: "BACK",
-  Legs: "LEGS",
-  Shoulders: "SHOULDERS",
-  Arms: "ARMS",
-  Core: "CORE",
-  Other: "OTHER",
-};
-
-const KEY_TO_LABEL: Record<MuscleGroupKey, string> = {
-  CHEST: "Chest",
-  BACK: "Back",
-  LEGS: "Legs",
-  SHOULDERS: "Shoulders",
-  ARMS: "Arms",
-  CORE: "Core",
-  OTHER: "Other",
-};
+import { EXERCISE_CATALOG } from "@/lib/exercises";
+import { parseMuscleName, sameMuscleName } from "@/lib/muscles";
+import type { CustomExercisePayload, CustomSupplementPayload } from "@/types/trackr";
 
 export const SUPPLEMENT_CATALOG = [
   { name: "Whey protein", defaultDose: "1 scoop" },
@@ -42,43 +8,13 @@ export const SUPPLEMENT_CATALOG = [
   { name: "Pre-workout", defaultDose: "1 scoop" },
 ] as const;
 
-export function isMuscleGroupKey(value: unknown): value is MuscleGroupKey {
-  return (
-    typeof value === "string" &&
-    (MUSCLE_GROUP_KEYS as readonly string[]).includes(value.toUpperCase())
-  );
-}
-
-export function normalizeMuscleGroup(value: string): MuscleGroupKey {
-  const upper = value.trim().toUpperCase();
-  if (isMuscleGroupKey(upper)) return upper;
-  const fromLabel = (
-    Object.entries(BUILTIN_TO_KEY) as [MuscleGroup, MuscleGroupKey][]
-  ).find(([label]) => label.toLowerCase() === value.trim().toLowerCase());
-  return fromLabel?.[1] ?? "OTHER";
-}
-
-export function muscleGroupLabel(key: MuscleGroupKey | string): string {
-  const normalized = normalizeMuscleGroup(String(key));
-  return KEY_TO_LABEL[normalized];
-}
-
-export type CatalogExercise = {
-  id: string;
-  name: string;
-  muscleGroup: MuscleGroupKey;
-  source: "builtin" | "custom";
-  defaultWeight?: number | null;
-  defaultReps?: number | null;
-};
-
 export function defaultExerciseSeeds(): Array<{
   name: string;
-  muscleGroup: MuscleGroupKey;
+  muscle: string;
 }> {
   return EXERCISE_CATALOG.map((item) => ({
     name: item.name,
-    muscleGroup: BUILTIN_TO_KEY[item.category],
+    muscle: item.muscle,
   }));
 }
 
@@ -90,41 +26,6 @@ export function defaultSupplementSeeds(): Array<{
     name: item.name,
     defaultDose: item.defaultDose,
   }));
-}
-
-export function mergeExerciseCatalog(
-  custom: CustomExercisePayload[],
-): CatalogExercise[] {
-  return [...custom]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      muscleGroup: normalizeMuscleGroup(item.muscleGroup),
-      source: "custom" as const,
-      defaultWeight: item.defaultWeight,
-      defaultReps: item.defaultReps,
-    }));
-}
-
-export type CatalogSupplement = {
-  id: string;
-  name: string;
-  source: "builtin" | "custom";
-  defaultDose: string;
-};
-
-export function mergeSupplementCatalog(
-  custom: CustomSupplementPayload[],
-): CatalogSupplement[] {
-  return [...custom]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      source: "custom" as const,
-      defaultDose: item.defaultDose,
-    }));
 }
 
 export function validateExerciseName(name: string): string | null {
@@ -150,47 +51,117 @@ export function parseDoseHint(dose: string): {
   };
 }
 
+function parseOptionalWeight(value: number | null | undefined, label: string): number | null {
+  if (value == null) return null;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    throw new Error(`${label} must be a non-negative number.`);
+  }
+  return numeric;
+}
+
+function parseOptionalReps(value: number | null | undefined, label: string): number | null {
+  if (value == null) return null;
+  const numeric = Number(value);
+  if (!Number.isInteger(numeric) || numeric <= 0) {
+    throw new Error(`${label} must be a positive integer.`);
+  }
+  return numeric;
+}
+
+function isDateKey(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 export type ParsedCustomExercise = {
   name: string;
-  muscleGroup: MuscleGroupKey;
-  defaultWeight: number | null;
-  defaultReps: number | null;
+  muscleId: string | null;
+  workingWeight: number | null;
+  workingReps: number | null;
+  prWeight: number | null;
+  prReps: number | null;
+  prDate: string | null;
 };
 
 export function parseCustomExerciseInput(input: {
   name: string;
-  muscleGroup: string;
-  defaultWeight?: number | null;
-  defaultReps?: number | null;
+  muscleId?: string | null;
+  workingWeight?: number | null;
+  workingReps?: number | null;
+  prWeight?: number | null;
+  prReps?: number | null;
+  prDate?: string | null;
 }): ParsedCustomExercise {
   const nameError = validateExerciseName(input.name);
   if (nameError) throw new Error(nameError);
 
-  const defaultWeight =
-    input.defaultWeight == null || input.defaultWeight === undefined
-      ? null
-      : Number(input.defaultWeight);
-  if (defaultWeight != null && (!Number.isFinite(defaultWeight) || defaultWeight < 0)) {
-    throw new Error("Default weight must be a non-negative number.");
-  }
+  const muscleId = input.muscleId?.trim() ? input.muscleId.trim() : null;
+  const workingWeight = parseOptionalWeight(input.workingWeight, "Working weight");
+  const workingReps = parseOptionalReps(input.workingReps, "Working reps");
+  const prWeight = parseOptionalWeight(input.prWeight, "PR weight");
+  const prReps = parseOptionalReps(input.prReps, "PR reps");
 
-  const defaultReps =
-    input.defaultReps == null || input.defaultReps === undefined
-      ? null
-      : Number(input.defaultReps);
-  if (
-    defaultReps != null &&
-    (!Number.isInteger(defaultReps) || defaultReps <= 0)
-  ) {
-    throw new Error("Default reps must be a positive integer.");
+  let prDate = input.prDate?.trim() ? input.prDate.trim() : null;
+  if (prDate && !isDateKey(prDate)) {
+    throw new Error("PR date must be YYYY-MM-DD.");
+  }
+  if ((prWeight != null || prReps != null) && !prDate) {
+    prDate = null;
+  }
+  if (prWeight == null && prReps == null) {
+    prDate = null;
   }
 
   return {
     name: input.name.trim(),
-    muscleGroup: normalizeMuscleGroup(input.muscleGroup),
-    defaultWeight,
-    defaultReps,
+    muscleId,
+    workingWeight,
+    workingReps,
+    prWeight,
+    prReps,
+    prDate,
   };
+}
+
+export type ParsedPersonalRecord = {
+  exerciseId: string;
+  prWeight: number;
+  prReps: number;
+  prDate: string | null;
+};
+
+export function parsePersonalRecordInput(input: {
+  exerciseId?: string | null;
+  prWeight?: number | null;
+  prReps?: number | null;
+  prDate?: string | null;
+}): ParsedPersonalRecord {
+  const exerciseId = input.exerciseId?.trim() ?? "";
+  if (!exerciseId) throw new Error("Pick an exercise.");
+
+  const prWeight = parseOptionalWeight(input.prWeight, "PR weight");
+  const prReps = parseOptionalReps(input.prReps, "PR reps");
+  if (prWeight == null) throw new Error("PR weight is required.");
+  if (prReps == null) throw new Error("PR reps are required.");
+
+  const prDate = input.prDate?.trim() ? input.prDate.trim() : null;
+  if (prDate && !isDateKey(prDate)) {
+    throw new Error("PR date must be YYYY-MM-DD.");
+  }
+
+  return { exerciseId, prWeight, prReps, prDate };
+}
+
+export function isImprovedPersonalRecord(
+  previous: { prWeight: number | null; prReps: number | null } | null | undefined,
+  next: { prWeight: number | null; prReps: number | null },
+): boolean {
+  if (next.prWeight == null || next.prReps == null) return false;
+  if (previous?.prWeight == null) return true;
+  if (next.prWeight > previous.prWeight) return true;
+  return (
+    next.prWeight === previous.prWeight && next.prReps > (previous.prReps ?? 0)
+  );
 }
 
 export type ParsedCustomSupplement = {
@@ -213,4 +184,86 @@ export function parseCustomSupplementInput(input: {
     defaultDose: dose,
     iconOrType: input.iconOrType?.trim() || "pill",
   };
+}
+
+export function formatLift(
+  weight: number | null | undefined,
+  reps: number | null | undefined,
+): string {
+  if (weight == null && reps == null) return "";
+  if (weight == null) return `${reps} reps`;
+  if (reps == null) return `${weight}kg`;
+  return `${weight}kg × ${reps}`;
+}
+
+export function muscleNameById(
+  muscles: { id: string; name: string }[],
+  muscleId: string | null | undefined,
+): string | null {
+  if (!muscleId) return null;
+  return muscles.find((item) => item.id === muscleId)?.name ?? null;
+}
+
+export function findMuscleByName(
+  muscles: { id: string; name: string }[],
+  name: string,
+): { id: string; name: string } | undefined {
+  return muscles.find((item) => sameMuscleName(item.name, name));
+}
+
+export function parseNewMuscleName(
+  name: string,
+  existing: { name: string }[],
+): string {
+  const parsed = parseMuscleName(name);
+  if (existing.some((item) => sameMuscleName(item.name, parsed))) {
+    throw new Error("A muscle with that name already exists.");
+  }
+  return parsed;
+}
+
+export type CatalogExercise = {
+  id: string;
+  name: string;
+  muscleId: string | null;
+  muscleName: string | null;
+  workingWeight: number | null;
+  workingReps: number | null;
+  prWeight: number | null;
+  prReps: number | null;
+};
+
+export function mergeExerciseCatalog(custom: CustomExercisePayload[]): CatalogExercise[] {
+  return [...custom]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      muscleId: item.muscleId,
+      muscleName: item.muscleName,
+      workingWeight: item.workingWeight,
+      workingReps: item.workingReps,
+      prWeight: item.prWeight,
+      prReps: item.prReps,
+    }));
+}
+
+export type CatalogSupplement = {
+  id: string;
+  name: string;
+  source: "builtin" | "custom";
+  defaultDose: string;
+};
+
+export function mergeSupplementCatalog(
+  custom: CustomSupplementPayload[],
+): CatalogSupplement[] {
+  return [...custom]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      source: "custom" as const,
+      defaultDose: item.defaultDose,
+    }));
 }

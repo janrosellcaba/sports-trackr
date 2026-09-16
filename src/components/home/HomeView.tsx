@@ -1,61 +1,68 @@
 "use client";
 
 import { formatDisplayDate } from "@/lib/calculations";
+import { averageIntensity, formatGymSummary } from "@/lib/muscles";
 import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
-import { WorkoutEditor } from "@/components/gym/WorkoutEditor";
+import { GymBar } from "@/components/gym/GymBar";
+import { PrBar } from "@/components/gym/PrBar";
 import { SportsBar } from "@/components/sports/SportsBar";
 import { SupplementBar } from "@/components/supplements/SupplementBar";
 import { DayPicker } from "@/components/ui/DayPicker";
 import type {
   CustomExercisePayload,
   CustomSupplementPayload,
+  GymSessionPayload,
+  MusclePayload,
   SportSessionPayload,
   SupplementPayload,
-  WorkoutPayload,
 } from "@/types/trackr";
 
 export function HomeView({
   today,
   date,
   onDateChange,
-  workout,
+  gym,
   sports,
   supplements,
-  recentWorkouts,
+  recentSessions,
+  muscles,
   customExercises,
   customSupplements,
-  onWorkoutChange,
+  onGymChange,
   onSportLogged,
   onSportRemoved,
   onSupplementsChange,
+  onExerciseChange,
 }: {
   today: string;
   date: string;
   onDateChange: (date: string) => void;
-  workout: WorkoutPayload | null;
+  gym: GymSessionPayload | null;
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
-  recentWorkouts: WorkoutPayload[];
+  recentSessions: GymSessionPayload[];
+  muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
   customSupplements: CustomSupplementPayload[];
-  onWorkoutChange: (workout: WorkoutPayload | null) => void;
+  onGymChange: (session: GymSessionPayload | null) => void;
   onSportLogged: (session: SportSessionPayload) => void;
   onSportRemoved: (id: string) => void;
   onSupplementsChange: (intakes: SupplementPayload[]) => void;
+  onExerciseChange: (row: CustomExercisePayload) => void;
 }) {
-  const volume = workout?.totalVolumeKg ?? 0;
-  const sets = workout?.setCount ?? 0;
+  const hits = gym?.hits ?? [];
+  const avg = averageIntensity(hits);
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
         <DayPicker today={today} date={date} onChange={onDateChange} />
         <div className={`${CARD_CLS} grid grid-cols-4 divide-x divide-line py-3`}>
-          <DayStat label="Sets" value={String(sets)} />
+          <DayStat label="Muscles" value={String(hits.length)} />
           <DayStat
-            label="kg"
-            value={volume === 0 ? "0" : volume.toLocaleString()}
-            accent={volume > 0}
+            label="Avg"
+            value={hits.length === 0 ? "—" : String(avg)}
+            accent={hits.length > 0}
           />
           <DayStat label="Sports" value={String(sports.length)} />
           <DayStat label="Supps" value={String(supplements.length)} />
@@ -64,11 +71,11 @@ export function HomeView({
 
       <div>
         <h2 className={`mb-3 ${LABEL_CLS}`}>Gym</h2>
-        <WorkoutEditor
+        <GymBar
           date={date}
-          workout={workout}
-          customExercises={customExercises}
-          onChange={onWorkoutChange}
+          session={gym}
+          muscles={muscles}
+          onChange={onGymChange}
         />
       </div>
 
@@ -86,11 +93,11 @@ export function HomeView({
         onRemoved={onSportRemoved}
       />
 
-      {recentWorkouts.length > 0 ? (
+      {recentSessions.length > 0 ? (
         <div>
           <h2 className={`mb-3 ${LABEL_CLS}`}>Recent gym days</h2>
           <div className="space-y-2">
-            {recentWorkouts.slice(0, 4).map((item) => (
+            {recentSessions.slice(0, 4).map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -101,14 +108,19 @@ export function HomeView({
                   {formatDisplayDate(item.date)}
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
-                  {item.exercises.length} exercises · {item.setCount} sets ·{" "}
-                  {item.totalVolumeKg.toLocaleString()}kg
+                  {formatGymSummary(item.hits) || `${item.hitCount} muscles`}
                 </p>
               </button>
             ))}
           </div>
         </div>
       ) : null}
+
+      <PrBar
+        date={date}
+        exercises={customExercises}
+        onChange={onExerciseChange}
+      />
     </div>
   );
 }

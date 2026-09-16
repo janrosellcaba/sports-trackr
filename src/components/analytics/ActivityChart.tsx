@@ -20,7 +20,7 @@ export function ActivityChart({ data }: { data: DailyActivityPoint[] }) {
   return (
     <section className={`${CARD_CLS} p-4`}>
       <div className="mb-4">
-        <h2 className={LABEL_CLS}>Volume</h2>
+        <h2 className={LABEL_CLS}>Gym load</h2>
       </div>
 
       <div className="h-56 w-full">
@@ -52,10 +52,10 @@ export function ActivityChart({ data }: { data: DailyActivityPoint[] }) {
               labelFormatter={(label) => formatShortDate(String(label))}
               formatter={(value, name) => {
                 if (name === "sports") return [`${value ?? 0}`, "Sports"];
-                return [`${value ?? 0} kg`, "Volume"];
+                return [`${value ?? 0}`, "Load"];
               }}
             />
-            <Bar dataKey="volumeKg" fill={brand} radius={[6, 6, 0, 0]} />
+            <Bar dataKey="gymLoad" fill={brand} radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

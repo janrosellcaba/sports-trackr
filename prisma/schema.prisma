@@ -15,42 +15,52 @@ model User {
   colorMode         String              @default("dark")
   createdAt         DateTime            @default(now())
   catalogSeeded     Boolean             @default(false)
-  workouts          Workout[]
+  gymSessions       GymSession[]
   sports            SportSession[]
   supplements       SupplementIntake[]
+  muscles           Muscle[]
   customExercises   CustomExercise[]
   customSupplements CustomSupplement[]
 }
 
-model Workout {
-  id        String        @id @default(cuid())
+model Muscle {
+  id        String         @id @default(cuid())
   userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int            @default(0)
+  createdAt DateTime       @default(now())
+  hits      MuscleHit[]
+  exercises CustomExercise[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model GymSession {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      String
   notes     String?
-  createdAt DateTime      @default(now())
-  exercises ExerciseLog[]
+  createdAt DateTime    @default(now())
+  hits      MuscleHit[]
 
   @@unique([userId, date])
   @@index([userId])
 }
 
-model ExerciseLog {
-  id        String   @id @default(cuid())
-  workoutId String
-  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  name      String
-  order     Int      @default(0)
-  sets      SetLog[]
-}
+model MuscleHit {
+  id         String     @id @default(cuid())
+  sessionId  String
+  session    GymSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  muscleId   String?
+  muscle     Muscle?    @relation(fields: [muscleId], references: [id], onDelete: SetNull)
+  muscleName String
+  intensity  Int
 
-model SetLog {
-  id            String      @id @default(cuid())
-  exerciseLogId String
-  exerciseLog   ExerciseLog @relation(fields: [exerciseLogId], references: [id], onDelete: Cascade)
-  setNumber     Int
-  weight        Float
-  reps          Int
+  @@index([sessionId])
+  @@index([muscleId])
 }
 
 model SupplementIntake {
@@ -83,16 +93,36 @@ model SportSession {
 }
 
 model CustomExercise {
-  id            String   @id @default(cuid())
+  id            String             @id @default(cuid())
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   name          String
-  muscleGroup   String
-  defaultWeight Float?
-  defaultReps   Int?
-  createdAt     DateTime @default(now())
+  muscleId      String?
+  muscle        Muscle?            @relation(fields: [muscleId], references: [id], onDelete: SetNull)
+  workingWeight Float?
+  workingReps   Int?
+  prWeight      Float?
+  prReps        Int?
+  prDate        String?
+  createdAt     DateTime           @default(now())
+  snapshots     ExerciseSnapshot[]
 
   @@index([userId])
+}
+
+model ExerciseSnapshot {
+  id            String         @id @default(cuid())
+  exerciseId    String
+  exercise      CustomExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  date          String
+  workingWeight Float?
+  workingReps   Int?
+  prWeight      Float?
+  prReps        Int?
+  createdAt     DateTime       @default(now())
+
+  @@unique([exerciseId, date])
+  @@index([exerciseId])
 }
 
 model CustomSupplement {

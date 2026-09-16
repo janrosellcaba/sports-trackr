@@ -43,16 +43,6 @@ export function formatDisplayDate(iso: string): string {
   });
 }
 
-export function setVolume(weight: number, reps: number): number {
-  return weight * reps;
-}
-
-export function workoutTonnage(
-  sets: { weight: number; reps: number }[],
-): number {
-  return sets.reduce((sum, set) => sum + setVolume(set.weight, set.reps), 0);
-}
-
 /** Epley estimated 1RM */
 export function estimatedOneRm(weight: number, reps: number): number {
   if (reps <= 0) return 0;

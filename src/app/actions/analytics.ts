@@ -6,7 +6,6 @@ import {
   computeStreak,
   estimatedOneRm,
   getTodayLocalDateISO,
-  setVolume,
 } from "@/lib/calculations";
 import { prisma } from "@/lib/prisma";
 import type {
@@ -14,7 +13,7 @@ import type {
   AnalyticsSummary,
   DailyActivityPoint,
   ProgressionPoint,
-  TopExercise,
+  TopMuscle,
 } from "@/types/trackr";
 
 function percentChange(current: number, previous: number): number {
@@ -34,7 +33,7 @@ function buildDailySkeleton(days: number, endISO: string): DailyActivityPoint[] 
   for (let i = days - 1; i >= 0; i -= 1) {
     points.push({
       date: addDaysISO(endISO, -i),
-      volumeKg: 0,
+      gymLoad: 0,
       workouts: 0,
       sports: 0,
       supplements: 0,
@@ -54,11 +53,11 @@ export async function getAnalyticsSummary(
   const previousStart = addDaysISO(rangeStart, -rangeDays);
   const chartStart = addDaysISO(today, -(chartDays - 1));
 
-  const [workouts, supplements, sports, previousWorkouts, previousSupplements, previousSports] =
+  const [sessions, supplements, sports, previousSessions, previousSupplements, previousSports] =
     await Promise.all([
-      prisma.workout.findMany({
+      prisma.gymSession.findMany({
         where: { userId: user.id, date: { gte: rangeStart } },
-        include: { exercises: { include: { sets: true } } },
+        include: { hits: true },
       }),
       prisma.supplementIntake.findMany({
         where: { userId: user.id, date: { gte: rangeStart } },
@@ -67,12 +66,12 @@ export async function getAnalyticsSummary(
       prisma.sportSession.findMany({
         where: { userId: user.id, date: { gte: rangeStart } },
       }),
-      prisma.workout.findMany({
+      prisma.gymSession.findMany({
         where: {
           userId: user.id,
           date: { gte: previousStart, lt: rangeStart },
         },
-        include: { exercises: { include: { sets: true } } },
+        include: { hits: true },
       }),
       prisma.supplementIntake.findMany({
         where: {
@@ -94,37 +93,35 @@ export async function getAnalyticsSummary(
     buildDailySkeleton(chartDays, today).map((point) => [point.date, point]),
   );
 
-  let totalVolumeKg = 0;
-  let totalSets = 0;
-  const topMap = new Map<string, TopExercise>();
+  let totalHits = 0;
+  let totalGymLoad = 0;
+  const topMap = new Map<string, TopMuscle & { dates: Set<string> }>();
 
-  for (const workout of workouts) {
-    const point = dailyMap.get(workout.date);
-    if (point && workout.date >= chartStart) {
+  for (const session of sessions) {
+    const point = dailyMap.get(session.date);
+    if (point && session.date >= chartStart) {
       point.workouts += 1;
     }
 
-    for (const exercise of workout.exercises) {
-      let exerciseVolume = 0;
-      for (const set of exercise.sets) {
-        const volume = setVolume(set.weight, set.reps);
-        totalVolumeKg += volume;
-        totalSets += 1;
-        exerciseVolume += volume;
-        if (point && workout.date >= chartStart) {
-          point.volumeKg += volume;
-        }
+    for (const hit of session.hits) {
+      totalHits += 1;
+      totalGymLoad += hit.intensity;
+      if (point && session.date >= chartStart) {
+        point.gymLoad += hit.intensity;
       }
-      const existing = topMap.get(exercise.name) ?? {
-        name: exercise.name,
-        volumeKg: 0,
-        sets: 0,
-        workouts: 0,
+      const key = hit.muscleName;
+      const existing = topMap.get(key) ?? {
+        name: key,
+        load: 0,
+        hits: 0,
+        days: 0,
+        avgIntensity: 0,
+        dates: new Set<string>(),
       };
-      existing.volumeKg += exerciseVolume;
-      existing.sets += exercise.sets.length;
-      existing.workouts += 1;
-      topMap.set(exercise.name, existing);
+      existing.load += hit.intensity;
+      existing.hits += 1;
+      existing.dates.add(session.date);
+      topMap.set(key, existing);
     }
   }
 
@@ -153,14 +150,10 @@ export async function getAnalyticsSummary(
     }
   }
 
-  let previousVolume = 0;
-  let previousSets = 0;
-  for (const workout of previousWorkouts) {
-    for (const exercise of workout.exercises) {
-      for (const set of exercise.sets) {
-        previousVolume += setVolume(set.weight, set.reps);
-        previousSets += 1;
-      }
+  let previousLoad = 0;
+  for (const session of previousSessions) {
+    for (const hit of session.hits) {
+      previousLoad += hit.intensity;
     }
   }
 
@@ -170,7 +163,7 @@ export async function getAnalyticsSummary(
   );
 
   const [allGymDates, allSupplementDates, allSportDates] = await Promise.all([
-    prisma.workout.findMany({
+    prisma.gymSession.findMany({
       where: { userId: user.id },
       select: { date: true },
       orderBy: { date: "desc" },
@@ -190,17 +183,23 @@ export async function getAnalyticsSummary(
     }),
   ]);
 
-  const topExercises = Array.from(topMap.values())
-    .map((item) => ({ ...item, volumeKg: Math.round(item.volumeKg) }))
-    .sort((a, b) => b.volumeKg - a.volumeKg)
-    .slice(0, 6);
+  const topMuscles = Array.from(topMap.values())
+    .map((item) => ({
+      name: item.name,
+      load: item.load,
+      hits: item.hits,
+      days: item.dates.size,
+      avgIntensity: Math.round((item.load / Math.max(item.hits, 1)) * 10) / 10,
+    }))
+    .sort((a, b) => b.load - a.load)
+    .slice(0, 8);
 
   return {
     days: rangeDays,
     periodLabel: periodLabel(rangeDays),
-    totalWorkouts: workouts.length,
-    totalSets,
-    totalVolumeKg: Math.round(totalVolumeKg),
+    totalWorkouts: sessions.length,
+    totalHits,
+    totalGymLoad,
     totalSports: sports.length,
     totalSportMinutes,
     totalSportKm: Math.round(totalSportKm * 10) / 10,
@@ -209,26 +208,28 @@ export async function getAnalyticsSummary(
     gymStreak: computeStreak(allGymDates.map((item) => item.date)),
     sportStreak: computeStreak(allSportDates.map((item) => item.date)),
     trends: {
-      workouts: percentChange(workouts.length, previousWorkouts.length),
-      sets: percentChange(totalSets, previousSets),
-      volumeKg: percentChange(totalVolumeKg, previousVolume),
+      workouts: percentChange(sessions.length, previousSessions.length),
+      gymLoad: percentChange(totalGymLoad, previousLoad),
       sports: percentChange(sports.length, previousSports.length),
       supplements: percentChange(supplementDays.size, previousSupplementDays.size),
     },
-    daily: Array.from(dailyMap.values()).map((point) => ({
-      ...point,
-      volumeKg: Math.round(point.volumeKg),
-    })),
-    topExercises,
+    daily: Array.from(dailyMap.values()),
+    topMuscles,
   };
 }
 
-export async function getExerciseNames(): Promise<string[]> {
+export async function getNotebookExerciseNames(): Promise<string[]> {
   const user = await requireUser();
-  const rows = await prisma.exerciseLog.findMany({
-    where: { workout: { userId: user.id } },
+  const rows = await prisma.customExercise.findMany({
+    where: {
+      userId: user.id,
+      OR: [
+        { workingWeight: { not: null } },
+        { prWeight: { not: null } },
+        { snapshots: { some: {} } },
+      ],
+    },
     select: { name: true },
-    distinct: ["name"],
     orderBy: { name: "asc" },
   });
   return rows.map((row) => row.name);
@@ -241,64 +242,57 @@ export async function getExerciseProgression(
   const trimmed = exerciseName.trim();
   if (!trimmed) return [];
 
-  const logs = await prisma.exerciseLog.findMany({
-    where: { name: trimmed, workout: { userId: user.id } },
+  const exercise = await prisma.customExercise.findFirst({
+    where: { userId: user.id, name: trimmed },
     include: {
-      workout: { select: { date: true } },
-      sets: true,
+      snapshots: { orderBy: { date: "asc" } },
     },
-    orderBy: { workout: { date: "asc" } },
   });
+  if (!exercise) return [];
 
-  const byDate = new Map<string, ProgressionPoint>();
+  const points: ProgressionPoint[] = exercise.snapshots.map((snap) => ({
+    date: snap.date,
+    workingWeight: snap.workingWeight,
+    prWeight: snap.prWeight,
+    estimatedOneRm:
+      snap.prWeight != null && snap.prReps != null
+        ? estimatedOneRm(snap.prWeight, snap.prReps)
+        : snap.prWeight,
+  }));
 
-  for (const log of logs) {
-    if (log.sets.length === 0) continue;
+  const last = points[points.length - 1];
+  const currentWorking = exercise.workingWeight;
+  const currentPr = exercise.prWeight;
+  const currentOneRm =
+    exercise.prWeight != null && exercise.prReps != null
+      ? estimatedOneRm(exercise.prWeight, exercise.prReps)
+      : exercise.prWeight;
+  const differs =
+    !last ||
+    last.workingWeight !== currentWorking ||
+    last.prWeight !== currentPr;
 
-    let bestWeight = 0;
-    let bestOneRm = 0;
-    let bestReps = 0;
-
-    for (const set of log.sets) {
-      const oneRm = estimatedOneRm(set.weight, set.reps);
-      if (set.weight > bestWeight) {
-        bestWeight = set.weight;
-        bestReps = set.reps;
-      }
-      if (oneRm > bestOneRm) {
-        bestOneRm = oneRm;
-      }
-    }
-
-    const key = log.workout.date;
-    const existing = byDate.get(key);
-    if (!existing || bestOneRm > existing.estimatedOneRm) {
-      byDate.set(key, {
-        date: key,
-        maxWeight: bestWeight,
-        estimatedOneRm: bestOneRm,
-        bestSetReps: bestReps,
-      });
-    }
+  if (differs && (currentWorking != null || currentPr != null)) {
+    points.push({
+      date: exercise.prDate ?? getTodayLocalDateISO(),
+      workingWeight: currentWorking,
+      prWeight: currentPr,
+      estimatedOneRm: currentOneRm,
+    });
   }
 
-  return Array.from(byDate.values());
+  return points;
 }
 
 export async function exportMyData() {
   const user = await requireUser();
 
-  const [workouts, supplements, sports, customExercises, customSupplements] =
+  const [sessions, supplements, sports, muscles, customExercises, customSupplements] =
     await Promise.all([
-      prisma.workout.findMany({
+      prisma.gymSession.findMany({
         where: { userId: user.id },
         orderBy: { date: "desc" },
-        include: {
-          exercises: {
-            orderBy: { order: "asc" },
-            include: { sets: { orderBy: { setNumber: "asc" } } },
-          },
-        },
+        include: { hits: { orderBy: { intensity: "desc" } } },
       }),
       prisma.supplementIntake.findMany({
         where: { userId: user.id },
@@ -308,9 +302,14 @@ export async function exportMyData() {
         where: { userId: user.id },
         orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       }),
+      prisma.muscle.findMany({
+        where: { userId: user.id },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      }),
       prisma.customExercise.findMany({
         where: { userId: user.id },
         orderBy: { name: "asc" },
+        include: { muscle: { select: { name: true } }, snapshots: true },
       }),
       prisma.customSupplement.findMany({
         where: { userId: user.id },
@@ -321,17 +320,13 @@ export async function exportMyData() {
   return {
     exportedAt: new Date().toISOString(),
     username: user.username,
-    workouts: workouts.map((workout) => ({
-      id: workout.id,
-      date: workout.date,
-      notes: workout.notes,
-      exercises: workout.exercises.map((exercise) => ({
-        name: exercise.name,
-        sets: exercise.sets.map((set) => ({
-          setNumber: set.setNumber,
-          weight: set.weight,
-          reps: set.reps,
-        })),
+    gymSessions: sessions.map((session) => ({
+      id: session.id,
+      date: session.date,
+      notes: session.notes,
+      hits: session.hits.map((hit) => ({
+        muscleName: hit.muscleName,
+        intensity: hit.intensity,
       })),
     })),
     supplements: supplements.map((item) => ({
@@ -349,11 +344,18 @@ export async function exportMyData() {
       effort: item.effort,
       notes: item.notes,
     })),
+    muscles: muscles.map((item) => ({
+      name: item.name,
+      sortOrder: item.sortOrder,
+    })),
     customExercises: customExercises.map((item) => ({
       name: item.name,
-      muscleGroup: item.muscleGroup,
-      defaultWeight: item.defaultWeight,
-      defaultReps: item.defaultReps,
+      muscleName: item.muscle?.name ?? null,
+      workingWeight: item.workingWeight,
+      workingReps: item.workingReps,
+      prWeight: item.prWeight,
+      prReps: item.prReps,
+      prDate: item.prDate,
     })),
     customSupplements: customSupplements.map((item) => ({
       name: item.name,

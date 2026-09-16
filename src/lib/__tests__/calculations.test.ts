@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  computeStreak,
-  estimatedOneRm,
-  workoutTonnage,
-} from "@/lib/calculations";
+import { computeStreak, estimatedOneRm } from "@/lib/calculations";
 
 describe("estimatedOneRm", () => {
   it("returns 0 for non-positive reps", () => {
@@ -18,21 +14,6 @@ describe("estimatedOneRm", () => {
   it("applies the Epley formula", () => {
     expect(estimatedOneRm(100, 5)).toBe(116.7);
     expect(estimatedOneRm(80, 10)).toBe(106.7);
-  });
-});
-
-describe("workoutTonnage", () => {
-  it("sums weight × reps across sets", () => {
-    expect(
-      workoutTonnage([
-        { weight: 100, reps: 5 },
-        { weight: 80, reps: 8 },
-      ]),
-    ).toBe(1140);
-  });
-
-  it("returns 0 for an empty session", () => {
-    expect(workoutTonnage([])).toBe(0);
   });
 });
 

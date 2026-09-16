@@ -14,9 +14,10 @@ import type {
   AppTab,
   CustomExercisePayload,
   CustomSupplementPayload,
+  GymSessionPayload,
+  MusclePayload,
   SportSessionPayload,
   SupplementPayload,
-  WorkoutPayload,
 } from "@/types/trackr";
 
 export function AppShell({
@@ -39,25 +40,33 @@ export function AppShell({
     mainRef.current?.scrollTo(0, 0);
   }, [tab]);
 
-  function upsertWorkout(
-    workout: WorkoutPayload | null,
+  function upsertGym(
+    session: GymSessionPayload | null,
+    date: string,
     options?: { keepDate?: boolean },
   ) {
-    if (!workout) return;
+    if (!session) {
+      setState((current) => ({
+        ...current,
+        todayGym: date === current.today ? null : current.todayGym,
+        gymSessions: current.gymSessions.filter((item) => item.date !== date),
+      }));
+      return;
+    }
     setState((current) => {
-      const workouts = [
-        workout,
-        ...current.workouts.filter(
-          (item) => item.id !== workout.id && item.date !== workout.date,
+      const gymSessions = [
+        session,
+        ...current.gymSessions.filter(
+          (item) => item.id !== session.id && item.date !== session.date,
         ),
       ].sort((a, b) => b.date.localeCompare(a.date));
       return {
         ...current,
-        todayWorkout: workout.date === current.today ? workout : current.todayWorkout,
-        workouts,
+        todayGym: session.date === current.today ? session : current.todayGym,
+        gymSessions,
       };
     });
-    if (!options?.keepDate) setSelectedDate(workout.date);
+    if (!options?.keepDate) setSelectedDate(session.date);
   }
 
   function upsertSport(
@@ -105,11 +114,11 @@ export function AppShell({
     }));
   }
 
-  function deleteWorkout(id: string) {
+  function deleteGym(id: string) {
     setState((current) => ({
       ...current,
-      todayWorkout: current.todayWorkout?.id === id ? null : current.todayWorkout,
-      workouts: current.workouts.filter((item) => item.id !== id),
+      todayGym: current.todayGym?.id === id ? null : current.todayGym,
+      gymSessions: current.gymSessions.filter((item) => item.id !== id),
     }));
   }
 
@@ -129,24 +138,38 @@ export function AppShell({
     }));
   }
 
+  function setMuscles(rows: MusclePayload[]) {
+    setState((current) => ({ ...current, muscles: rows }));
+  }
+
   function setCustomExercises(rows: CustomExercisePayload[]) {
     setState((current) => ({ ...current, customExercises: rows }));
+  }
+
+  function upsertExercise(row: CustomExercisePayload) {
+    setState((current) => ({
+      ...current,
+      customExercises: [
+        row,
+        ...current.customExercises.filter((item) => item.id !== row.id),
+      ].sort((a, b) => a.name.localeCompare(b.name)),
+    }));
   }
 
   function setCustomSupplements(rows: CustomSupplementPayload[]) {
     setState((current) => ({ ...current, customSupplements: rows }));
   }
 
-  const dayWorkout =
+  const dayGym =
     selectedDate === state.today
-      ? state.todayWorkout
-      : (state.workouts.find((workout) => workout.date === selectedDate) ?? null);
+      ? state.todayGym
+      : (state.gymSessions.find((session) => session.date === selectedDate) ?? null);
   const daySports = state.sports.filter((session) => session.date === selectedDate);
   const daySupplements = state.supplements.filter(
     (intake) => intake.date === selectedDate,
   );
-  const recentWorkouts = state.workouts.filter(
-    (workout) => workout.date !== selectedDate,
+  const recentSessions = state.gymSessions.filter(
+    (session) => session.date !== selectedDate,
   );
 
   return (
@@ -172,31 +195,35 @@ export function AppShell({
               today={state.today}
               date={selectedDate}
               onDateChange={setSelectedDate}
-              workout={dayWorkout}
+              gym={dayGym}
               sports={daySports}
               supplements={daySupplements}
-              recentWorkouts={recentWorkouts}
+              recentSessions={recentSessions}
+              muscles={state.muscles}
               customExercises={state.customExercises}
               customSupplements={state.customSupplements}
-              onWorkoutChange={upsertWorkout}
+              onGymChange={(session) => upsertGym(session, selectedDate)}
               onSportLogged={upsertSport}
               onSportRemoved={deleteSport}
               onSupplementsChange={(intakes) =>
                 setSupplementsForDate(selectedDate, intakes)
               }
+              onExerciseChange={upsertExercise}
             />
           )}
           {tab === "log" && (
             <LogView
               today={state.today}
-              workouts={state.workouts}
+              gymSessions={state.gymSessions}
               sports={state.sports}
               supplements={state.supplements}
-              customExercises={state.customExercises}
-              onWorkoutChange={(workout) => upsertWorkout(workout, { keepDate: true })}
+              muscles={state.muscles}
+              onGymChange={(session, date) =>
+                upsertGym(session, date, { keepDate: true })
+              }
               onSportLogged={(session) => upsertSport(session, { keepDate: true })}
               onSupplementUpsert={upsertSupplement}
-              onDeleteWorkout={deleteWorkout}
+              onDeleteGym={deleteGym}
               onDeleteSport={deleteSport}
               onDeleteSupplement={deleteSupplement}
             />
@@ -210,8 +237,10 @@ export function AppShell({
           {tab === "settings" && (
             <SettingsView
               user={user}
+              muscles={state.muscles}
               customExercises={state.customExercises}
               customSupplements={state.customSupplements}
+              onMusclesChange={setMuscles}
               onExercisesChange={setCustomExercises}
               onSupplementsChange={setCustomSupplements}
             />

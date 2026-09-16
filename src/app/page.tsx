@@ -1,4 +1,4 @@
-import { getExerciseNames, getAnalyticsSummary } from "@/app/actions/analytics";
+import { getNotebookExerciseNames, getAnalyticsSummary } from "@/app/actions/analytics";
 import { requireUser } from "@/app/actions/auth";
 import { getAppState } from "@/app/actions/data";
 import { AppShell } from "@/components/layout/AppShell";
@@ -8,7 +8,7 @@ export default async function Home() {
   const [state, analytics, exerciseNames] = await Promise.all([
     getAppState(),
     getAnalyticsSummary(30),
-    getExerciseNames(),
+    getNotebookExerciseNames(),
   ]);
 
   return (

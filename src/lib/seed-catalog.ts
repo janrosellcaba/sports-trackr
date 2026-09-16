@@ -1,12 +1,45 @@
 import { defaultExerciseSeeds, defaultSupplementSeeds } from "@/lib/catalog";
+import { DEFAULT_MUSCLES } from "@/lib/muscles";
 import { prisma } from "@/lib/prisma";
+
+export async function ensureDefaultMuscles(userId: string): Promise<
+  Array<{ id: string; name: string; sortOrder: number }>
+> {
+  const existing = await prisma.muscle.findMany({
+    where: { userId },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: { id: true, name: true, sortOrder: true },
+  });
+  if (existing.length > 0) return existing;
+
+  await prisma.muscle.createMany({
+    data: DEFAULT_MUSCLES.map((name, index) => ({
+      userId,
+      name,
+      sortOrder: index,
+    })),
+  });
+
+  return prisma.muscle.findMany({
+    where: { userId },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: { id: true, name: true, sortOrder: true },
+  });
+}
 
 export async function seedUserCatalog(userId: string): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { catalogSeeded: true },
   });
-  if (!user || user.catalogSeeded) return;
+  if (!user) return;
+
+  const muscles = await ensureDefaultMuscles(userId);
+  if (user.catalogSeeded) return;
+
+  const muscleIdByName = new Map(
+    muscles.map((item) => [item.name.toLowerCase(), item.id]),
+  );
 
   const [exercises, supplements] = await Promise.all([
     prisma.customExercise.findMany({
@@ -31,7 +64,7 @@ export async function seedUserCatalog(userId: string): Promise<void> {
     .map((item) => ({
       userId,
       name: item.name,
-      muscleGroup: item.muscleGroup,
+      muscleId: muscleIdByName.get(item.muscle.toLowerCase()) ?? null,
     }));
 
   const supplementCreates = defaultSupplementSeeds()

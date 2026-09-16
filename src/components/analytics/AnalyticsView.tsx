@@ -3,12 +3,12 @@
 import { useEffect, useState, useTransition } from "react";
 import {
   getAnalyticsSummary,
-  getExerciseNames,
+  getNotebookExerciseNames,
 } from "@/app/actions/analytics";
 import { ActivityChart } from "@/components/analytics/ActivityChart";
 import { ExerciseProgressionChart } from "@/components/analytics/ExerciseProgressionChart";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
-import { TopExercises } from "@/components/analytics/TopExercises";
+import { TopMuscles } from "@/components/analytics/TopMuscles";
 import { PAGE_TITLE } from "@/lib/ui";
 import type { AnalyticsPeriod, AnalyticsSummary } from "@/types/trackr";
 
@@ -35,7 +35,7 @@ export function AnalyticsView({
     startTransition(async () => {
       const [nextSummary, nextNames] = await Promise.all([
         getAnalyticsSummary(period),
-        getExerciseNames(),
+        getNotebookExerciseNames(),
       ]);
       setSummary(nextSummary);
       setNames(nextNames);
@@ -71,7 +71,7 @@ export function AnalyticsView({
         <div className="space-y-5">
           <KpiGrid summary={summary} />
           <ActivityChart data={summary.daily} />
-          <TopExercises items={summary.topExercises} />
+          <TopMuscles items={summary.topMuscles} />
           <ExerciseProgressionChart exerciseNames={names} />
         </div>
       </div>

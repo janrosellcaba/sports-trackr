@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Download,
   Dumbbell,
+  Grid3x3,
   LogOut,
   Palette,
   Pill,
@@ -17,6 +18,7 @@ import { exportMyData } from "@/app/actions/analytics";
 import { AppearanceView } from "@/components/settings/AppearanceView";
 import {
   ExerciseCatalogView,
+  MuscleCatalogView,
   SupplementCatalogView,
 } from "@/components/settings/CatalogViews";
 import { confirmsUsername } from "@/lib/auth-logic";
@@ -26,10 +28,12 @@ import type { AuthUser } from "@/lib/auth";
 import type {
   CustomExercisePayload,
   CustomSupplementPayload,
+  MusclePayload,
 } from "@/types/trackr";
 
 type SettingsPage =
   | "menu"
+  | "muscles"
   | "supplements"
   | "exercises"
   | "appearance"
@@ -43,16 +47,22 @@ const PAGES: {
   icon: typeof Pill;
 }[] = [
   {
-    id: "supplements",
-    label: "Supplements",
-    hint: "Tap buttons on Home",
-    icon: Pill,
+    id: "muscles",
+    label: "Muscles",
+    hint: "Tap targets on Home",
+    icon: Grid3x3,
   },
   {
     id: "exercises",
     label: "Exercises",
-    hint: "Gym picker list",
+    hint: "Lift catalog",
     icon: Dumbbell,
+  },
+  {
+    id: "supplements",
+    label: "Supplements",
+    hint: "Tap buttons on Home",
+    icon: Pill,
   },
   {
     id: "appearance",
@@ -76,14 +86,18 @@ const PAGES: {
 
 export function SettingsView({
   user,
+  muscles,
   customExercises,
   customSupplements,
+  onMusclesChange,
   onExercisesChange,
   onSupplementsChange,
 }: {
   user: AuthUser;
+  muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
   customSupplements: CustomSupplementPayload[];
+  onMusclesChange: (rows: MusclePayload[]) => void;
   onExercisesChange: (rows: CustomExercisePayload[]) => void;
   onSupplementsChange: (rows: CustomSupplementPayload[]) => void;
 }) {
@@ -105,6 +119,15 @@ export function SettingsView({
           Settings
         </button>
 
+        {page === "muscles" ? (
+          <SectionIntro
+            title="Muscles"
+            description="Tap these after a gym session. Add Calves, or split Back into Lats and Traps, whenever you want."
+          >
+            <MuscleCatalogView initial={muscles} onChange={onMusclesChange} />
+          </SectionIntro>
+        ) : null}
+
         {page === "supplements" ? (
           <SectionIntro
             title="Supplements"
@@ -120,10 +143,11 @@ export function SettingsView({
         {page === "exercises" ? (
           <SectionIntro
             title="Exercises"
-            description="Add, rename, or delete anything in the gym picker — including the defaults."
+            description="Add lifts here first. Personal records are logged from Home with + Add PR."
           >
             <ExerciseCatalogView
               initial={customExercises}
+              muscles={muscles}
               onChange={onExercisesChange}
             />
           </SectionIntro>

@@ -1,24 +1,24 @@
-export type SetPayload = {
-  id: string;
-  setNumber: number;
-  weight: number;
-  reps: number;
-};
-
-export type ExercisePayload = {
+export type MusclePayload = {
   id: string;
   name: string;
-  order: number;
-  sets: SetPayload[];
+  sortOrder: number;
+  createdAt: string;
 };
 
-export type WorkoutPayload = {
+export type MuscleHitPayload = {
+  id: string;
+  muscleId: string | null;
+  muscleName: string;
+  intensity: number;
+};
+
+export type GymSessionPayload = {
   id: string;
   date: string;
   notes: string | null;
-  exercises: ExercisePayload[];
-  totalVolumeKg: number;
-  setCount: number;
+  hits: MuscleHitPayload[];
+  hitCount: number;
+  totalLoad: number;
 };
 
 export type SupplementPayload = {
@@ -43,9 +43,13 @@ export type SportSessionPayload = {
 export type CustomExercisePayload = {
   id: string;
   name: string;
-  muscleGroup: string;
-  defaultWeight: number | null;
-  defaultReps: number | null;
+  muscleId: string | null;
+  muscleName: string | null;
+  workingWeight: number | null;
+  workingReps: number | null;
+  prWeight: number | null;
+  prReps: number | null;
+  prDate: string | null;
   createdAt: string;
 };
 
@@ -61,25 +65,26 @@ export type AnalyticsPeriod = 7 | 30 | 90 | 0;
 
 export type DailyActivityPoint = {
   date: string;
-  volumeKg: number;
+  gymLoad: number;
   workouts: number;
   sports: number;
   supplements: number;
 };
 
-export type TopExercise = {
+export type TopMuscle = {
   name: string;
-  volumeKg: number;
-  sets: number;
-  workouts: number;
+  load: number;
+  hits: number;
+  days: number;
+  avgIntensity: number;
 };
 
 export type AnalyticsSummary = {
   days: number;
   periodLabel: string;
   totalWorkouts: number;
-  totalSets: number;
-  totalVolumeKg: number;
+  totalHits: number;
+  totalGymLoad: number;
   totalSports: number;
   totalSportMinutes: number;
   totalSportKm: number;
@@ -89,32 +94,32 @@ export type AnalyticsSummary = {
   sportStreak: number;
   trends: {
     workouts: number;
-    sets: number;
-    volumeKg: number;
+    gymLoad: number;
     sports: number;
     supplements: number;
   };
   daily: DailyActivityPoint[];
-  topExercises: TopExercise[];
+  topMuscles: TopMuscle[];
 };
 
 export type ProgressionPoint = {
   date: string;
-  maxWeight: number;
-  estimatedOneRm: number;
-  bestSetReps: number;
+  workingWeight: number | null;
+  prWeight: number | null;
+  estimatedOneRm: number | null;
 };
 
 export type AppTab = "home" | "log" | "analytics" | "settings";
 
 export type AppState = {
   today: string;
-  todayWorkout: WorkoutPayload | null;
+  todayGym: GymSessionPayload | null;
   todaySports: SportSessionPayload[];
   todaySupplements: SupplementPayload[];
-  workouts: WorkoutPayload[];
+  gymSessions: GymSessionPayload[];
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
+  muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
   customSupplements: CustomSupplementPayload[];
 };

@@ -29,7 +29,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Trackr",
-  description: "Simple gym and supplement log",
+  description: "Gym, sports, and supplement log",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
