@@ -20,12 +20,13 @@ import { exportMyData } from "@/app/actions/analytics";
 import { importMyData, type ImportSummary } from "@/app/actions/import";
 import { AppearanceView } from "@/components/settings/AppearanceView";
 import { AccountSecurity } from "@/components/settings/AccountSecurity";
+import { AdminPanel } from "@/components/settings/AdminPanel";
 import {
   ExerciseCatalogView,
   MuscleCatalogView,
   SupplementCatalogView,
 } from "@/components/settings/CatalogViews";
-import { confirmsUsername } from "@/lib/auth-logic";
+import { confirmsUsername, isAdminUser } from "@/lib/auth-logic";
 import { buildExportCsv } from "@/lib/export-data";
 import type { SettingsSection } from "@/lib/settings";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS, PAGE_TITLE, PRIMARY_BTN } from "@/lib/ui";
@@ -210,6 +211,8 @@ export function SettingsView({
           );
         })}
       </div>
+
+      {isAdminUser(user.username) ? <AdminPanel currentUserId={user.id} /> : null}
     </div>
   );
 }

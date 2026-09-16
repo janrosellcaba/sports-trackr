@@ -20,6 +20,10 @@ export function isValidInviteCode(
   return mismatch === 0;
 }
 
+export function isAdminUser(username: string): boolean {
+  return normalizeUsername(username) === "jan";
+}
+
 export function confirmsUsername(
   username: string,
   confirmation: string,

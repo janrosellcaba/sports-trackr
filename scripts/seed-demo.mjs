@@ -4,7 +4,7 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
 
 const DEMO_USERNAME = "test";
-const DEMO_PASSWORD = "testpass1";
+const DEMO_PASSWORD = "test";
 
 const MUSCLES = [
   "Chest",
@@ -133,6 +133,7 @@ async function main() {
     });
     if (existing) {
       console.log("Refreshing demo user `test` only (cascade delete of that user's logs).");
+      await prisma.gymSession.deleteMany({ where: { userId: existing.id } });
       await prisma.user.delete({ where: { id: existing.id } });
     }
 

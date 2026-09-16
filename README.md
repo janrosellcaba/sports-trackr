@@ -31,7 +31,7 @@ Development falls back to insecure defaults so `npm run dev` works without a fil
 npm run seed:demo
 ```
 
-Creates user `test` / `testpass1` with ~90 days of gym, sports, supplements, and PR snapshots. Other accounts are left alone.
+Creates user `test` / `test` with ~90 days of gym, sports, supplements, and PR snapshots. Other accounts are left alone. Username `jan` is admin: Settings shows a small Admin button with a user list and account delete.
 
 ## App map
 

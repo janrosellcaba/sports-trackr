@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { requireUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteUserRecord } from "@/lib/db/user";
 import {
   SESSION_COOKIE,
   sessionCookieOptions,
@@ -178,7 +179,7 @@ export async function deleteAccount(
     return { error: "Type your username to confirm account deletion." };
   }
 
-  await prisma.user.delete({ where: { id: user.id } });
+  await deleteUserRecord(user.id);
   const store = await cookies();
   store.set(SESSION_COOKIE, "", { ...sessionCookieOptions, maxAge: 0 });
   store.delete(SESSION_COOKIE);

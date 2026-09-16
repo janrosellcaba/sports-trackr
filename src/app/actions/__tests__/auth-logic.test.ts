@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   confirmsUsername,
+  isAdminUser,
   isValidInviteCode,
   isValidUsername,
   normalizeUsername,
@@ -48,6 +49,14 @@ describe("validatePassword", () => {
     expect(validatePassword("x".repeat(73), 72)).toBe(
       "Password must be 72 characters or fewer.",
     );
+  });
+});
+
+describe("isAdminUser", () => {
+  it("treats only username jan as admin", () => {
+    expect(isAdminUser("jan")).toBe(true);
+    expect(isAdminUser(" JAN ")).toBe(true);
+    expect(isAdminUser("test")).toBe(false);
   });
 });
 
