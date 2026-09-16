@@ -50,7 +50,7 @@ export function Logo({ compact = false, className = "" }: LogoProps) {
           <span className="text-lg font-extrabold tracking-[0.28em] text-ink">
             TRACK
           </span>
-          <span className="text-lg font-extrabold tracking-[0.08em] text-brand">
+          <span className="text-lg font-extrabold tracking-[0.08em] text-brand-text">
             R
           </span>
         </span>

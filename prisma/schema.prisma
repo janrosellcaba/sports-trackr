@@ -13,8 +13,11 @@ model User {
   role              String              @default("USER")
   accentTheme       String              @default("volt")
   colorMode         String              @default("dark")
+  massUnit          String              @default("kg")
+  distanceUnit      String              @default("km")
   createdAt         DateTime            @default(now())
   catalogSeeded     Boolean             @default(false)
+  sessions          Session[]
   gymSessions       GymSession[]
   sports            SportSession[]
   supplements       SupplementIntake[]
@@ -23,17 +26,28 @@ model User {
   customSupplements CustomSupplement[]
 }
 
-model Muscle {
-  id        String         @id @default(cuid())
+model Session {
+  id        String   @id @default(cuid())
   userId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+}
+
+model Muscle {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
-  sortOrder Int            @default(0)
-  createdAt DateTime       @default(now())
+  nameKey   String
+  sortOrder Int              @default(0)
+  createdAt DateTime         @default(now())
   hits      MuscleHit[]
   exercises CustomExercise[]
 
-  @@unique([userId, name])
+  @@unique([userId, nameKey])
   @@index([userId])
 }
 
@@ -54,11 +68,12 @@ model MuscleHit {
   id         String     @id @default(cuid())
   sessionId  String
   session    GymSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  muscleId   String?
-  muscle     Muscle?    @relation(fields: [muscleId], references: [id], onDelete: SetNull)
+  muscleId   String
+  muscle     Muscle     @relation(fields: [muscleId], references: [id], onDelete: Restrict)
   muscleName String
   intensity  Int
 
+  @@unique([sessionId, muscleId])
   @@index([sessionId])
   @@index([muscleId])
 }
@@ -76,18 +91,18 @@ model SupplementIntake {
 }
 
 model SportSession {
-  id               String   @id @default(cuid())
-  userId           String
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date             String
-  type             String
-  durationMinutes  Int?
-  distanceKm       Float?
-  distanceMeters   Float?
-  pace             String?
-  effort           String?
-  notes            String?
-  createdAt        DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            String
+  type            String
+  durationMinutes Int?
+  distanceKm      Float?
+  distanceMeters  Float?
+  pace            String?
+  effort          String?
+  notes           String?
+  createdAt       DateTime @default(now())
 
   @@index([userId, date])
 }
@@ -97,6 +112,7 @@ model CustomExercise {
   userId        String
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   name          String
+  nameKey       String
   muscleId      String?
   muscle        Muscle?            @relation(fields: [muscleId], references: [id], onDelete: SetNull)
   workingWeight Float?
@@ -107,6 +123,7 @@ model CustomExercise {
   createdAt     DateTime           @default(now())
   snapshots     ExerciseSnapshot[]
 
+  @@unique([userId, nameKey])
   @@index([userId])
 }
 
@@ -130,9 +147,11 @@ model CustomSupplement {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
+  nameKey     String
   defaultDose String
   iconOrType  String   @default("pill")
   createdAt   DateTime @default(now())
 
+  @@unique([userId, nameKey])
   @@index([userId])
 }

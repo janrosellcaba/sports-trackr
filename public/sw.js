@@ -1,7 +1,7 @@
-const STATIC_CACHE = "trackr-static-v3";
-const PAGE_CACHE = "trackr-pages-v3";
+const STATIC_CACHE = "trackr-static-v4";
 
 const PRECACHE = [
+  "/offline.html",
   "/icons/icon.svg",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -12,7 +12,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE)),
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -20,12 +19,11 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== STATIC_CACHE && key !== PAGE_CACHE)
+          .filter((key) => key !== STATIC_CACHE)
           .map((key) => caches.delete(key)),
       ),
     ),
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
@@ -38,20 +36,21 @@ self.addEventListener("fetch", (event) => {
   const isStatic =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
-    url.pathname === "/manifest.json";
+    url.pathname === "/manifest.json" ||
+    url.pathname === "/offline.html";
 
   if (isStatic) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
+    event.respondWith(cacheFirst(request));
     return;
   }
 
   if (request.mode === "navigate") {
-    event.respondWith(networkFirst(request, PAGE_CACHE));
+    event.respondWith(networkOnlyNavigate(request));
   }
 });
 
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
+async function cacheFirst(request) {
+  const cache = await caches.open(STATIC_CACHE);
   const cached = await cache.match(request);
   if (cached) return cached;
   const response = await fetch(request);
@@ -59,15 +58,17 @@ async function cacheFirst(request, cacheName) {
   return response;
 }
 
-async function networkFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
+async function networkOnlyNavigate(request) {
   try {
-    const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
-    return response;
+    return await fetch(request);
   } catch {
-    const cached = await cache.match(request);
-    if (cached) return cached;
-    return new Response("Offline", { status: 503, statusText: "Offline" });
+    const cache = await caches.open(STATIC_CACHE);
+    const offline = await cache.match("/offline.html");
+    if (offline) return offline;
+    return new Response("Trackr is offline. Reconnect to log.", {
+      status: 503,
+      statusText: "Offline",
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   }
 }

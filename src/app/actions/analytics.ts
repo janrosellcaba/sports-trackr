@@ -5,27 +5,26 @@ import {
   addDaysISO,
   computeStreak,
   estimatedOneRm,
-  getTodayLocalDateISO,
 } from "@/lib/calculations";
+import {
+  ANALYTICS_ALL_CHART_DAYS,
+  parseAnalyticsPeriod,
+  percentChange,
+  periodLabel,
+} from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
+import { getRequestToday } from "@/lib/request-today";
 import type {
   AnalyticsPeriod,
   AnalyticsSummary,
   DailyActivityPoint,
+  NotebookExercise,
   ProgressionPoint,
   TopMuscle,
 } from "@/types/trackr";
 
-function percentChange(current: number, previous: number): number {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return Math.round(((current - previous) / previous) * 100);
-}
-
-function periodLabel(days: number): string {
-  if (days <= 7) return "Last 7 days";
-  if (days <= 30) return "Last 30 days";
-  if (days <= 90) return "Last 90 days";
-  return "All time";
+function uniqueDates(dates: string[]): string[] {
+  return [...new Set(dates)];
 }
 
 function buildDailySkeleton(days: number, endISO: string): DailyActivityPoint[] {
@@ -43,75 +42,126 @@ function buildDailySkeleton(days: number, endISO: string): DailyActivityPoint[] 
 }
 
 export async function getAnalyticsSummary(
-  period: AnalyticsPeriod = 30,
+  periodInput: AnalyticsPeriod | number = 30,
+  todayOverride?: string,
 ): Promise<AnalyticsSummary> {
   const user = await requireUser();
-  const today = getTodayLocalDateISO();
-  const rangeDays = period === 0 ? 3650 : period;
-  const chartDays = period === 0 ? 90 : rangeDays;
+  const period = parseAnalyticsPeriod(periodInput);
+  const today = todayOverride ?? (await getRequestToday());
+  const allTime = period === 0;
+  const rangeDays = allTime ? ANALYTICS_ALL_CHART_DAYS : period;
   const rangeStart = addDaysISO(today, -(rangeDays - 1));
   const previousStart = addDaysISO(rangeStart, -rangeDays);
-  const chartStart = addDaysISO(today, -(chartDays - 1));
 
-  const [sessions, supplements, sports, previousSessions, previousSupplements, previousSports] =
-    await Promise.all([
-      prisma.gymSession.findMany({
-        where: { userId: user.id, date: { gte: rangeStart } },
-        include: { hits: true },
-      }),
-      prisma.supplementIntake.findMany({
-        where: { userId: user.id, date: { gte: rangeStart } },
-        select: { date: true },
-      }),
-      prisma.sportSession.findMany({
-        where: { userId: user.id, date: { gte: rangeStart } },
-      }),
-      prisma.gymSession.findMany({
-        where: {
-          userId: user.id,
-          date: { gte: previousStart, lt: rangeStart },
-        },
-        include: { hits: true },
-      }),
-      prisma.supplementIntake.findMany({
-        where: {
-          userId: user.id,
-          date: { gte: previousStart, lt: rangeStart },
-        },
-        select: { date: true },
-      }),
-      prisma.sportSession.findMany({
-        where: {
-          userId: user.id,
-          date: { gte: previousStart, lt: rangeStart },
-        },
-        select: { id: true },
-      }),
-    ]);
+  const [
+    chartSessions,
+    chartSupplements,
+    chartSports,
+    previousSessions,
+    previousSupplements,
+    previousSports,
+    workoutCount,
+    hitAgg,
+    sportAgg,
+    sportCount,
+    allGymDates,
+    allSupplementDates,
+    allSportDates,
+    topHits,
+  ] = await Promise.all([
+    prisma.gymSession.findMany({
+      where: { userId: user.id, date: { gte: rangeStart } },
+      include: { hits: true },
+    }),
+    prisma.supplementIntake.findMany({
+      where: { userId: user.id, date: { gte: rangeStart } },
+      select: { date: true },
+    }),
+    prisma.sportSession.findMany({
+      where: { userId: user.id, date: { gte: rangeStart } },
+    }),
+    prisma.gymSession.findMany({
+      where: {
+        userId: user.id,
+        date: { gte: previousStart, lt: rangeStart },
+      },
+      include: { hits: true },
+    }),
+    prisma.supplementIntake.findMany({
+      where: {
+        userId: user.id,
+        date: { gte: previousStart, lt: rangeStart },
+      },
+      select: { date: true },
+    }),
+    prisma.sportSession.findMany({
+      where: {
+        userId: user.id,
+        date: { gte: previousStart, lt: rangeStart },
+      },
+      select: { id: true },
+    }),
+    allTime
+      ? prisma.gymSession.count({ where: { userId: user.id } })
+      : Promise.resolve(null),
+    allTime
+      ? prisma.muscleHit.aggregate({
+          where: { session: { userId: user.id } },
+          _count: true,
+          _sum: { intensity: true },
+        })
+      : Promise.resolve(null),
+    allTime
+      ? prisma.sportSession.aggregate({
+          where: { userId: user.id },
+          _sum: { durationMinutes: true, distanceKm: true, distanceMeters: true },
+        })
+      : Promise.resolve(null),
+    allTime
+      ? prisma.sportSession.count({ where: { userId: user.id } })
+      : Promise.resolve(null),
+    prisma.gymSession.findMany({
+      where: { userId: user.id },
+      select: { date: true },
+      orderBy: { date: "desc" },
+    }),
+    prisma.supplementIntake.findMany({
+      where: { userId: user.id },
+      select: { date: true },
+      orderBy: { date: "desc" },
+    }),
+    prisma.sportSession.findMany({
+      where: { userId: user.id },
+      select: { date: true },
+      orderBy: { date: "desc" },
+    }),
+    allTime
+      ? prisma.muscleHit.groupBy({
+          by: ["muscleName"],
+          where: { session: { userId: user.id } },
+          _sum: { intensity: true },
+          _count: true,
+        })
+      : Promise.resolve(null),
+  ]);
 
   const dailyMap = new Map(
-    buildDailySkeleton(chartDays, today).map((point) => [point.date, point]),
+    buildDailySkeleton(rangeDays, today).map((point) => [point.date, point]),
   );
 
   let totalHits = 0;
   let totalGymLoad = 0;
   const topMap = new Map<string, TopMuscle & { dates: Set<string> }>();
 
-  for (const session of sessions) {
+  for (const session of chartSessions) {
     const point = dailyMap.get(session.date);
-    if (point && session.date >= chartStart) {
-      point.workouts += 1;
-    }
-
+    if (point) point.workouts += 1;
     for (const hit of session.hits) {
       totalHits += 1;
       totalGymLoad += hit.intensity;
-      if (point && session.date >= chartStart) {
-        point.gymLoad += hit.intensity;
-      }
-      const key = hit.muscleName;
-      const existing = topMap.get(key) ?? {
-        name: key,
+      if (point) point.gymLoad += hit.intensity;
+      const existing = topMap.get(hit.muscleName) ?? {
+        name: hit.muscleName,
         load: 0,
         hits: 0,
         days: 0,
@@ -121,30 +171,22 @@ export async function getAnalyticsSummary(
       existing.load += hit.intensity;
       existing.hits += 1;
       existing.dates.add(session.date);
-      topMap.set(key, existing);
+      topMap.set(hit.muscleName, existing);
     }
   }
 
-  for (const intake of supplements) {
+  for (const intake of chartSupplements) {
     const point = dailyMap.get(intake.date);
-    if (point && intake.date >= chartStart) {
-      point.supplements += 1;
-    }
+    if (point) point.supplements += 1;
   }
 
   let totalSportMinutes = 0;
   let totalSportKm = 0;
-  for (const session of sports) {
+  for (const session of chartSports) {
     const point = dailyMap.get(session.date);
-    if (point && session.date >= chartStart) {
-      point.sports += 1;
-    }
-    if (session.durationMinutes != null) {
-      totalSportMinutes += session.durationMinutes;
-    }
-    if (session.distanceKm != null) {
-      totalSportKm += session.distanceKm;
-    }
+    if (point) point.sports += 1;
+    if (session.durationMinutes != null) totalSportMinutes += session.durationMinutes;
+    if (session.distanceKm != null) totalSportKm += session.distanceKm;
     if (session.distanceMeters != null) {
       totalSportKm += session.distanceMeters / 1000;
     }
@@ -152,36 +194,35 @@ export async function getAnalyticsSummary(
 
   let previousLoad = 0;
   for (const session of previousSessions) {
-    for (const hit of session.hits) {
-      previousLoad += hit.intensity;
-    }
+    for (const hit of session.hits) previousLoad += hit.intensity;
   }
 
-  const supplementDays = new Set(supplements.map((item) => item.date));
+  const supplementDays = new Set(chartSupplements.map((item) => item.date));
   const previousSupplementDays = new Set(
     previousSupplements.map((item) => item.date),
   );
 
-  const [allGymDates, allSupplementDates, allSportDates] = await Promise.all([
-    prisma.gymSession.findMany({
-      where: { userId: user.id },
-      select: { date: true },
-      orderBy: { date: "desc" },
-      take: 400,
-    }),
-    prisma.supplementIntake.findMany({
-      where: { userId: user.id },
-      select: { date: true },
-      orderBy: { date: "desc" },
-      take: 400,
-    }),
-    prisma.sportSession.findMany({
-      where: { userId: user.id },
-      select: { date: true },
-      orderBy: { date: "desc" },
-      take: 400,
-    }),
-  ]);
+  if (allTime && hitAgg && workoutCount != null && sportCount != null && sportAgg) {
+    totalHits = hitAgg._count;
+    totalGymLoad = hitAgg._sum.intensity ?? 0;
+    totalSportMinutes = sportAgg._sum.durationMinutes ?? 0;
+    totalSportKm =
+      (sportAgg._sum.distanceKm ?? 0) + (sportAgg._sum.distanceMeters ?? 0) / 1000;
+  }
+
+  if (allTime && topHits) {
+    topMap.clear();
+    for (const row of topHits) {
+      topMap.set(row.muscleName, {
+        name: row.muscleName,
+        load: row._sum.intensity ?? 0,
+        hits: row._count,
+        days: 0,
+        avgIntensity: 0,
+        dates: new Set(),
+      });
+    }
+  }
 
   const topMuscles = Array.from(topMap.values())
     .map((item) => ({
@@ -194,31 +235,54 @@ export async function getAnalyticsSummary(
     .sort((a, b) => b.load - a.load)
     .slice(0, 8);
 
+  const totalWorkouts = allTime && workoutCount != null ? workoutCount : chartSessions.length;
+  const totalSports = allTime && sportCount != null ? sportCount : chartSports.length;
+  const allTimeSupplementDays = allTime
+    ? uniqueDates(allSupplementDates.map((item) => item.date)).length
+    : supplementDays.size;
+
   return {
-    days: rangeDays,
-    periodLabel: periodLabel(rangeDays),
-    totalWorkouts: sessions.length,
+    days: allTime ? 0 : rangeDays,
+    periodLabel: periodLabel(allTime ? 9999 : rangeDays),
+    chartLabel: allTime
+      ? `Gym load · last ${ANALYTICS_ALL_CHART_DAYS} days`
+      : "Gym load",
+    totalWorkouts,
     totalHits,
     totalGymLoad,
-    totalSports: sports.length,
+    totalSports,
     totalSportMinutes,
     totalSportKm: Math.round(totalSportKm * 10) / 10,
-    supplementDays: supplementDays.size,
-    supplementStreak: computeStreak(allSupplementDates.map((item) => item.date)),
-    gymStreak: computeStreak(allGymDates.map((item) => item.date)),
-    sportStreak: computeStreak(allSportDates.map((item) => item.date)),
-    trends: {
-      workouts: percentChange(sessions.length, previousSessions.length),
-      gymLoad: percentChange(totalGymLoad, previousLoad),
-      sports: percentChange(sports.length, previousSports.length),
-      supplements: percentChange(supplementDays.size, previousSupplementDays.size),
-    },
+    supplementDays: allTimeSupplementDays,
+    supplementStreak: computeStreak(
+      uniqueDates(allSupplementDates.map((item) => item.date)),
+      new Date(`${today}T12:00:00`),
+    ),
+    gymStreak: computeStreak(
+      uniqueDates(allGymDates.map((item) => item.date)),
+      new Date(`${today}T12:00:00`),
+    ),
+    sportStreak: computeStreak(
+      uniqueDates(allSportDates.map((item) => item.date)),
+      new Date(`${today}T12:00:00`),
+    ),
+    trends: allTime
+      ? { workouts: null, gymLoad: null, sports: null, supplements: null }
+      : {
+          workouts: percentChange(chartSessions.length, previousSessions.length),
+          gymLoad: percentChange(totalGymLoad, previousLoad),
+          sports: percentChange(chartSports.length, previousSports.length),
+          supplements: percentChange(
+            supplementDays.size,
+            previousSupplementDays.size,
+          ),
+        },
     daily: Array.from(dailyMap.values()),
     topMuscles,
   };
 }
 
-export async function getNotebookExerciseNames(): Promise<string[]> {
+export async function getNotebookExercises(): Promise<NotebookExercise[]> {
   const user = await requireUser();
   const rows = await prisma.customExercise.findMany({
     where: {
@@ -229,21 +293,21 @@ export async function getNotebookExerciseNames(): Promise<string[]> {
         { snapshots: { some: {} } },
       ],
     },
-    select: { name: true },
+    select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
-  return rows.map((row) => row.name);
+  return rows;
 }
 
 export async function getExerciseProgression(
-  exerciseName: string,
+  exerciseId: string,
 ): Promise<ProgressionPoint[]> {
   const user = await requireUser();
-  const trimmed = exerciseName.trim();
-  if (!trimmed) return [];
+  const id = exerciseId.trim();
+  if (!id) return [];
 
   const exercise = await prisma.customExercise.findFirst({
-    where: { userId: user.id, name: trimmed },
+    where: { id, userId: user.id },
     include: {
       snapshots: { orderBy: { date: "asc" } },
     },
@@ -261,24 +325,27 @@ export async function getExerciseProgression(
   }));
 
   const last = points[points.length - 1];
-  const currentWorking = exercise.workingWeight;
-  const currentPr = exercise.prWeight;
   const currentOneRm =
     exercise.prWeight != null && exercise.prReps != null
       ? estimatedOneRm(exercise.prWeight, exercise.prReps)
       : exercise.prWeight;
   const differs =
     !last ||
-    last.workingWeight !== currentWorking ||
-    last.prWeight !== currentPr;
+    last.workingWeight !== exercise.workingWeight ||
+    last.prWeight !== exercise.prWeight;
+  const pointDate = exercise.prDate ?? (await getRequestToday());
 
-  if (differs && (currentWorking != null || currentPr != null)) {
-    points.push({
-      date: exercise.prDate ?? getTodayLocalDateISO(),
-      workingWeight: currentWorking,
-      prWeight: currentPr,
+  if (differs && (exercise.workingWeight != null || exercise.prWeight != null)) {
+    const existingIndex = points.findIndex((item) => item.date === pointDate);
+    const nextPoint = {
+      date: pointDate,
+      workingWeight: exercise.workingWeight,
+      prWeight: exercise.prWeight,
       estimatedOneRm: currentOneRm,
-    });
+    };
+    if (existingIndex >= 0) points[existingIndex] = nextPoint;
+    else points.push(nextPoint);
+    points.sort((a, b) => a.date.localeCompare(b.date));
   }
 
   return points;
@@ -356,10 +423,21 @@ export async function exportMyData() {
       prWeight: item.prWeight,
       prReps: item.prReps,
       prDate: item.prDate,
+      snapshots: item.snapshots.map((snap) => ({
+        date: snap.date,
+        workingWeight: snap.workingWeight,
+        workingReps: snap.workingReps,
+        prWeight: snap.prWeight,
+        prReps: snap.prReps,
+      })),
     })),
     customSupplements: customSupplements.map((item) => ({
       name: item.name,
       defaultDose: item.defaultDose,
     })),
+    preferences: {
+      massUnit: user.massUnit,
+      distanceUnit: user.distanceUnit,
+    },
   };
 }

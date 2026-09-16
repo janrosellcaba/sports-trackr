@@ -1,57 +1,136 @@
 "use server";
 
-import {
-  listCustomExercises,
-  listCustomSupplements,
-  listMuscles,
-} from "@/app/actions/catalog";
 import { requireUser } from "@/app/actions/auth";
-import { seedUserCatalog } from "@/lib/seed-catalog";
-import { getGymSessionByDate, listGymSessions } from "@/app/actions/gym";
-import { getSportsForDate, listSports } from "@/app/actions/sports";
 import {
-  getSupplementsForDate,
-  listSupplements,
-} from "@/app/actions/supplements";
-import { getTodayLocalDateISO } from "@/lib/calculations";
-import type { AppState } from "@/types/trackr";
+  listCustomExercisesForUser,
+  listCustomSupplementsForUser,
+  listMusclesForUser,
+} from "@/app/actions/catalog";
+import { seedUserCatalog } from "@/lib/seed-catalog";
+import { getRequestToday, resolveRequestedDate } from "@/lib/request-today";
+import {
+  findGymSessionByDate,
+  listGymSessionsForUser,
+  listLatestHitsBeforeDate,
+  listRecentGymSessionsForUser,
+  serializeGymSession,
+} from "@/lib/db/gym";
+import {
+  listSportsForDate,
+  listSportsForUser,
+  listSupplementsForDate,
+  listSupplementsForUser,
+  serializeSport,
+  serializeSupplement,
+} from "@/lib/db/activity";
+import { daysBetween } from "@/lib/recovery";
+import type {
+  CustomExercisePayload,
+  CustomSupplementPayload,
+  GymSessionPayload,
+  MusclePayload,
+  MuscleRecoveryPayload,
+  SportSessionPayload,
+  SupplementPayload,
+} from "@/types/trackr";
 
-export async function getAppState(): Promise<AppState> {
+export type HomeDayState = {
+  today: string;
+  date: string;
+  gym: GymSessionPayload | null;
+  sports: SportSessionPayload[];
+  supplements: SupplementPayload[];
+  recentSessions: GymSessionPayload[];
+  recovery: MuscleRecoveryPayload[];
+  muscles: MusclePayload[];
+  customExercises: CustomExercisePayload[];
+  customSupplements: CustomSupplementPayload[];
+};
+
+export type LogState = {
+  today: string;
+  gymSessions: GymSessionPayload[];
+  sports: SportSessionPayload[];
+  supplements: SupplementPayload[];
+  muscles: MusclePayload[];
+};
+
+export type CatalogState = {
+  muscles: MusclePayload[];
+  customExercises: CustomExercisePayload[];
+  customSupplements: CustomSupplementPayload[];
+};
+
+export async function getHomeDayState(
+  dateParam?: string,
+): Promise<HomeDayState> {
   const user = await requireUser();
   await seedUserCatalog(user.id);
-  const today = getTodayLocalDateISO();
+  const today = await getRequestToday();
+  const date = resolveRequestedDate(dateParam, today);
   const [
-    todayGym,
-    todaySports,
-    todaySupplements,
-    gymSessions,
-    sports,
-    supplements,
+    gymRow,
+    sportsRows,
+    supplementRows,
+    recentRows,
+    latestHits,
     muscles,
     customExercises,
     customSupplements,
   ] = await Promise.all([
-    getGymSessionByDate(today),
-    getSportsForDate(today),
-    getSupplementsForDate(today),
-    listGymSessions(),
-    listSports(),
-    listSupplements(),
-    listMuscles(),
-    listCustomExercises(),
-    listCustomSupplements(),
+    findGymSessionByDate(user.id, date),
+    listSportsForDate(user.id, date),
+    listSupplementsForDate(user.id, date),
+    listRecentGymSessionsForUser(user.id, date),
+    listLatestHitsBeforeDate(user.id, date),
+    listMusclesForUser(user.id),
+    listCustomExercisesForUser(user.id),
+    listCustomSupplementsForUser(user.id),
   ]);
 
   return {
     today,
-    todayGym,
-    todaySports,
-    todaySupplements,
-    gymSessions,
-    sports,
-    supplements,
+    date,
+    gym: gymRow ? serializeGymSession(gymRow) : null,
+    sports: sportsRows.map(serializeSport),
+    supplements: supplementRows.map(serializeSupplement),
+    recentSessions: recentRows.map(serializeGymSession),
+    recovery: latestHits.map((hit) => ({
+      ...hit,
+      daysAgo: daysBetween(hit.lastDate, date),
+    })),
     muscles,
     customExercises,
     customSupplements,
   };
+}
+
+export async function getLogState(): Promise<LogState> {
+  const user = await requireUser();
+  await seedUserCatalog(user.id);
+  const today = await getRequestToday();
+  const [gymRows, sportsRows, supplementRows, muscles] = await Promise.all([
+    listGymSessionsForUser(user.id),
+    listSportsForUser(user.id),
+    listSupplementsForUser(user.id),
+    listMusclesForUser(user.id),
+  ]);
+  return {
+    today,
+    gymSessions: gymRows.map(serializeGymSession),
+    sports: sportsRows.map(serializeSport),
+    supplements: supplementRows.map(serializeSupplement),
+    muscles,
+  };
+}
+
+export async function getCatalogState(): Promise<CatalogState> {
+  const user = await requireUser();
+  await seedUserCatalog(user.id);
+  const [muscles, customExercises, customSupplements] = await Promise.all([
+    listMusclesForUser(user.id),
+    listCustomExercisesForUser(user.id),
+    listCustomSupplementsForUser(user.id),
+  ]);
+  return { muscles, customExercises, customSupplements };
 }

@@ -1,75 +1,34 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireUser } from "@/app/actions/auth";
-import { getTodayLocalDateISO } from "@/lib/calculations";
-import { gymLoad, parseIntensity } from "@/lib/muscles";
+import { isDateKey } from "@/lib/calculations";
+import { getRequestToday } from "@/lib/request-today";
+import { parseIntensity } from "@/lib/muscles";
 import { prisma } from "@/lib/prisma";
-import type { GymSessionPayload, MuscleHitPayload } from "@/types/trackr";
+import { revalidateApp } from "@/lib/revalidate";
+import {
+  findGymSessionByDate,
+  listGymSessionsForUser,
+  listRecentGymSessionsForUser,
+  serializeGymSession,
+  sessionInclude,
+} from "@/lib/db/gym";
+import type { GymSessionPayload } from "@/types/trackr";
 
-const sessionInclude = {
-  hits: {
-    orderBy: { intensity: "desc" as const },
-  },
-};
-
-function isDateKey(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function serializeSession(session: {
-  id: string;
-  date: string;
-  notes: string | null;
-  hits: {
-    id: string;
-    muscleId: string | null;
-    muscleName: string;
-    intensity: number;
-  }[];
-}): GymSessionPayload {
-  const hits: MuscleHitPayload[] = session.hits.map((hit) => ({
-    id: hit.id,
-    muscleId: hit.muscleId,
-    muscleName: hit.muscleName,
-    intensity: hit.intensity,
-  }));
-  return {
-    id: session.id,
-    date: session.date,
-    notes: session.notes,
-    hits,
-    hitCount: hits.length,
-    totalLoad: gymLoad(hits),
-  };
-}
-
-function revalidateApp() {
-  revalidatePath("/");
-}
-
-export async function listGymSessions(limit = 60): Promise<GymSessionPayload[]> {
+export async function listGymSessions(): Promise<GymSessionPayload[]> {
   const user = await requireUser();
-  const take = Math.max(1, Math.min(limit, 200));
-  const rows = await prisma.gymSession.findMany({
-    where: { userId: user.id },
-    orderBy: { date: "desc" },
-    take,
-    include: sessionInclude,
-  });
-  return rows.map(serializeSession);
+  const rows = await listGymSessionsForUser(user.id);
+  return rows.map(serializeGymSession);
 }
 
 export async function getGymSessionByDate(
-  date = getTodayLocalDateISO(),
+  date?: string,
 ): Promise<GymSessionPayload | null> {
   const user = await requireUser();
-  if (!isDateKey(date)) throw new Error("Invalid date.");
-  const session = await prisma.gymSession.findUnique({
-    where: { userId_date: { userId: user.id, date } },
-    include: sessionInclude,
-  });
-  return session ? serializeSession(session) : null;
+  const resolved = date ?? (await getRequestToday());
+  if (!isDateKey(resolved)) throw new Error("Invalid date.");
+  const session = await findGymSessionByDate(user.id, resolved);
+  return session ? serializeGymSession(session) : null;
 }
 
 async function getOrCreateSession(userId: string, date: string) {
@@ -88,7 +47,7 @@ export async function upsertMuscleHit(input: {
   intensity: number;
 }): Promise<GymSessionPayload> {
   const user = await requireUser();
-  const date = input.date ?? getTodayLocalDateISO();
+  const date = input.date ?? (await getRequestToday());
   const intensity = parseIntensity(input.intensity);
 
   const muscle = await prisma.muscle.findFirst({
@@ -98,33 +57,30 @@ export async function upsertMuscleHit(input: {
   if (!muscle) throw new Error("Muscle not found.");
 
   const session = await getOrCreateSession(user.id, date);
-  const existing = session.hits.find((hit) => hit.muscleId === muscle.id);
-
-  if (existing) {
-    await prisma.muscleHit.update({
-      where: { id: existing.id },
-      data: { intensity, muscleName: muscle.name },
-    });
-  } else {
-    await prisma.muscleHit.create({
-      data: {
-        sessionId: session.id,
-        muscleId: muscle.id,
-        muscleName: muscle.name,
-        intensity,
-      },
-    });
-  }
+  await prisma.muscleHit.upsert({
+    where: {
+      sessionId_muscleId: { sessionId: session.id, muscleId: muscle.id },
+    },
+    create: {
+      sessionId: session.id,
+      muscleId: muscle.id,
+      muscleName: muscle.name,
+      intensity,
+    },
+    update: { intensity, muscleName: muscle.name },
+  });
 
   const next = await prisma.gymSession.findUniqueOrThrow({
     where: { id: session.id },
     include: sessionInclude,
   });
   revalidateApp();
-  return serializeSession(next);
+  return serializeGymSession(next);
 }
 
-export async function deleteMuscleHit(hitId: string): Promise<GymSessionPayload | null> {
+export async function deleteMuscleHit(
+  hitId: string,
+): Promise<GymSessionPayload | null> {
   const user = await requireUser();
   const hit = await prisma.muscleHit.findFirst({
     where: { id: hitId, session: { userId: user.id } },
@@ -148,7 +104,7 @@ export async function deleteMuscleHit(hitId: string): Promise<GymSessionPayload 
     include: sessionInclude,
   });
   revalidateApp();
-  return serializeSession(next);
+  return serializeGymSession(next);
 }
 
 export async function deleteGymSession(sessionId: string): Promise<void> {
@@ -158,4 +114,13 @@ export async function deleteGymSession(sessionId: string): Promise<void> {
   });
   if (result.count === 0) throw new Error("Gym session not found.");
   revalidateApp();
+}
+
+export async function getRecentGymSessions(
+  excludeDate: string,
+): Promise<GymSessionPayload[]> {
+  const user = await requireUser();
+  if (!isDateKey(excludeDate)) throw new Error("Invalid date.");
+  const rows = await listRecentGymSessionsForUser(user.id, excludeDate);
+  return rows.map(serializeGymSession);
 }

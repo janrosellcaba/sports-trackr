@@ -19,7 +19,7 @@ export type IntensityLevel = (typeof INTENSITY_LEVELS)[number];
 
 const INTENSITY_LABELS: Record<IntensityLevel, string> = {
   1: "Light",
-  2: "Easy",
+  2: "Steady",
   3: "Solid",
   4: "Hard",
   5: "Wrecked",

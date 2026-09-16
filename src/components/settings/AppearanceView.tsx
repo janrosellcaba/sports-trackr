@@ -1,25 +1,41 @@
 "use client";
 
 import { useAccentTheme } from "@/components/theme/ThemeProvider";
+import { useUnits } from "@/components/units/UnitsProvider";
 import {
   ACCENT_THEMES,
   ACCENT_THEME_IDS,
   type AccentThemeId,
 } from "@/lib/theme";
+import { DISTANCE_UNITS, MASS_UNITS } from "@/lib/units";
 import { CARD_CLS, LABEL_CLS, chipClass } from "@/lib/ui";
 
 export function AppearanceView() {
-  const { theme, setTheme, colorMode, setColorMode } = useAccentTheme();
+  const { theme, setTheme, colorMode, setColorMode, saveError } = useAccentTheme();
+  const {
+    massUnit,
+    distanceUnit,
+    setMassUnit,
+    setDistanceUnit,
+    saveError: unitsError,
+  } = useUnits();
 
   return (
     <div className="space-y-3">
+      {saveError || unitsError ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {saveError || unitsError}
+        </p>
+      ) : null}
+
       <section className={`${CARD_CLS} space-y-3 p-4`}>
         <p className={LABEL_CLS}>Mode</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Color mode">
           {(["dark", "light"] as const).map((mode) => (
             <button
               key={mode}
               type="button"
+              aria-pressed={colorMode === mode}
               onClick={() => setColorMode(mode)}
               className={`${chipClass(colorMode === mode)} w-full py-3`}
             >
@@ -30,11 +46,49 @@ export function AppearanceView() {
       </section>
 
       <section className={`${CARD_CLS} space-y-3 p-4`}>
+        <p className={LABEL_CLS}>Weight</p>
+        <p className="text-sm text-muted">PRs and working sets. Stored in kilograms.</p>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Weight unit">
+          {MASS_UNITS.map((unit) => (
+            <button
+              key={unit}
+              type="button"
+              aria-pressed={massUnit === unit}
+              onClick={() => setMassUnit(unit)}
+              className={`${chipClass(massUnit === unit)} w-full py-3`}
+            >
+              {unit === "kg" ? "Kilograms" : "Pounds"}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className={`${CARD_CLS} space-y-3 p-4`}>
+        <p className={LABEL_CLS}>Distance</p>
+        <p className="text-sm text-muted">
+          Runs, rides, and walks. Pool distance becomes yards when miles are on.
+        </p>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Distance unit">
+          {DISTANCE_UNITS.map((unit) => (
+            <button
+              key={unit}
+              type="button"
+              aria-pressed={distanceUnit === unit}
+              onClick={() => setDistanceUnit(unit)}
+              className={`${chipClass(distanceUnit === unit)} w-full py-3`}
+            >
+              {unit === "km" ? "Kilometers" : "Miles"}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className={`${CARD_CLS} space-y-3 p-4`}>
         <p className={LABEL_CLS}>Accent</p>
         <p className="text-sm text-muted">
           Accent colors update buttons, dock, badges, and charts instantly.
         </p>
-        <div className="grid grid-cols-1 gap-2">
+        <div className="grid grid-cols-1 gap-2" role="listbox" aria-label="Accent">
           {ACCENT_THEME_IDS.map((id) => {
             const preset = ACCENT_THEMES[id];
             const active = theme.id === id;
@@ -42,6 +96,8 @@ export function AppearanceView() {
               <button
                 key={id}
                 type="button"
+                role="option"
+                aria-selected={active}
                 onClick={() => setTheme(id as AccentThemeId)}
                 className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
                   active

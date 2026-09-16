@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireUser } from "@/app/actions/auth";
 import {
   parseCustomExerciseInput,
@@ -8,9 +7,12 @@ import {
   parseNewMuscleName,
   parsePersonalRecordInput,
 } from "@/lib/catalog";
-import { getTodayLocalDateISO } from "@/lib/calculations";
+import { getRequestToday } from "@/lib/request-today";
 import { parseMuscleName, sameMuscleName } from "@/lib/muscles";
+import { nameKey } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
+import { isUniqueConstraintError } from "@/lib/prisma-errors";
+import { revalidateApp } from "@/lib/revalidate";
 import type {
   CustomExercisePayload,
   CustomSupplementPayload,
@@ -73,19 +75,40 @@ function serializeSupplement(row: {
   };
 }
 
-function revalidateCatalog() {
-  revalidatePath("/");
-}
-
 const exerciseInclude = { muscle: { select: { name: true } } };
 
-export async function listMuscles(): Promise<MusclePayload[]> {
-  const user = await requireUser();
+export async function listMusclesForUser(userId: string): Promise<MusclePayload[]> {
   const rows = await prisma.muscle.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
   return rows.map(serializeMuscle);
+}
+
+export async function listCustomExercisesForUser(
+  userId: string,
+): Promise<CustomExercisePayload[]> {
+  const rows = await prisma.customExercise.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+    include: exerciseInclude,
+  });
+  return rows.map(serializeExercise);
+}
+
+export async function listCustomSupplementsForUser(
+  userId: string,
+): Promise<CustomSupplementPayload[]> {
+  const rows = await prisma.customSupplement.findMany({
+    where: { userId },
+    orderBy: { name: "asc" },
+  });
+  return rows.map(serializeSupplement);
+}
+
+export async function listMuscles(): Promise<MusclePayload[]> {
+  const user = await requireUser();
+  return listMusclesForUser(user.id);
 }
 
 export async function createMuscle(input: { name: string }): Promise<MusclePayload> {
@@ -97,11 +120,18 @@ export async function createMuscle(input: { name: string }): Promise<MusclePaylo
   const name = parseNewMuscleName(input.name, existing);
   const sortOrder =
     existing.reduce((max, item) => Math.max(max, item.sortOrder), -1) + 1;
-  const row = await prisma.muscle.create({
-    data: { userId: user.id, name, sortOrder },
-  });
-  revalidateCatalog();
-  return serializeMuscle(row);
+  try {
+    const row = await prisma.muscle.create({
+      data: { userId: user.id, name, nameKey: nameKey(name), sortOrder },
+    });
+    revalidateApp();
+    return serializeMuscle(row);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new Error("A muscle with that name already exists.");
+    }
+    throw error;
+  }
 }
 
 export async function updateMuscle(input: {
@@ -126,23 +156,28 @@ export async function updateMuscle(input: {
 
   const row = await prisma.muscle.update({
     where: { id: input.id },
-    data: { name },
+    data: { name, nameKey: nameKey(name) },
   });
   await prisma.muscleHit.updateMany({
     where: { muscleId: input.id, session: { userId: user.id } },
     data: { muscleName: name },
   });
-  revalidateCatalog();
+  revalidateApp();
   return serializeMuscle(row);
 }
 
 export async function deleteMuscle(id: string): Promise<void> {
   const user = await requireUser();
-  const result = await prisma.muscle.deleteMany({
+  const muscle = await prisma.muscle.findFirst({
     where: { id, userId: user.id },
+    select: { id: true, _count: { select: { hits: true } } },
   });
-  if (result.count === 0) throw new Error("Muscle not found.");
-  revalidateCatalog();
+  if (!muscle) throw new Error("Muscle not found.");
+  if (muscle._count.hits > 0) {
+    throw new Error("This muscle is still on a gym log. Remove those hits first.");
+  }
+  await prisma.muscle.delete({ where: { id: muscle.id } });
+  revalidateApp();
 }
 
 export async function moveMuscle(
@@ -171,31 +206,23 @@ export async function moveMuscle(
       data: { sortOrder: current.sortOrder },
     }),
   ]);
-  revalidateCatalog();
-  return listMuscles();
+  revalidateApp();
+  return listMusclesForUser(user.id);
 }
 
 export async function listCustomExercises(): Promise<CustomExercisePayload[]> {
   const user = await requireUser();
-  const rows = await prisma.customExercise.findMany({
-    where: { userId: user.id },
-    orderBy: { name: "asc" },
-    include: exerciseInclude,
-  });
-  return rows.map(serializeExercise);
+  return listCustomExercisesForUser(user.id);
 }
 
 export async function listCustomSupplements(): Promise<CustomSupplementPayload[]> {
   const user = await requireUser();
-  const rows = await prisma.customSupplement.findMany({
-    where: { userId: user.id },
-    orderBy: { name: "asc" },
-  });
-  return rows.map(serializeSupplement);
+  return listCustomSupplementsForUser(user.id);
 }
 
 async function snapshotExercise(input: {
   exerciseId: string;
+  date: string;
   workingWeight: number | null;
   workingReps: number | null;
   prWeight: number | null;
@@ -222,14 +249,13 @@ async function snapshotExercise(input: {
 
   if (!changed || !hasNumbers) return;
 
-  const date = getTodayLocalDateISO();
   await prisma.exerciseSnapshot.upsert({
     where: {
-      exerciseId_date: { exerciseId: input.exerciseId, date },
+      exerciseId_date: { exerciseId: input.exerciseId, date: input.date },
     },
     create: {
       exerciseId: input.exerciseId,
-      date,
+      date: input.date,
       workingWeight: input.workingWeight,
       workingReps: input.workingReps,
       prWeight: input.prWeight,
@@ -247,10 +273,10 @@ async function snapshotExercise(input: {
 export async function createCustomExercise(input: {
   name: string;
   muscleId?: string | null;
-  workingWeight?: number | null;
-  workingReps?: number | null;
-  prWeight?: number | null;
-  prReps?: number | null;
+  workingWeight?: number | string | null;
+  workingReps?: number | string | null;
+  prWeight?: number | string | null;
+  prReps?: number | string | null;
   prDate?: string | null;
 }): Promise<CustomExercisePayload> {
   const user = await requireUser();
@@ -263,43 +289,52 @@ export async function createCustomExercise(input: {
     if (!muscle) throw new Error("Muscle not found.");
   }
 
+  const today = await getRequestToday();
   const prDate =
-    parsed.prWeight != null && !parsed.prDate
-      ? getTodayLocalDateISO()
-      : parsed.prDate;
+    parsed.prWeight != null && !parsed.prDate ? today : parsed.prDate;
+  const snapshotDate = prDate ?? today;
 
-  const row = await prisma.customExercise.create({
-    data: {
-      userId: user.id,
-      name: parsed.name,
-      muscleId: parsed.muscleId,
-      workingWeight: parsed.workingWeight,
-      workingReps: parsed.workingReps,
-      prWeight: parsed.prWeight,
-      prReps: parsed.prReps,
-      prDate,
-    },
-    include: exerciseInclude,
-  });
-  await snapshotExercise({
-    exerciseId: row.id,
-    workingWeight: row.workingWeight,
-    workingReps: row.workingReps,
-    prWeight: row.prWeight,
-    prReps: row.prReps,
-  });
-  revalidateCatalog();
-  return serializeExercise(row);
+  try {
+    const row = await prisma.customExercise.create({
+      data: {
+        userId: user.id,
+        name: parsed.name,
+        nameKey: nameKey(parsed.name),
+        muscleId: parsed.muscleId,
+        workingWeight: parsed.workingWeight,
+        workingReps: parsed.workingReps,
+        prWeight: parsed.prWeight,
+        prReps: parsed.prReps,
+        prDate,
+      },
+      include: exerciseInclude,
+    });
+    await snapshotExercise({
+      exerciseId: row.id,
+      date: snapshotDate,
+      workingWeight: row.workingWeight,
+      workingReps: row.workingReps,
+      prWeight: row.prWeight,
+      prReps: row.prReps,
+    });
+    revalidateApp();
+    return serializeExercise(row);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new Error("An exercise with that name already exists.");
+    }
+    throw error;
+  }
 }
 
 export async function updateCustomExercise(input: {
   id: string;
   name: string;
   muscleId?: string | null;
-  workingWeight?: number | null;
-  workingReps?: number | null;
-  prWeight?: number | null;
-  prReps?: number | null;
+  workingWeight?: number | string | null;
+  workingReps?: number | string | null;
+  prWeight?: number | string | null;
+  prReps?: number | string | null;
   prDate?: string | null;
 }): Promise<CustomExercisePayload> {
   const user = await requireUser();
@@ -316,55 +351,77 @@ export async function updateCustomExercise(input: {
     if (!muscle) throw new Error("Muscle not found.");
   }
 
+  const today = await getRequestToday();
   const prDate =
     parsed.prWeight != null && !parsed.prDate
-      ? existing.prDate ?? getTodayLocalDateISO()
+      ? existing.prDate ?? today
       : parsed.prDate;
+  const snapshotDate = prDate ?? today;
 
-  const row = await prisma.customExercise.update({
-    where: { id: input.id },
-    data: {
-      name: parsed.name,
-      muscleId: parsed.muscleId,
-      workingWeight: parsed.workingWeight,
-      workingReps: parsed.workingReps,
-      prWeight: parsed.prWeight,
-      prReps: parsed.prReps,
-      prDate,
-    },
-    include: exerciseInclude,
-  });
-  await snapshotExercise({
-    exerciseId: row.id,
-    workingWeight: row.workingWeight,
-    workingReps: row.workingReps,
-    prWeight: row.prWeight,
-    prReps: row.prReps,
-    previous: {
-      workingWeight: existing.workingWeight,
-      workingReps: existing.workingReps,
-      prWeight: existing.prWeight,
-      prReps: existing.prReps,
-    },
-  });
-  revalidateCatalog();
-  return serializeExercise(row);
+  try {
+    const row = await prisma.customExercise.update({
+      where: { id: input.id },
+      data: {
+        name: parsed.name,
+        nameKey: nameKey(parsed.name),
+        muscleId: parsed.muscleId,
+        workingWeight: parsed.workingWeight,
+        workingReps: parsed.workingReps,
+        prWeight: parsed.prWeight,
+        prReps: parsed.prReps,
+        prDate,
+      },
+      include: exerciseInclude,
+    });
+    await snapshotExercise({
+      exerciseId: row.id,
+      date: snapshotDate,
+      workingWeight: row.workingWeight,
+      workingReps: row.workingReps,
+      prWeight: row.prWeight,
+      prReps: row.prReps,
+      previous: {
+        workingWeight: existing.workingWeight,
+        workingReps: existing.workingReps,
+        prWeight: existing.prWeight,
+        prReps: existing.prReps,
+      },
+    });
+    revalidateApp();
+    return serializeExercise(row);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new Error("An exercise with that name already exists.");
+    }
+    throw error;
+  }
 }
 
 export async function recordPersonalRecord(input: {
   exerciseId?: string | null;
-  prWeight?: number | null;
-  prReps?: number | null;
+  prWeight?: number | string | null;
+  prReps?: number | string | null;
   prDate?: string | null;
-}): Promise<CustomExercisePayload> {
+  allowDowngrade?: boolean;
+}): Promise<CustomExercisePayload | { needsConfirm: true }> {
   const user = await requireUser();
   const parsed = parsePersonalRecordInput(input);
-  const prDate = parsed.prDate ?? getTodayLocalDateISO();
+  const prDate = parsed.prDate ?? (await getRequestToday());
 
   const existing = await prisma.customExercise.findFirst({
     where: { id: parsed.exerciseId, userId: user.id },
   });
   if (!existing) throw new Error("Exercise not found.");
+
+  if (
+    !input.allowDowngrade &&
+    existing.prWeight != null &&
+    (parsed.prWeight < existing.prWeight ||
+      (parsed.prWeight === existing.prWeight &&
+        parsed.prReps <= (existing.prReps ?? 0)))
+  ) {
+    return { needsConfirm: true as const };
+  }
 
   const row = await prisma.customExercise.update({
     where: { id: existing.id },
@@ -377,6 +434,7 @@ export async function recordPersonalRecord(input: {
   });
   await snapshotExercise({
     exerciseId: row.id,
+    date: prDate,
     workingWeight: row.workingWeight,
     workingReps: row.workingReps,
     prWeight: row.prWeight,
@@ -388,7 +446,7 @@ export async function recordPersonalRecord(input: {
       prReps: existing.prReps,
     },
   });
-  revalidateCatalog();
+  revalidateApp();
   return serializeExercise(row);
 }
 
@@ -398,7 +456,7 @@ export async function deleteCustomExercise(id: string): Promise<void> {
     where: { id, userId: user.id },
   });
   if (result.count === 0) throw new Error("Custom exercise not found.");
-  revalidateCatalog();
+  revalidateApp();
 }
 
 export async function createCustomSupplement(input: {
@@ -408,16 +466,24 @@ export async function createCustomSupplement(input: {
 }): Promise<CustomSupplementPayload> {
   const user = await requireUser();
   const parsed = parseCustomSupplementInput(input);
-  const row = await prisma.customSupplement.create({
-    data: {
-      userId: user.id,
-      name: parsed.name,
-      defaultDose: parsed.defaultDose,
-      iconOrType: parsed.iconOrType,
-    },
-  });
-  revalidateCatalog();
-  return serializeSupplement(row);
+  try {
+    const row = await prisma.customSupplement.create({
+      data: {
+        userId: user.id,
+        name: parsed.name,
+        nameKey: nameKey(parsed.name),
+        defaultDose: parsed.defaultDose,
+        iconOrType: parsed.iconOrType,
+      },
+    });
+    revalidateApp();
+    return serializeSupplement(row);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new Error("A supplement with that name already exists.");
+    }
+    throw error;
+  }
 }
 
 export async function updateCustomSupplement(input: {
@@ -434,16 +500,24 @@ export async function updateCustomSupplement(input: {
   });
   if (!existing) throw new Error("Custom supplement not found.");
 
-  const row = await prisma.customSupplement.update({
-    where: { id: input.id },
-    data: {
-      name: parsed.name,
-      defaultDose: parsed.defaultDose,
-      iconOrType: parsed.iconOrType,
-    },
-  });
-  revalidateCatalog();
-  return serializeSupplement(row);
+  try {
+    const row = await prisma.customSupplement.update({
+      where: { id: input.id },
+      data: {
+        name: parsed.name,
+        nameKey: nameKey(parsed.name),
+        defaultDose: parsed.defaultDose,
+        iconOrType: parsed.iconOrType,
+      },
+    });
+    revalidateApp();
+    return serializeSupplement(row);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw new Error("A supplement with that name already exists.");
+    }
+    throw error;
+  }
 }
 
 export async function deleteCustomSupplement(id: string): Promise<void> {
@@ -452,5 +526,5 @@ export async function deleteCustomSupplement(id: string): Promise<void> {
     where: { id, userId: user.id },
   });
   if (result.count === 0) throw new Error("Custom supplement not found.");
-  revalidateCatalog();
+  revalidateApp();
 }

@@ -4,7 +4,7 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
 
 const DEMO_USERNAME = "test";
-const DEMO_PASSWORD = "test";
+const DEMO_PASSWORD = "testpass1";
 
 const MUSCLES = [
   "Chest",
@@ -85,6 +85,10 @@ const UPPER = [
   ["Abs", 2],
 ];
 
+function nameKey(name) {
+  return String(name).trim().toLowerCase();
+}
+
 function pad(value) {
   return String(value).padStart(2, "0");
 }
@@ -140,10 +144,17 @@ async function main() {
         role: "USER",
         catalogSeeded: true,
         muscles: {
-          create: MUSCLES.map((name, sortOrder) => ({ name, sortOrder })),
+          create: MUSCLES.map((name, sortOrder) => ({
+            name,
+            nameKey: nameKey(name),
+            sortOrder,
+          })),
         },
         customSupplements: {
-          create: SUPPLEMENTS,
+          create: SUPPLEMENTS.map((item) => ({
+            ...item,
+            nameKey: nameKey(item.name),
+          })),
         },
       },
     });
@@ -154,16 +165,21 @@ async function main() {
     const muscleIdByName = new Map(muscles.map((item) => [item.name, item.id]));
 
     await prisma.customExercise.createMany({
-      data: EXERCISES.map((item) => ({
-        userId: user.id,
-        name: item.name,
-        muscleId: muscleIdByName.get(item.muscle) ?? null,
-        workingWeight: item.workingWeight,
-        workingReps: item.workingReps,
-        prWeight: item.prWeight,
-        prReps: item.prReps,
-        prDate: toISO(daysAgo(3)),
-      })),
+      data: EXERCISES.map((item) => {
+        const muscleId = muscleIdByName.get(item.muscle);
+        if (!muscleId) throw new Error(`Missing muscle ${item.muscle}`);
+        return {
+          userId: user.id,
+          name: item.name,
+          nameKey: nameKey(item.name),
+          muscleId,
+          workingWeight: item.workingWeight,
+          workingReps: item.workingReps,
+          prWeight: item.prWeight,
+          prReps: item.prReps,
+          prDate: toISO(daysAgo(3)),
+        };
+      }),
     });
 
     const notebook = await prisma.customExercise.findMany({
@@ -224,11 +240,15 @@ async function main() {
             userId: user.id,
             date,
             hits: {
-              create: template.map(([name, base]) => ({
-                muscleId: muscleIdByName.get(name) ?? null,
-                muscleName: name,
-                intensity: clampIntensity(base + (week % 3 === 0 ? 1 : 0) - (week % 5 === 0 ? 1 : 0)),
-              })),
+              create: template.map(([name, base]) => {
+                const muscleId = muscleIdByName.get(name);
+                if (!muscleId) throw new Error(`Missing muscle ${name}`);
+                return {
+                  muscleId,
+                  muscleName: name,
+                  intensity: clampIntensity(base + (week % 3 === 0 ? 1 : 0) - (week % 5 === 0 ? 1 : 0)),
+                };
+              }),
             },
           },
         });
@@ -348,11 +368,11 @@ async function main() {
           userId: user.id,
           date: today,
           hits: {
-            create: PUSH.map(([name, intensity]) => ({
-              muscleId: muscleIdByName.get(name) ?? null,
-              muscleName: name,
-              intensity,
-            })),
+            create: PUSH.map(([name, intensity]) => {
+              const muscleId = muscleIdByName.get(name);
+              if (!muscleId) throw new Error(`Missing muscle ${name}`);
+              return { muscleId, muscleName: name, intensity };
+            }),
           },
         },
       });

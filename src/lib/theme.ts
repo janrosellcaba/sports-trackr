@@ -139,6 +139,16 @@ export function applyThemeColorMeta(mode: ColorMode): void {
   document
     .querySelectorAll('meta[name="theme-color"]')
     .forEach((node) => node.setAttribute("content", color));
+  let status = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (!status) {
+    status = document.createElement("meta");
+    status.setAttribute("name", "apple-mobile-web-app-status-bar-style");
+    document.head.appendChild(status);
+  }
+  status.setAttribute(
+    "content",
+    mode === "light" ? "default" : "black-translucent",
+  );
 }
 
 export function themeBootstrapScript(
@@ -147,5 +157,3 @@ export function themeBootstrapScript(
 ): string {
   return `(function(){try{var ak=${JSON.stringify(ACCENT_STORAGE_KEY)};var mk=${JSON.stringify(COLOR_MODE_STORAGE_KEY)};var accents=${JSON.stringify(ACCENT_THEME_IDS)};var modes=${JSON.stringify(COLOR_MODES)};var s=${JSON.stringify(typeof serverTheme === "string" ? serverTheme : "")};var c=${JSON.stringify(typeof serverColorMode === "string" ? serverColorMode : "")};var a=accents.indexOf(s)!==-1?s:localStorage.getItem(ak);var m=modes.indexOf(c)!==-1?c:localStorage.getItem(mk);var root=document.documentElement;if(accents.indexOf(a)!==-1)root.dataset.accent=a;if(modes.indexOf(m)!==-1){root.dataset.theme=m;root.style.colorScheme=m}}catch(e){}})();`;
 }
-
-export const THEME_BOOTSTRAP_SCRIPT = themeBootstrapScript();

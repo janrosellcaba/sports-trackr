@@ -1,5 +1,8 @@
 import { EXERCISE_CATALOG } from "@/lib/exercises";
+import { isDateKey } from "@/lib/calculations";
 import { parseMuscleName, sameMuscleName } from "@/lib/muscles";
+import { parseOptionalDecimal } from "@/lib/numbers";
+import { formatMass, type MassUnit } from "@/lib/units";
 import type { CustomExercisePayload, CustomSupplementPayload } from "@/types/trackr";
 
 export const SUPPLEMENT_CATALOG = [
@@ -39,38 +42,25 @@ export function validateSupplementName(name: string): string | null {
   return validateExerciseName(name);
 }
 
-export function parseDoseHint(dose: string): {
-  amountGrams?: number;
-  scoops?: number;
-} {
-  const grams = dose.match(/(\d+(?:\.\d+)?)\s*g/i);
-  const scoops = dose.match(/(\d+(?:\.\d+)?)\s*scoop/i);
-  return {
-    amountGrams: grams ? Number(grams[1]) : undefined,
-    scoops: scoops ? Number(scoops[1]) : undefined,
-  };
-}
-
-function parseOptionalWeight(value: number | null | undefined, label: string): number | null {
-  if (value == null) return null;
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric) || numeric < 0) {
+function parseOptionalWeight(value: number | string | null | undefined, label: string): number | null {
+  const numeric = parseOptionalDecimal(value, label);
+  if (numeric == null) return null;
+  if (numeric < 0) {
     throw new Error(`${label} must be a non-negative number.`);
   }
   return numeric;
 }
 
-function parseOptionalReps(value: number | null | undefined, label: string): number | null {
-  if (value == null) return null;
-  const numeric = Number(value);
+function parseOptionalReps(
+  value: number | string | null | undefined,
+  label: string,
+): number | null {
+  if (value == null || String(value).trim() === "") return null;
+  const numeric = Number(String(value).replace(",", "."));
   if (!Number.isInteger(numeric) || numeric <= 0) {
     throw new Error(`${label} must be a positive integer.`);
   }
   return numeric;
-}
-
-function isDateKey(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 export type ParsedCustomExercise = {
@@ -86,10 +76,10 @@ export type ParsedCustomExercise = {
 export function parseCustomExerciseInput(input: {
   name: string;
   muscleId?: string | null;
-  workingWeight?: number | null;
-  workingReps?: number | null;
-  prWeight?: number | null;
-  prReps?: number | null;
+  workingWeight?: number | string | null;
+  workingReps?: number | string | null;
+  prWeight?: number | string | null;
+  prReps?: number | string | null;
   prDate?: string | null;
 }): ParsedCustomExercise {
   const nameError = validateExerciseName(input.name);
@@ -132,8 +122,8 @@ export type ParsedPersonalRecord = {
 
 export function parsePersonalRecordInput(input: {
   exerciseId?: string | null;
-  prWeight?: number | null;
-  prReps?: number | null;
+  prWeight?: number | string | null;
+  prReps?: number | string | null;
   prDate?: string | null;
 }): ParsedPersonalRecord {
   const exerciseId = input.exerciseId?.trim() ?? "";
@@ -179,6 +169,7 @@ export function parseCustomSupplementInput(input: {
   if (nameError) throw new Error(nameError);
   const dose = input.defaultDose.trim();
   if (!dose) throw new Error("Default dose is required.");
+  if (dose.length > 80) throw new Error("Dose must be 80 characters or fewer.");
   return {
     name: input.name.trim(),
     defaultDose: dose,
@@ -189,11 +180,13 @@ export function parseCustomSupplementInput(input: {
 export function formatLift(
   weight: number | null | undefined,
   reps: number | null | undefined,
+  massUnit: MassUnit = "kg",
 ): string {
   if (weight == null && reps == null) return "";
   if (weight == null) return `${reps} reps`;
-  if (reps == null) return `${weight}kg`;
-  return `${weight}kg × ${reps}`;
+  const mass = formatMass(weight, massUnit);
+  if (reps == null) return mass;
+  return `${mass} × ${reps}`;
 }
 
 export function muscleNameById(

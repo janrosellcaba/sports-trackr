@@ -5,9 +5,16 @@ export type MusclePayload = {
   createdAt: string;
 };
 
+export type MuscleRecoveryPayload = {
+  muscleId: string;
+  lastDate: string;
+  lastIntensity: number;
+  daysAgo: number;
+};
+
 export type MuscleHitPayload = {
   id: string;
-  muscleId: string | null;
+  muscleId: string;
   muscleName: string;
   intensity: number;
 };
@@ -61,7 +68,12 @@ export type CustomSupplementPayload = {
   createdAt: string;
 };
 
-export type AnalyticsPeriod = 7 | 30 | 90 | 0;
+export type { AnalyticsPeriod } from "@/lib/analytics";
+
+export type NotebookExercise = {
+  id: string;
+  name: string;
+};
 
 export type DailyActivityPoint = {
   date: string;
@@ -92,11 +104,12 @@ export type AnalyticsSummary = {
   supplementStreak: number;
   gymStreak: number;
   sportStreak: number;
+  chartLabel: string;
   trends: {
-    workouts: number;
-    gymLoad: number;
-    sports: number;
-    supplements: number;
+    workouts: number | null;
+    gymLoad: number | null;
+    sports: number | null;
+    supplements: number | null;
   };
   daily: DailyActivityPoint[];
   topMuscles: TopMuscle[];
@@ -107,19 +120,4 @@ export type ProgressionPoint = {
   workingWeight: number | null;
   prWeight: number | null;
   estimatedOneRm: number | null;
-};
-
-export type AppTab = "home" | "log" | "analytics" | "settings";
-
-export type AppState = {
-  today: string;
-  todayGym: GymSessionPayload | null;
-  todaySports: SportSessionPayload[];
-  todaySupplements: SupplementPayload[];
-  gymSessions: GymSessionPayload[];
-  sports: SportSessionPayload[];
-  supplements: SupplementPayload[];
-  muscles: MusclePayload[];
-  customExercises: CustomExercisePayload[];
-  customSupplements: CustomSupplementPayload[];
 };

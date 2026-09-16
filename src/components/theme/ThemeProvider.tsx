@@ -30,6 +30,7 @@ type ThemeContextValue = {
   setTheme: (id: AccentThemeId, persist?: boolean) => void;
   colorMode: ColorMode;
   setColorMode: (mode: ColorMode, persist?: boolean) => void;
+  saveError: string | null;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -55,20 +56,13 @@ export function ThemeProvider({
   const [colorMode, setColorModeState] = useState<ColorMode>(
     resolveColorMode(initialColorMode),
   );
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    const resolvedTheme = initialTheme
-      ? resolveAccentTheme(initialTheme)
-      : resolveAccentTheme(localStorage.getItem(ACCENT_STORAGE_KEY));
-    const resolvedMode = initialColorMode
-      ? resolveColorMode(initialColorMode)
-      : resolveColorMode(localStorage.getItem(COLOR_MODE_STORAGE_KEY));
-    setThemeId(resolvedTheme.id);
-    setColorModeState(resolvedMode);
-    applyAppearance(resolvedTheme.id, resolvedMode);
-    localStorage.setItem(ACCENT_STORAGE_KEY, resolvedTheme.id);
-    localStorage.setItem(COLOR_MODE_STORAGE_KEY, resolvedMode);
-  }, [initialColorMode, initialTheme]);
+    applyAppearance(themeId, colorMode);
+    localStorage.setItem(ACCENT_STORAGE_KEY, themeId);
+    localStorage.setItem(COLOR_MODE_STORAGE_KEY, colorMode);
+  }, [colorMode, themeId]);
 
   const setTheme = useCallback(
     (id: AccentThemeId, persist = true) => {
@@ -77,7 +71,13 @@ export function ThemeProvider({
       applyAccentToDocument(resolved);
       localStorage.setItem(ACCENT_STORAGE_KEY, resolved.id);
       if (persist) {
-        void updateAccentTheme(resolved.id).catch(() => undefined);
+        void updateAccentTheme(resolved.id).then(
+          () => setSaveError(null),
+          (error: unknown) =>
+            setSaveError(
+              error instanceof Error ? error.message : "Could not save accent.",
+            ),
+        );
       }
     },
     [],
@@ -90,7 +90,13 @@ export function ThemeProvider({
     applyThemeColorMeta(resolved);
     localStorage.setItem(COLOR_MODE_STORAGE_KEY, resolved);
     if (persist) {
-      void updateColorMode(resolved).catch(() => undefined);
+      void updateColorMode(resolved).then(
+        () => setSaveError(null),
+        (error: unknown) =>
+          setSaveError(
+            error instanceof Error ? error.message : "Could not save color mode.",
+          ),
+      );
     }
   }, []);
 
@@ -100,8 +106,9 @@ export function ThemeProvider({
       setTheme,
       colorMode,
       setColorMode,
+      saveError,
     }),
-    [colorMode, setColorMode, setTheme, themeId],
+    [colorMode, saveError, setColorMode, setTheme, themeId],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
@@ -112,6 +119,7 @@ const FALLBACK_THEME: ThemeContextValue = {
   setTheme: () => undefined,
   colorMode: DEFAULT_COLOR_MODE,
   setColorMode: () => undefined,
+  saveError: null,
 };
 
 export function useAccentTheme(): ThemeContextValue {
@@ -120,38 +128,24 @@ export function useAccentTheme(): ThemeContextValue {
 
 export function useAccentColor(): string {
   const { theme } = useAccentTheme();
-  const [color, setColor] = useState(theme.primary);
-
-  useEffect(() => {
-    const computed = getComputedStyle(document.documentElement)
-      .getPropertyValue("--accent-primary")
-      .trim();
-    setColor(computed || theme.primary);
-  }, [theme.primary]);
-
-  return color;
+  return theme.primary;
 }
+
+const LIGHT_SURFACE = {
+  ink: "#18181b",
+  muted: "#5c5c66",
+  line: "rgba(24, 24, 27, 0.1)",
+  paper: "#fffcf7",
+};
+
+const DARK_SURFACE = {
+  ink: "#f4f4f5",
+  muted: "#a1a1aa",
+  line: "rgba(255, 255, 255, 0.08)",
+  paper: "#18181b",
+};
 
 export function useSurfaceColors() {
   const { colorMode } = useAccentTheme();
-  const [colors, setColors] = useState({
-    ink: "#f4f4f5",
-    muted: "#a1a1aa",
-    line: "rgba(255, 255, 255, 0.08)",
-    paper: "#18181b",
-  });
-
-  useEffect(() => {
-    const root = getComputedStyle(document.documentElement);
-    const read = (name: string, fallback: string) =>
-      root.getPropertyValue(name).trim() || fallback;
-    setColors({
-      ink: read("--color-ink", "#f4f4f5"),
-      muted: read("--color-muted", "#a1a1aa"),
-      line: read("--color-line", "rgba(255, 255, 255, 0.08)"),
-      paper: read("--color-paper", "#18181b"),
-    });
-  }, [colorMode]);
-
-  return colors;
+  return colorMode === "light" ? LIGHT_SURFACE : DARK_SURFACE;
 }

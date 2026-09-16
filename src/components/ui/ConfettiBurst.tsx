@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 type Particle = {
@@ -25,15 +25,22 @@ function palette(): string[] {
   return [brand, hover, ink, "#ffffff", "#fbbf24", "#fb7185"];
 }
 
+function useIsClient() {
+  return useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+}
+
 export function ConfettiBurst({ onDone }: { onDone: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -146,12 +153,17 @@ export function ConfettiBurst({ onDone }: { onDone: () => void }) {
   if (!mounted) return null;
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-[80]" aria-hidden="true">
-      <canvas ref={canvasRef} className="h-full w-full" />
-      <p className="confetti-label font-display absolute top-[34%] left-1/2 text-3xl font-extrabold tracking-tight text-brand">
-        New PR
+    <>
+      <p role="status" className="sr-only">
+        New personal record
       </p>
-    </div>,
+      <div className="pointer-events-none fixed inset-0 z-[80]" aria-hidden="true">
+        <canvas ref={canvasRef} className="h-full w-full" />
+        <p className="confetti-label font-display absolute top-[34%] left-1/2 text-3xl font-extrabold tracking-tight text-brand-text">
+          New PR
+        </p>
+      </div>
+    </>,
     document.body,
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { register } from "@/app/actions/auth";
+import { PasswordField } from "@/components/auth/PasswordField";
 import { INPUT_CLS, PRIMARY_BTN } from "@/lib/ui";
 
 function SubmitButton() {
@@ -15,7 +16,7 @@ function SubmitButton() {
       disabled={pending}
       className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark`}
     >
-      {pending ? "Please wait…" : "Create Account"}
+      {pending ? "Please wait…" : "Create account"}
     </button>
   );
 }
@@ -44,42 +45,43 @@ export function RegisterForm() {
           autoCorrect="off"
           spellCheck={false}
           required
-          placeholder="e.g. jan"
+          placeholder="letters, numbers, . _ -"
           className={INPUT_CLS}
         />
+        <span className="mt-1 block text-xs text-muted">
+          2–32 characters, saved in lowercase.
+        </span>
       </label>
 
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-ink">
           Password
         </span>
-        <input
-          name="password"
-          type="password"
+        <PasswordField
           autoComplete="new-password"
-          required
           minLength={8}
           placeholder="At least 8 characters"
-          className={INPUT_CLS}
         />
       </label>
 
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-ink">
-          Registration Safety Code
+          Registration code
         </span>
         <input
           name="inviteCode"
           type="text"
           autoComplete="off"
           required
-          placeholder="Enter access code"
+          placeholder="Invite code"
           className={INPUT_CLS}
         />
       </label>
 
       {error ? (
-        <p className="text-sm font-medium text-danger">{error}</p>
+        <p role="alert" className="text-sm font-medium text-danger">
+          {error}
+        </p>
       ) : null}
 
       <SubmitButton />

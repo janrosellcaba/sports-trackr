@@ -7,12 +7,23 @@ const DEV_AUTH_SECRET = "dev-insecure-auth-secret-change-me";
 const DEV_REGISTRATION_CODE = "01234";
 
 export function getRegistrationCode(): string {
-  return process.env.REGISTRATION_CODE ?? DEV_REGISTRATION_CODE;
+  const code = process.env.REGISTRATION_CODE;
+  if (code && code.trim()) return code.trim();
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("REGISTRATION_CODE is required in production.");
+  }
+  return DEV_REGISTRATION_CODE;
 }
 
 function getAuthSecret(): Uint8Array {
-  const secret = process.env.AUTH_SECRET ?? DEV_AUTH_SECRET;
-  return new TextEncoder().encode(secret);
+  const secret = process.env.AUTH_SECRET;
+  if (secret && secret.length >= 16) {
+    return new TextEncoder().encode(secret);
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET is required in production.");
+  }
+  return new TextEncoder().encode(DEV_AUTH_SECRET);
 }
 
 export const sessionCookieOptions = {
@@ -29,35 +40,37 @@ export type AuthUser = {
   role: string;
   accentTheme: string;
   colorMode: string;
+  massUnit: string;
+  distanceUnit: string;
 };
-
-export function isAdminUser(user: {
-  username: string;
-  role?: string | null;
-}): boolean {
-  return user.role === "ADMIN" || user.username === "jan";
-}
 
 export type AuthActionResult = {
   error: string;
 };
 
-export async function signSessionToken(userId: string): Promise<string> {
-  return new SignJWT({ sub: userId })
+export async function signSessionToken(
+  userId: string,
+  sessionId: string,
+): Promise<string> {
+  return new SignJWT({ sub: userId, sid: sessionId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_MAX_AGE}s`)
     .sign(getAuthSecret());
 }
 
-export async function verifySessionToken(
-  token: string | undefined,
-): Promise<string | null> {
+export async function verifySessionToken(token: string | undefined): Promise<{
+  userId: string;
+  sessionId: string;
+} | null> {
   if (!token) return null;
 
   try {
     const { payload } = await jwtVerify(token, getAuthSecret());
-    return typeof payload.sub === "string" ? payload.sub : null;
+    const userId = typeof payload.sub === "string" ? payload.sub : null;
+    const sessionId = typeof payload.sid === "string" ? payload.sid : null;
+    if (!userId || !sessionId) return null;
+    return { userId, sessionId };
   } catch {
     return null;
   }

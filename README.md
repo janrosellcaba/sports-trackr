@@ -1,37 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trackr
 
-## Getting Started
+Personal gym, sports, and supplement log. Next.js App Router, Prisma, and SQLite.
 
-First, run the development server:
+## Setup
 
 ```bash
+npm install
+cp .env.example .env
+npx prisma generate
+npx prisma migrate deploy
+# existing local SQLite: node scripts/backfill-namekey.mjs && npx prisma db push
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Phone testing on the LAN hostname is allowed automatically; add extras with `ALLOWED_DEV_ORIGINS`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Required in production | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | SQLite file URL, e.g. `file:./dev.db` |
+| `AUTH_SECRET` | yes | At least 16 characters. Used to sign session JWTs. |
+| `REGISTRATION_CODE` | yes | Invite code for `/register`. Compared in constant time. |
 
-## Learn More
+Development falls back to insecure defaults so `npm run dev` works without a filled `.env`. Those defaults are rejected in production.
 
-To learn more about Next.js, take a look at the following resources:
+### Demo data
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run seed:demo
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Creates user `test` / `testpass1` with ~90 days of gym, sports, supplements, and PR snapshots. Other accounts are left alone.
 
-## Deploy on Vercel
+## App map
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `/` Home for a day (`?date=YYYY-MM-DD`)
+- `/log` Full history
+- `/analytics` Period via `?period=7|30|90|0`
+- `/settings/...` Muscles, exercises, supplements, appearance (including kg/lb and km/mi), export/import, account
+- `/login` and `/register`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# sports-trackr
+Sessions live in SQLite and are revoked on logout. Writes go through server actions. The service worker caches icons and an offline page only — it does not cache logged-in HTML and does not queue logs offline. Weights are stored in kilograms and distances in km/meters; Appearance can display pounds and miles.
+
+## Scripts
+
+```bash
+npm test
+npm run lint
+npm run build
+```

@@ -6,15 +6,18 @@ export function isValidUsername(username: string): boolean {
   return /^[a-z0-9._-]{2,32}$/.test(username);
 }
 
-export function assignRole(username: string): "ADMIN" | "USER" {
-  return username === "jan" ? "ADMIN" : "USER";
-}
-
 export function isValidInviteCode(
   inviteCode: string,
   expected: string,
 ): boolean {
-  return inviteCode.trim() === expected;
+  const left = inviteCode.trim();
+  const right = expected.trim();
+  if (left.length !== right.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < left.length; i += 1) {
+    mismatch |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  }
+  return mismatch === 0;
 }
 
 export function confirmsUsername(
@@ -22,4 +25,15 @@ export function confirmsUsername(
   confirmation: string,
 ): boolean {
   return normalizeUsername(confirmation) === normalizeUsername(username);
+}
+
+export function validatePassword(
+  password: string,
+  maxLength: number,
+): string | null {
+  if (password.length < 8) return "Password must be at least 8 characters.";
+  if (password.length > maxLength) {
+    return `Password must be ${maxLength} characters or fewer.`;
+  }
+  return null;
 }

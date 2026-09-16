@@ -1,5 +1,6 @@
 import { defaultExerciseSeeds, defaultSupplementSeeds } from "@/lib/catalog";
 import { DEFAULT_MUSCLES } from "@/lib/muscles";
+import { nameKey } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
 
 export async function ensureDefaultMuscles(userId: string): Promise<
@@ -12,10 +13,17 @@ export async function ensureDefaultMuscles(userId: string): Promise<
   });
   if (existing.length > 0) return existing;
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { catalogSeeded: true },
+  });
+  if (user?.catalogSeeded) return existing;
+
   await prisma.muscle.createMany({
     data: DEFAULT_MUSCLES.map((name, index) => ({
       userId,
       name,
+      nameKey: nameKey(name),
       sortOrder: index,
     })),
   });
@@ -33,10 +41,9 @@ export async function seedUserCatalog(userId: string): Promise<void> {
     select: { catalogSeeded: true },
   });
   if (!user) return;
-
-  const muscles = await ensureDefaultMuscles(userId);
   if (user.catalogSeeded) return;
 
+  const muscles = await ensureDefaultMuscles(userId);
   const muscleIdByName = new Map(
     muscles.map((item) => [item.name.toLowerCase(), item.id]),
   );
@@ -44,34 +51,32 @@ export async function seedUserCatalog(userId: string): Promise<void> {
   const [exercises, supplements] = await Promise.all([
     prisma.customExercise.findMany({
       where: { userId },
-      select: { name: true },
+      select: { nameKey: true },
     }),
     prisma.customSupplement.findMany({
       where: { userId },
-      select: { name: true },
+      select: { nameKey: true },
     }),
   ]);
 
-  const existingExercises = new Set(
-    exercises.map((item) => item.name.trim().toLowerCase()),
-  );
-  const existingSupplements = new Set(
-    supplements.map((item) => item.name.trim().toLowerCase()),
-  );
+  const existingExercises = new Set(exercises.map((item) => item.nameKey));
+  const existingSupplements = new Set(supplements.map((item) => item.nameKey));
 
   const exerciseCreates = defaultExerciseSeeds()
-    .filter((item) => !existingExercises.has(item.name.toLowerCase()))
+    .filter((item) => !existingExercises.has(nameKey(item.name)))
     .map((item) => ({
       userId,
       name: item.name,
+      nameKey: nameKey(item.name),
       muscleId: muscleIdByName.get(item.muscle.toLowerCase()) ?? null,
     }));
 
   const supplementCreates = defaultSupplementSeeds()
-    .filter((item) => !existingSupplements.has(item.name.toLowerCase()))
+    .filter((item) => !existingSupplements.has(nameKey(item.name)))
     .map((item) => ({
       userId,
       name: item.name,
+      nameKey: nameKey(item.name),
       defaultDose: item.defaultDose,
       iconOrType: "pill",
     }));

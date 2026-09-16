@@ -1,18 +1,21 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { formatDisplayDate } from "@/lib/calculations";
 import { averageIntensity, formatGymSummary } from "@/lib/muscles";
-import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
+import { CARD_CLS, LABEL_CLS, PAGE_TITLE } from "@/lib/ui";
 import { GymBar } from "@/components/gym/GymBar";
 import { PrBar } from "@/components/gym/PrBar";
 import { SportsBar } from "@/components/sports/SportsBar";
 import { SupplementBar } from "@/components/supplements/SupplementBar";
 import { DayPicker } from "@/components/ui/DayPicker";
+import { useLatestProps } from "@/lib/use-latest-props";
 import type {
   CustomExercisePayload,
   CustomSupplementPayload,
   GymSessionPayload,
   MusclePayload,
+  MuscleRecoveryPayload,
   SportSessionPayload,
   SupplementPayload,
 } from "@/types/trackr";
@@ -20,52 +23,54 @@ import type {
 export function HomeView({
   today,
   date,
-  onDateChange,
   gym,
   sports,
   supplements,
   recentSessions,
+  recovery,
   muscles,
   customExercises,
   customSupplements,
-  onGymChange,
-  onSportLogged,
-  onSportRemoved,
-  onSupplementsChange,
-  onExerciseChange,
 }: {
   today: string;
   date: string;
-  onDateChange: (date: string) => void;
   gym: GymSessionPayload | null;
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
   recentSessions: GymSessionPayload[];
+  recovery: MuscleRecoveryPayload[];
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
   customSupplements: CustomSupplementPayload[];
-  onGymChange: (session: GymSessionPayload | null) => void;
-  onSportLogged: (session: SportSessionPayload) => void;
-  onSportRemoved: (id: string) => void;
-  onSupplementsChange: (intakes: SupplementPayload[]) => void;
-  onExerciseChange: (row: CustomExercisePayload) => void;
 }) {
-  const hits = gym?.hits ?? [];
+  const router = useRouter();
+  const [dayGym, setDayGym] = useLatestProps(gym);
+  const [daySports, setDaySports] = useLatestProps(sports);
+  const [daySupplements, setDaySupplements] = useLatestProps(supplements);
+  const [exercises, setExercises] = useLatestProps(customExercises);
+  const hits = dayGym?.hits ?? [];
   const avg = averageIntensity(hits);
+
+  function goToDate(next: string) {
+    router.push(next === today ? "/" : `/?date=${next}`);
+  }
 
   return (
     <div className="space-y-6">
+      <h1 className={PAGE_TITLE}>
+        {date === today ? "Today" : formatDisplayDate(date)}
+      </h1>
       <div className="space-y-3">
-        <DayPicker today={today} date={date} onChange={onDateChange} />
-        <div className={`${CARD_CLS} grid grid-cols-4 divide-x divide-line py-3`}>
+        <DayPicker today={today} date={date} onChange={goToDate} />
+        <div className={`${CARD_CLS} grid grid-cols-2 gap-px bg-line sm:grid-cols-4`}>
           <DayStat label="Muscles" value={String(hits.length)} />
           <DayStat
-            label="Avg"
-            value={hits.length === 0 ? "—" : String(avg)}
+            label="Avg intensity"
+            value={hits.length === 0 ? "—" : `${avg} / 5`}
             accent={hits.length > 0}
           />
-          <DayStat label="Sports" value={String(sports.length)} />
-          <DayStat label="Supps" value={String(supplements.length)} />
+          <DayStat label="Sports" value={String(daySports.length)} />
+          <DayStat label="Supplements" value={String(daySupplements.length)} />
         </div>
       </div>
 
@@ -73,35 +78,55 @@ export function HomeView({
         <h2 className={`mb-3 ${LABEL_CLS}`}>Gym</h2>
         <GymBar
           date={date}
-          session={gym}
+          session={dayGym}
           muscles={muscles}
-          onChange={onGymChange}
+          recovery={recovery}
+          onChange={(session) => {
+            setDayGym(session);
+            router.refresh();
+          }}
         />
       </div>
 
       <SupplementBar
         date={date}
-        intakes={supplements}
+        intakes={daySupplements}
         customSupplements={customSupplements}
-        onChange={onSupplementsChange}
+        onChange={(intakes) => {
+          setDaySupplements(intakes);
+          router.refresh();
+        }}
       />
 
       <SportsBar
         date={date}
-        sessions={sports}
-        onLogged={onSportLogged}
-        onRemoved={onSportRemoved}
+        sessions={daySports}
+        lockDate
+        onLogged={(session) => {
+          setDaySports((current) => {
+            const next = [
+              session,
+              ...current.filter((item) => item.id !== session.id),
+            ];
+            return next.sort((a, b) => b.date.localeCompare(a.date));
+          });
+          router.refresh();
+        }}
+        onRemoved={(id) => {
+          setDaySports((current) => current.filter((item) => item.id !== id));
+          router.refresh();
+        }}
       />
 
       {recentSessions.length > 0 ? (
         <div>
-          <h2 className={`mb-3 ${LABEL_CLS}`}>Recent gym days</h2>
+          <h2 className={`mb-3 ${LABEL_CLS}`}>Other gym days</h2>
           <div className="space-y-2">
-            {recentSessions.slice(0, 4).map((item) => (
+            {recentSessions.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onDateChange(item.date)}
+                onClick={() => goToDate(item.date)}
                 className={`${CARD_CLS} w-full px-4 py-3 text-left hover:bg-chip/40`}
               >
                 <p className="text-sm font-semibold text-ink">
@@ -118,8 +143,16 @@ export function HomeView({
 
       <PrBar
         date={date}
-        exercises={customExercises}
-        onChange={onExerciseChange}
+        exercises={exercises}
+        lockDate
+        onChange={(row) => {
+          setExercises((current) =>
+            [row, ...current.filter((item) => item.id !== row.id)].sort((a, b) =>
+              a.name.localeCompare(b.name),
+            ),
+          );
+          router.refresh();
+        }}
       />
     </div>
   );
@@ -135,10 +168,10 @@ function DayStat({
   accent?: boolean;
 }) {
   return (
-    <div className="min-w-0 px-2 text-center">
+    <div className="min-w-0 bg-paper px-3 py-3 text-center">
       <p
         className={`truncate text-lg font-semibold tabular-nums ${
-          accent ? "text-brand" : "text-ink"
+          accent ? "text-brand-text" : "text-ink"
         }`}
       >
         {value}

@@ -1,31 +1,30 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireUser } from "@/app/actions/auth";
-import { getTodayLocalDateISO } from "@/lib/calculations";
+import { isDateKey } from "@/lib/calculations";
+import { getRequestToday } from "@/lib/request-today";
 import { prisma } from "@/lib/prisma";
+import { revalidateApp } from "@/lib/revalidate";
+import { MAX_TEXT_FIELD } from "@/lib/constants";
+import {
+  listSupplementsForDate,
+  listSupplementsForUser,
+  serializeSupplement,
+} from "@/lib/db/activity";
 import type { SupplementPayload } from "@/types/trackr";
 
-function isDateKey(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function serialize(row: {
-  id: string;
-  name: string;
-  dose: string;
-  date: string;
-}): SupplementPayload {
-  return {
-    id: row.id,
-    name: row.name,
-    dose: row.dose,
-    date: row.date,
-  };
-}
-
-function revalidateApp() {
-  revalidatePath("/");
+function parseIntakeFields(nameRaw: string, doseRaw: string) {
+  const name = nameRaw.trim();
+  const dose = doseRaw.trim();
+  if (!name) throw new Error("Supplement name is required.");
+  if (!dose) throw new Error("Dose is required.");
+  if (name.length > MAX_TEXT_FIELD) {
+    throw new Error(`Name must be ${MAX_TEXT_FIELD} characters or fewer.`);
+  }
+  if (dose.length > MAX_TEXT_FIELD) {
+    throw new Error(`Dose must be ${MAX_TEXT_FIELD} characters or fewer.`);
+  }
+  return { name, dose };
 }
 
 export async function logSupplement(input: {
@@ -34,12 +33,8 @@ export async function logSupplement(input: {
   date?: string;
 }): Promise<SupplementPayload> {
   const user = await requireUser();
-  const name = input.name.trim();
-  const dose = input.dose.trim();
-  const date = input.date ?? getTodayLocalDateISO();
-
-  if (!name) throw new Error("Supplement name is required.");
-  if (!dose) throw new Error("Dose is required.");
+  const { name, dose } = parseIntakeFields(input.name, input.dose);
+  const date = input.date ?? (await getRequestToday());
   if (!isDateKey(date)) throw new Error("Invalid date.");
 
   const intake = await prisma.supplementIntake.create({
@@ -52,30 +47,23 @@ export async function logSupplement(input: {
   });
 
   revalidateApp();
-  return serialize(intake);
+  return serializeSupplement(intake);
 }
 
-export async function listSupplements(limit = 80): Promise<SupplementPayload[]> {
+export async function listSupplements(): Promise<SupplementPayload[]> {
   const user = await requireUser();
-  const take = Math.max(1, Math.min(limit, 200));
-  const rows = await prisma.supplementIntake.findMany({
-    where: { userId: user.id },
-    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-    take,
-  });
-  return rows.map(serialize);
+  const rows = await listSupplementsForUser(user.id);
+  return rows.map(serializeSupplement);
 }
 
 export async function getSupplementsForDate(
-  date = getTodayLocalDateISO(),
+  date?: string,
 ): Promise<SupplementPayload[]> {
   const user = await requireUser();
-  if (!isDateKey(date)) throw new Error("Invalid date.");
-  const rows = await prisma.supplementIntake.findMany({
-    where: { userId: user.id, date },
-    orderBy: { createdAt: "desc" },
-  });
-  return rows.map(serialize);
+  const resolved = date ?? (await getRequestToday());
+  if (!isDateKey(resolved)) throw new Error("Invalid date.");
+  const rows = await listSupplementsForDate(user.id, resolved);
+  return rows.map(serializeSupplement);
 }
 
 export async function updateSupplement(input: {
@@ -85,12 +73,8 @@ export async function updateSupplement(input: {
   date?: string;
 }): Promise<SupplementPayload> {
   const user = await requireUser();
-  const name = input.name.trim();
-  const dose = input.dose.trim();
-  const date = input.date ?? getTodayLocalDateISO();
-
-  if (!name) throw new Error("Supplement name is required.");
-  if (!dose) throw new Error("Dose is required.");
+  const { name, dose } = parseIntakeFields(input.name, input.dose);
+  const date = input.date ?? (await getRequestToday());
   if (!isDateKey(date)) throw new Error("Invalid date.");
 
   const existing = await prisma.supplementIntake.findFirst({
@@ -105,7 +89,7 @@ export async function updateSupplement(input: {
   });
 
   revalidateApp();
-  return serialize(row);
+  return serializeSupplement(row);
 }
 
 export async function deleteSupplement(id: string): Promise<void> {

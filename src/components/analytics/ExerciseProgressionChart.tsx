@@ -12,59 +12,73 @@ import {
 } from "recharts";
 import { getExerciseProgression } from "@/app/actions/analytics";
 import { useAccentColor, useSurfaceColors } from "@/components/theme/ThemeProvider";
-import type { ProgressionPoint } from "@/types/trackr";
-import { CARD_CLS, INPUT_CLS, LABEL_CLS } from "@/lib/ui";
+import { useUnits } from "@/components/units/UnitsProvider";
+import { formatChartDate } from "@/lib/calculations";
+import { kgToDisplay, trimNumber, type MassUnit } from "@/lib/units";
+import type { NotebookExercise, ProgressionPoint } from "@/types/trackr";
+import { CARD_CLS, LABEL_CLS, SELECT_CLS } from "@/lib/ui";
 
 export function ExerciseProgressionChart({
-  exerciseNames,
-  initialName,
+  exercises,
+  initialId,
 }: {
-  exerciseNames: string[];
-  initialName?: string;
+  exercises: NotebookExercise[];
+  initialId?: string;
 }) {
   const brand = useAccentColor();
   const { ink, muted, line, paper } = useSurfaceColors();
-  const [selected, setSelected] = useState(initialName ?? exerciseNames[0] ?? "");
+  const { massUnit } = useUnits();
+  const [selected, setSelected] = useState(initialId ?? exercises[0]?.id ?? "");
   const [points, setPoints] = useState<ProgressionPoint[]>([]);
+  const [picked, setPicked] = useState<ProgressionPoint | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!selected) {
-      setPoints([]);
-      return;
-    }
+    if (!selected) return;
+    let cancelled = false;
     startTransition(async () => {
       const data = await getExerciseProgression(selected);
+      if (cancelled) return;
       setPoints(data);
+      setPicked(data[data.length - 1] ?? null);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [selected]);
 
-  if (exerciseNames.length === 0) {
+  const displayPoints = points.map((point) => toDisplayPoint(point, massUnit));
+  const displayPicked = picked ? toDisplayPoint(picked, massUnit) : null;
+
+  if (exercises.length === 0) {
     return (
       <section className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
         <p className="text-sm text-muted">
-          Log working weights or PRs to see strength over time.
+          Log a personal record from Home to see strength over time.
         </p>
       </section>
     );
   }
 
   return (
-    <section className={`${CARD_CLS} p-4`}>
+    <section className={`${CARD_CLS} p-4`} aria-busy={isPending}>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className={LABEL_CLS}>Progression</h2>
+          <p className="mt-1 text-xs text-muted">
+            Snapshots from personal records and working sets, in {massUnit}.
+          </p>
         </div>
         <label className="block w-full sm:w-56">
           <span className="sr-only">Exercise</span>
           <select
             value={selected}
             onChange={(event) => setSelected(event.target.value)}
-            className={INPUT_CLS}
+            className={SELECT_CLS}
           >
-            {exerciseNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
+            {exercises.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
               </option>
             ))}
           </select>
@@ -78,11 +92,23 @@ export function ExerciseProgressionChart({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={points} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+            <LineChart
+              data={displayPoints}
+              margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
+              onClick={(state) => {
+                const payload = (
+                  state as { activePayload?: Array<{ payload?: ProgressionPoint }> } | undefined
+                )?.activePayload?.[0]?.payload;
+                if (payload?.date) {
+                  const original = points.find((item) => item.date === payload.date);
+                  if (original) setPicked(original);
+                }
+              }}
+            >
               <CartesianGrid stroke={line} strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="date"
-                tickFormatter={formatShortDate}
+                tickFormatter={formatChartDate}
                 tick={{ fill: muted, fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
@@ -101,9 +127,9 @@ export function ExerciseProgressionChart({
                   color: ink,
                   fontSize: 12,
                 }}
-                labelFormatter={(label) => formatShortDate(String(label))}
+                labelFormatter={(label) => formatChartDate(String(label))}
                 formatter={(value, name) => [
-                  value == null ? "—" : `${value} kg`,
+                  value == null ? "—" : `${value} ${massUnit}`,
                   name === "estimatedOneRm"
                     ? "Est. 1RM"
                     : name === "prWeight"
@@ -131,12 +157,32 @@ export function ExerciseProgressionChart({
           </ResponsiveContainer>
         )}
       </div>
+
+      {displayPicked ? (
+        <p className="mt-3 text-sm text-ink" role="status">
+          {formatChartDate(displayPicked.date)}
+          {displayPicked.workingWeight != null
+            ? ` · working ${trimNumber(displayPicked.workingWeight)}${massUnit}`
+            : ""}
+          {displayPicked.prWeight != null
+            ? ` · PR ${trimNumber(displayPicked.prWeight)}${massUnit}`
+            : ""}
+          {displayPicked.estimatedOneRm != null
+            ? ` · est. 1RM ${trimNumber(displayPicked.estimatedOneRm)}${massUnit}`
+            : ""}
+        </p>
+      ) : null}
     </section>
   );
 }
 
-function formatShortDate(value: string): string {
-  const parts = value.split("-");
-  if (parts.length < 3) return value;
-  return `${parts[1]}/${parts[2]}`;
+function toDisplayPoint(point: ProgressionPoint, unit: MassUnit): ProgressionPoint {
+  return {
+    ...point,
+    workingWeight:
+      point.workingWeight == null ? null : kgToDisplay(point.workingWeight, unit),
+    prWeight: point.prWeight == null ? null : kgToDisplay(point.prWeight, unit),
+    estimatedOneRm:
+      point.estimatedOneRm == null ? null : kgToDisplay(point.estimatedOneRm, unit),
+  };
 }

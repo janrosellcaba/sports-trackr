@@ -1,39 +1,17 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireUser } from "@/app/actions/auth";
-import { getTodayLocalDateISO } from "@/lib/calculations";
+import { isDateKey } from "@/lib/calculations";
+import { getRequestToday } from "@/lib/request-today";
 import { prisma } from "@/lib/prisma";
 import { parseSportSessionInput } from "@/lib/sports";
+import { revalidateApp } from "@/lib/revalidate";
+import {
+  listSportsForDate,
+  listSportsForUser,
+  serializeSport,
+} from "@/lib/db/activity";
 import type { SportSessionPayload } from "@/types/trackr";
-
-function serialize(row: {
-  id: string;
-  date: string;
-  type: string;
-  durationMinutes: number | null;
-  distanceKm: number | null;
-  distanceMeters: number | null;
-  pace: string | null;
-  effort: string | null;
-  notes: string | null;
-}): SportSessionPayload {
-  return {
-    id: row.id,
-    date: row.date,
-    type: row.type,
-    durationMinutes: row.durationMinutes,
-    distanceKm: row.distanceKm,
-    distanceMeters: row.distanceMeters,
-    pace: row.pace,
-    effort: row.effort,
-    notes: row.notes,
-  };
-}
-
-function revalidateApp() {
-  revalidatePath("/");
-}
 
 export async function logSport(input: {
   type: string;
@@ -48,7 +26,7 @@ export async function logSport(input: {
   const user = await requireUser();
   const parsed = parseSportSessionInput({
     ...input,
-    date: input.date ?? getTodayLocalDateISO(),
+    date: input.date ?? (await getRequestToday()),
   });
 
   const row = await prisma.sportSession.create({
@@ -66,7 +44,7 @@ export async function logSport(input: {
   });
 
   revalidateApp();
-  return serialize(row);
+  return serializeSport(row);
 }
 
 export async function updateSport(
@@ -85,7 +63,7 @@ export async function updateSport(
   const user = await requireUser();
   const parsed = parseSportSessionInput({
     ...input,
-    date: input.date ?? getTodayLocalDateISO(),
+    date: input.date ?? (await getRequestToday()),
   });
 
   const existing = await prisma.sportSession.findFirst({
@@ -109,29 +87,23 @@ export async function updateSport(
   });
 
   revalidateApp();
-  return serialize(row);
+  return serializeSport(row);
 }
 
-export async function listSports(limit = 80): Promise<SportSessionPayload[]> {
+export async function listSports(): Promise<SportSessionPayload[]> {
   const user = await requireUser();
-  const take = Math.max(1, Math.min(limit, 200));
-  const rows = await prisma.sportSession.findMany({
-    where: { userId: user.id },
-    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
-    take,
-  });
-  return rows.map(serialize);
+  const rows = await listSportsForUser(user.id);
+  return rows.map(serializeSport);
 }
 
 export async function getSportsForDate(
-  date = getTodayLocalDateISO(),
+  date?: string,
 ): Promise<SportSessionPayload[]> {
   const user = await requireUser();
-  const rows = await prisma.sportSession.findMany({
-    where: { userId: user.id, date },
-    orderBy: { createdAt: "desc" },
-  });
-  return rows.map(serialize);
+  const resolved = date ?? (await getRequestToday());
+  if (!isDateKey(resolved)) throw new Error("Invalid date.");
+  const rows = await listSportsForDate(user.id, resolved);
+  return rows.map(serializeSport);
 }
 
 export async function deleteSport(id: string): Promise<void> {

@@ -1,4 +1,4 @@
-type ExportPayload = {
+export type TrackrExportPayload = {
   gymSessions?: Array<{
     id: string;
     date: string;
@@ -35,11 +35,22 @@ type ExportPayload = {
     prWeight: number | null;
     prReps: number | null;
     prDate: string | null;
+    snapshots?: Array<{
+      date: string;
+      workingWeight: number | null;
+      workingReps: number | null;
+      prWeight: number | null;
+      prReps: number | null;
+    }>;
   }>;
   customSupplements?: Array<{
     name: string;
     defaultDose: string;
   }>;
+  preferences?: {
+    massUnit?: string;
+    distanceUnit?: string;
+  };
 };
 
 function csvEscape(value: unknown): string {
@@ -55,7 +66,7 @@ function rowsToCsv(headers: string[], rows: Array<Array<unknown>>): string {
   ].join("\n");
 }
 
-export function buildExportCsv(data: ExportPayload): string {
+export function buildExportCsv(data: TrackrExportPayload): string {
   const sessionRows: Array<Array<unknown>> = [];
   const hitRows: Array<Array<unknown>> = [];
 
@@ -134,6 +145,21 @@ export function buildExportCsv(data: ExportPayload): string {
         item.prReps ?? "",
         item.prDate ?? "",
       ]),
+    ),
+    "",
+    "# exerciseSnapshots",
+    rowsToCsv(
+      ["exercise", "date", "workingWeight", "workingReps", "prWeight", "prReps"],
+      (data.customExercises ?? []).flatMap((item) =>
+        (item.snapshots ?? []).map((snap) => [
+          item.name,
+          snap.date,
+          snap.workingWeight ?? "",
+          snap.workingReps ?? "",
+          snap.prWeight ?? "",
+          snap.prReps ?? "",
+        ]),
+      ),
     ),
     "",
     "# customSupplements",

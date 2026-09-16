@@ -1,11 +1,13 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cache } from "react";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import {
   SESSION_COOKIE,
+  SESSION_MAX_AGE,
   getRegistrationCode,
   sessionCookieOptions,
   signSessionToken,
@@ -14,58 +16,107 @@ import {
   type AuthUser,
 } from "@/lib/auth";
 import { seedUserCatalog } from "@/lib/seed-catalog";
+import { isValidInviteCode, isValidUsername, normalizeUsername, validatePassword } from "@/lib/auth-logic";
+import { MAX_PASSWORD_LENGTH } from "@/lib/constants";
+import { isUniqueConstraintError } from "@/lib/prisma-errors";
 import {
-  assignRole,
-  isValidInviteCode,
-  isValidUsername,
-  normalizeUsername,
-} from "@/lib/auth-logic";
+  assertNotRateLimited,
+  clearAuthFailures,
+  recordAuthFailure,
+} from "@/lib/rate-limit";
 
 function readString(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
 }
 
+function clientKey(username: string, ip: string): string {
+  return `${ip}:${username || "*"}`;
+}
+
+async function requestIp(): Promise<string> {
+  const list = await headers();
+  const forwarded = list.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
+  return list.get("x-real-ip") || "unknown";
+}
+
 async function createSession(userId: string): Promise<void> {
-  const token = await signSessionToken(userId);
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE * 1000);
+  const session = await prisma.session.create({
+    data: { userId, expiresAt },
+  });
+  const token = await signSessionToken(userId, session.id);
   const store = await cookies();
   store.set(SESSION_COOKIE, token, sessionCookieOptions);
 }
 
-export async function getCurrentUser(): Promise<AuthUser | null> {
+async function destroyCurrentSession(): Promise<void> {
   const store = await cookies();
-  const userId = await verifySessionToken(store.get(SESSION_COOKIE)?.value);
-  if (!userId) return null;
-
-  return prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      username: true,
-      role: true,
-      accentTheme: true,
-      colorMode: true,
-    },
-  });
+  const parsed = await verifySessionToken(store.get(SESSION_COOKIE)?.value);
+  if (parsed) {
+    await prisma.session.deleteMany({ where: { id: parsed.sessionId } });
+  }
+  store.set(SESSION_COOKIE, "", { ...sessionCookieOptions, maxAge: 0 });
+  store.delete(SESSION_COOKIE);
 }
 
-export async function requireUser(): Promise<AuthUser> {
+export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
+  const store = await cookies();
+  const parsed = await verifySessionToken(store.get(SESSION_COOKIE)?.value);
+  if (!parsed) return null;
+
+  const session = await prisma.session.findFirst({
+    where: {
+      id: parsed.sessionId,
+      userId: parsed.userId,
+      expiresAt: { gt: new Date() },
+    },
+    select: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          accentTheme: true,
+          colorMode: true,
+          massUnit: true,
+          distanceUnit: true,
+        },
+      },
+    },
+  });
+
+  return session?.user ?? null;
+});
+
+export const requireUser = cache(async (): Promise<AuthUser> => {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
   }
   return user;
-}
+});
 
 export async function register(
   formData: FormData,
 ): Promise<AuthActionResult | void> {
   const username = normalizeUsername(readString(formData, "username"));
   const password = readString(formData, "password");
-  const inviteCode = readString(formData, "inviteCode").trim();
+  const inviteCode = readString(formData, "inviteCode");
+  const ip = await requestIp();
+  const key = clientKey(username, ip);
 
-  if (!isValidInviteCode(inviteCode, getRegistrationCode())) {
-    return { error: "Invalid registration code" };
+  const limited = assertNotRateLimited(key);
+  if (!limited.ok) return { error: limited.error };
+
+  try {
+    if (!isValidInviteCode(inviteCode, getRegistrationCode())) {
+      const next = recordAuthFailure(key);
+      return { error: next.ok ? "Invalid registration code." : next.error };
+    }
+  } catch {
+    return { error: "Registration is not available." };
   }
 
   if (!isValidUsername(username)) {
@@ -74,9 +125,8 @@ export async function register(
     };
   }
 
-  if (password.length < 8) {
-    return { error: "Password must be at least 8 characters." };
-  }
+  const passwordError = validatePassword(password, MAX_PASSWORD_LENGTH);
+  if (passwordError) return { error: passwordError };
 
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) {
@@ -84,16 +134,23 @@ export async function register(
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: {
-      username,
-      passwordHash,
-      role: assignRole(username),
-    },
-  });
-
-  await seedUserCatalog(user.id);
-  await createSession(user.id);
+  try {
+    const user = await prisma.user.create({
+      data: {
+        username,
+        passwordHash,
+        role: "USER",
+      },
+    });
+    await seedUserCatalog(user.id);
+    await createSession(user.id);
+    clearAuthFailures(key);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return { error: "That username is already taken." };
+    }
+    throw error;
+  }
   redirect("/");
 }
 
@@ -102,28 +159,32 @@ export async function login(
 ): Promise<AuthActionResult | void> {
   const username = normalizeUsername(readString(formData, "username"));
   const password = readString(formData, "password");
+  const ip = await requestIp();
+  const key = clientKey(username, ip);
+
+  const limited = assertNotRateLimited(key);
+  if (!limited.ok) return { error: limited.error };
 
   if (!username || !password) {
     return { error: "Username and password are required." };
   }
 
   const user = await prisma.user.findUnique({ where: { username } });
-  if (!user) {
-    return { error: "Invalid username or password." };
-  }
+  const valid = user
+    ? await bcrypt.compare(password, user.passwordHash)
+    : await bcrypt.compare(password, "$2a$10$invalidhashinvalidhashinvalidho");
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) {
-    return { error: "Invalid username or password." };
+  if (!user || !valid) {
+    const next = recordAuthFailure(key);
+    return { error: next.ok ? "Invalid username or password." : next.error };
   }
 
   await createSession(user.id);
+  clearAuthFailures(key);
   redirect("/");
 }
 
 export async function logout(): Promise<void> {
-  const store = await cookies();
-  store.set(SESSION_COOKIE, "", { ...sessionCookieOptions, maxAge: 0 });
-  store.delete(SESSION_COOKIE);
+  await destroyCurrentSession();
   redirect("/login");
 }

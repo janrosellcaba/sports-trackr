@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { deleteGymSession } from "@/app/actions/gym";
 import { deleteSport } from "@/app/actions/sports";
@@ -8,11 +9,22 @@ import { deleteSupplement, updateSupplement } from "@/app/actions/supplements";
 import { GymBar } from "@/components/gym/GymBar";
 import { SportFormSheet } from "@/components/sports/SportsBar";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
 import { DateField } from "@/components/ui/DayPicker";
 import { formatDisplayDate } from "@/lib/calculations";
+import { useLatestProps } from "@/lib/use-latest-props";
 import { formatGymSummary } from "@/lib/muscles";
 import { formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
-import { CARD_CLS, INPUT_CLS, LABEL_CLS, PAGE_TITLE, PRIMARY_BTN } from "@/lib/ui";
+import { useUnits } from "@/components/units/UnitsProvider";
+import {
+  CARD_CLS,
+  DANGER_BTN,
+  GHOST_BTN,
+  INPUT_CLS,
+  LABEL_CLS,
+  PAGE_TITLE,
+  PRIMARY_BTN,
+} from "@/lib/ui";
 import type {
   GymSessionPayload,
   MusclePayload,
@@ -35,61 +47,47 @@ export function LogView({
   sports,
   supplements,
   muscles,
-  onGymChange,
-  onSportLogged,
-  onSupplementUpsert,
-  onDeleteGym,
-  onDeleteSport,
-  onDeleteSupplement,
 }: {
   today: string;
   gymSessions: GymSessionPayload[];
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
   muscles: MusclePayload[];
-  onGymChange: (session: GymSessionPayload | null, date: string) => void;
-  onSportLogged: (session: SportSessionPayload) => void;
-  onSupplementUpsert: (intake: SupplementPayload) => void;
-  onDeleteGym: (id: string) => void;
-  onDeleteSport: (id: string) => void;
-  onDeleteSupplement: (id: string) => void;
 }) {
+  const router = useRouter();
+  const { distanceUnit } = useUnits();
   const [filter, setFilter] = useState<Filter>("all");
   const [openDate, setOpenDate] = useState<string | null>(null);
   const [editingSport, setEditingSport] = useState<SportSessionPayload | null>(null);
   const [editingSupplement, setEditingSupplement] = useState<SupplementPayload | null>(
     null,
   );
-  const [isPending, startTransition] = useTransition();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{
+    title: string;
+    body: string;
+    run: () => Promise<void>;
+  } | null>(null);
+  const [, startTransition] = useTransition();
+  const [gym, setGym] = useLatestProps(gymSessions);
+  const [sportRows, setSportRows] = useLatestProps(sports);
+  const [suppRows, setSuppRows] = useLatestProps(supplements);
 
   const days = useMemo(() => {
     const map = new Map<string, DayGroup>();
-
     function group(date: string): DayGroup {
       const existing = map.get(date);
       if (existing) return existing;
-      const created: DayGroup = {
-        date,
-        gym: null,
-        sports: [],
-        supplements: [],
-      };
+      const created: DayGroup = { date, gym: null, sports: [], supplements: [] };
       map.set(date, created);
       return created;
     }
-
-    for (const session of gymSessions) {
-      group(session.date).gym = session;
-    }
-    for (const session of sports) {
-      group(session.date).sports.push(session);
-    }
-    for (const intake of supplements) {
-      group(intake.date).supplements.push(intake);
-    }
-
+    for (const session of gym) group(session.date).gym = session;
+    for (const session of sportRows) group(session.date).sports.push(session);
+    for (const intake of suppRows) group(intake.date).supplements.push(intake);
     return Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
-  }, [gymSessions, sports, supplements]);
+  }, [gym, sportRows, suppRows]);
 
   const visible = days.filter((day) => {
     if (filter === "gym") return day.gym != null;
@@ -100,6 +98,26 @@ export function LogView({
 
   const editingSportDef = editingSport ? sportDefinition(editingSport.type) : null;
 
+  function refresh() {
+    router.refresh();
+  }
+
+  function runDelete(id: string, work: () => Promise<void>) {
+    setError(null);
+    setPendingId(id);
+    startTransition(async () => {
+      try {
+        await work();
+        setConfirm(null);
+        refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not delete.");
+      } finally {
+        setPendingId(null);
+      }
+    });
+  }
+
   return (
     <div className="space-y-4">
       <h1 className={PAGE_TITLE}>Log</h1>
@@ -109,22 +127,29 @@ export function LogView({
           [
             ["all", "All"],
             ["gym", "Gym"],
-            ["sports", "Sport"],
-            ["supplements", "Supps"],
+            ["sports", "Sports"],
+            ["supplements", "Supplements"],
           ] as const
         ).map(([key, label]) => (
           <button
             key={key}
             type="button"
+            aria-pressed={filter === key}
             onClick={() => setFilter(key)}
-            className={`rounded-lg py-2 text-xs font-bold transition-all duration-150 ${
-              filter === key ? "bg-paper text-ink shadow-sm" : "text-muted hover:text-ink"
+            className={`min-h-11 rounded-lg px-1 text-[11px] font-bold transition-all duration-150 sm:text-xs ${
+              filter === key ? "bg-paper text-ink" : "text-muted hover:text-ink"
             }`}
           >
             {label}
           </button>
         ))}
       </div>
+
+      {error ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {error}
+        </p>
+      ) : null}
 
       {visible.length === 0 ? (
         <section className={`${CARD_CLS} border-dashed px-4 py-10 text-center`}>
@@ -137,11 +162,11 @@ export function LogView({
           {visible.map((day) => {
             const open = openDate === day.date;
             const gymLine = day.gym ? formatGymSummary(day.gym.hits) : null;
-
             return (
               <article key={day.date} className={`${CARD_CLS} overflow-hidden`}>
                 <button
                   type="button"
+                  aria-expanded={open}
                   onClick={() => setOpenDate(open ? null : day.date)}
                   className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
                 >
@@ -149,7 +174,9 @@ export function LogView({
                     <p className="text-sm font-semibold text-ink">
                       {formatDisplayDate(day.date)}
                       {day.date === today ? (
-                        <span className="ml-2 text-xs font-bold text-brand">Today</span>
+                        <span className="ml-2 text-xs font-bold text-brand-text">
+                          Today
+                        </span>
                       ) : null}
                     </p>
                     <div className="mt-2 space-y-1">
@@ -159,7 +186,7 @@ export function LogView({
                         </p>
                       ) : null}
                       {day.sports.map((session) => {
-                        const summary = formatSportSummary(session);
+                        const summary = formatSportSummary(session, distanceUnit);
                         return (
                           <p key={session.id} className="text-sm text-ink">
                             {sportLabel(session.type)}
@@ -178,6 +205,7 @@ export function LogView({
                     className={`mt-1 h-4 w-4 shrink-0 text-muted transition ${
                       open ? "rotate-180" : ""
                     }`}
+                    aria-hidden="true"
                   />
                 </button>
 
@@ -190,20 +218,37 @@ export function LogView({
                           date={day.date}
                           session={day.gym}
                           muscles={muscles}
-                          onChange={(next) => onGymChange(next, day.date)}
+                          onChange={(next) => {
+                            setGym((current) => {
+                              const without = current.filter(
+                                (item) => item.date !== day.date,
+                              );
+                              return next
+                                ? [next, ...without].sort((a, b) =>
+                                    b.date.localeCompare(a.date),
+                                  )
+                                : without;
+                            });
+                            refresh();
+                          }}
                         />
                         {day.gym ? (
                           <button
                             type="button"
-                            disabled={isPending}
-                            onClick={() => {
-                              if (!window.confirm("Delete this gym session?")) return;
-                              startTransition(async () => {
-                                await deleteGymSession(day.gym!.id);
-                                onDeleteGym(day.gym!.id);
-                              });
-                            }}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-xs font-bold text-danger hover:bg-danger/15 disabled:opacity-50"
+                            disabled={pendingId != null}
+                            onClick={() =>
+                              setConfirm({
+                                title: "Delete gym session?",
+                                body: "This removes every muscle hit logged on this day.",
+                                run: async () => {
+                                  await deleteGymSession(day.gym!.id);
+                                  setGym((current) =>
+                                    current.filter((item) => item.id !== day.gym!.id),
+                                  );
+                                },
+                              })
+                            }
+                            className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-sm font-bold text-danger disabled:opacity-50"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                             Delete gym
@@ -220,7 +265,7 @@ export function LogView({
                         ) : (
                           <ul className="space-y-2">
                             {day.sports.map((session) => {
-                              const summary = formatSportSummary(session);
+                              const summary = formatSportSummary(session, distanceUnit);
                               return (
                                 <li
                                   key={session.id}
@@ -238,26 +283,32 @@ export function LogView({
                                         </p>
                                       ) : null}
                                     </div>
-                                    <span className="flex shrink-0 gap-2">
+                                    <span className="flex shrink-0 gap-1">
                                       <button
                                         type="button"
-                                        className="text-xs font-bold text-muted"
+                                        className={GHOST_BTN}
                                         onClick={() => setEditingSport(session)}
                                       >
                                         Edit
                                       </button>
                                       <button
                                         type="button"
-                                        disabled={isPending}
-                                        className="text-xs font-bold text-danger disabled:opacity-50"
-                                        onClick={() => {
-                                          startTransition(async () => {
-                                            await deleteSport(session.id);
-                                            onDeleteSport(session.id);
-                                          });
-                                        }}
+                                        disabled={pendingId != null}
+                                        className={DANGER_BTN}
+                                        onClick={() =>
+                                          setConfirm({
+                                            title: "Delete sport?",
+                                            body: `Remove this ${sportLabel(session.type).toLowerCase()} session?`,
+                                            run: async () => {
+                                              await deleteSport(session.id);
+                                              setSportRows((current) =>
+                                                current.filter((item) => item.id !== session.id),
+                                              );
+                                            },
+                                          })
+                                        }
                                       >
-                                        Del
+                                        Delete
                                       </button>
                                     </span>
                                   </div>
@@ -281,29 +332,35 @@ export function LogView({
                                 key={intake.id}
                                 className="flex items-center justify-between gap-2 rounded-xl bg-chip px-3 py-2.5"
                               >
-                                <p className="min-w-0 text-sm font-bold text-ink">
+                                <p className="min-w-0 truncate text-sm font-bold text-ink">
                                   {intake.name} · {intake.dose}
                                 </p>
-                                <span className="flex shrink-0 gap-2">
+                                <span className="flex shrink-0 gap-1">
                                   <button
                                     type="button"
-                                    className="text-xs font-bold text-muted"
+                                    className={GHOST_BTN}
                                     onClick={() => setEditingSupplement(intake)}
                                   >
                                     Edit
                                   </button>
                                   <button
                                     type="button"
-                                    disabled={isPending}
-                                    className="text-xs font-bold text-danger disabled:opacity-50"
-                                    onClick={() => {
-                                      startTransition(async () => {
-                                        await deleteSupplement(intake.id);
-                                        onDeleteSupplement(intake.id);
-                                      });
-                                    }}
+                                    disabled={pendingId != null}
+                                    className={DANGER_BTN}
+                                    onClick={() =>
+                                      setConfirm({
+                                        title: "Delete supplement?",
+                                        body: `Remove ${intake.name} from this day?`,
+                                        run: async () => {
+                                          await deleteSupplement(intake.id);
+                                          setSuppRows((current) =>
+                                            current.filter((item) => item.id !== intake.id),
+                                          );
+                                        },
+                                      })
+                                    }
                                   >
-                                    Del
+                                    Delete
                                   </button>
                                 </span>
                               </li>
@@ -327,20 +384,38 @@ export function LogView({
           initial={editingSport}
           onClose={() => setEditingSport(null)}
           onSave={(session) => {
-            onSportLogged(session);
+            setSportRows((current) =>
+              [session, ...current.filter((item) => item.id !== session.id)].sort(
+                (a, b) => b.date.localeCompare(a.date),
+              ),
+            );
             setEditingSport(null);
+            refresh();
           }}
         />
       ) : null}
 
       {editingSupplement ? (
         <SupplementEditSheet
-          initial={editingSupplement}
+          intake={editingSupplement}
           onClose={() => setEditingSupplement(null)}
           onSave={(intake) => {
-            onSupplementUpsert(intake);
+            setSuppRows((current) =>
+              current.map((item) => (item.id === intake.id ? intake : item)),
+            );
             setEditingSupplement(null);
+            refresh();
           }}
+        />
+      ) : null}
+
+      {confirm ? (
+        <ConfirmSheet
+          title={confirm.title}
+          body={confirm.body}
+          pending={pendingId != null}
+          onClose={() => setConfirm(null)}
+          onConfirm={() => runDelete("confirm", confirm.run)}
         />
       ) : null}
     </div>
@@ -348,40 +423,36 @@ export function LogView({
 }
 
 function SupplementEditSheet({
-  initial,
+  intake,
   onClose,
   onSave,
 }: {
-  initial: SupplementPayload;
+  intake: SupplementPayload;
   onClose: () => void;
   onSave: (intake: SupplementPayload) => void;
 }) {
-  const [name, setName] = useState(initial.name);
-  const [dose, setDose] = useState(initial.dose);
-  const [date, setDate] = useState(initial.date);
+  const [name, setName] = useState(intake.name);
+  const [dose, setDose] = useState(intake.dose);
+  const [date, setDate] = useState(intake.date);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
     <BottomSheet title="Edit supplement" onClose={onClose}>
-      <DateField value={date} onChange={setDate} />
       <label className="mb-3 block">
         <span className="mb-1 block text-sm font-semibold text-ink">Name</span>
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          className={INPUT_CLS}
-        />
+        <input value={name} onChange={(event) => setName(event.target.value)} className={INPUT_CLS} />
       </label>
-      <label className="mb-4 block">
+      <label className="mb-3 block">
         <span className="mb-1 block text-sm font-semibold text-ink">Dose</span>
-        <input
-          value={dose}
-          onChange={(event) => setDose(event.target.value)}
-          className={INPUT_CLS}
-        />
+        <input value={dose} onChange={(event) => setDose(event.target.value)} className={INPUT_CLS} />
       </label>
-      {error ? <p className="mb-3 text-sm text-danger">{error}</p> : null}
+      <DateField value={date} onChange={setDate} />
+      {error ? (
+        <p role="alert" className="mb-3 text-sm font-medium text-danger">
+          {error}
+        </p>
+      ) : null}
       <button
         type="button"
         disabled={pending}
@@ -389,20 +460,20 @@ function SupplementEditSheet({
         onClick={() => {
           startTransition(async () => {
             try {
-              const row = await updateSupplement({
-                id: initial.id,
+              const next = await updateSupplement({
+                id: intake.id,
                 name,
                 dose,
                 date,
               });
-              onSave(row);
+              onSave(next);
             } catch (err) {
               setError(err instanceof Error ? err.message : "Could not save.");
             }
           });
         }}
       >
-        Save
+        {pending ? "Saving…" : "Save"}
       </button>
     </BottomSheet>
   );

@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
 import {
   createCustomExercise,
   createCustomSupplement,
@@ -15,7 +17,18 @@ import {
   updateMuscle,
 } from "@/app/actions/catalog";
 import { formatLift, parseCustomExerciseInput, parseCustomSupplementInput } from "@/lib/catalog";
-import { CARD_CLS, INPUT_CLS, PRIMARY_BTN } from "@/lib/ui";
+import { parseDecimal } from "@/lib/numbers";
+import { displayToKg, formatInputNumber, kgToDisplay, massLabel } from "@/lib/units";
+import { useUnits } from "@/components/units/UnitsProvider";
+import { useLatestProps } from "@/lib/use-latest-props";
+import {
+  CARD_CLS,
+  DANGER_BTN,
+  GHOST_BTN,
+  INPUT_CLS,
+  PRIMARY_BTN,
+  SELECT_CLS,
+} from "@/lib/ui";
 import type {
   CustomExercisePayload,
   CustomSupplementPayload,
@@ -24,44 +37,42 @@ import type {
 
 export function MuscleCatalogView({
   initial,
-  onChange,
 }: {
   initial: MusclePayload[];
-  onChange?: (rows: MusclePayload[]) => void;
 }) {
-  const [muscles, setMuscles] = useState(initial);
+  const router = useRouter();
+  const [muscles, setMuscles] = useLatestProps(initial);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<MusclePayload | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  useEffect(() => {
-    setMuscles(initial);
-  }, [initial]);
+  const [pendingDelete, setPendingDelete] = useState<MusclePayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   function commit(rows: MusclePayload[]) {
     setMuscles(rows);
-    onChange?.(rows);
+    router.refresh();
   }
 
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Muscles</h2>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={() => {
             setEditing(null);
             setSheetOpen(true);
           }}
-          className="text-sm font-bold text-brand"
+          className={`${GHOST_BTN} text-brand-text`}
         >
           + Add
         </button>
       </div>
-      <p className="text-xs text-muted">
-        These are the tap targets on Home. Split Back into Lats and Traps by adding
-        both, then delete Back if you no longer need it.
-      </p>
+      {error ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {error}
+        </p>
+      ) : null}
       {muscles.length === 0 ? (
         <p className="text-sm text-muted">None yet.</p>
       ) : (
@@ -69,17 +80,27 @@ export function MuscleCatalogView({
           {muscles.map((item, index) => (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-2 rounded-xl bg-chip px-3 py-2"
+              className="flex flex-col gap-2 rounded-xl bg-chip px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
-              <span className="min-w-0 text-sm font-medium text-ink">{item.name}</span>
-              <span className="flex shrink-0 gap-2">
+              <span className="min-w-0 truncate text-sm font-medium text-ink">
+                {item.name}
+              </span>
+              <span className="flex flex-wrap justify-end gap-1">
                 <button
                   type="button"
-                  disabled={pending || index === 0}
-                  className="text-xs font-bold text-muted disabled:opacity-30"
+                  disabled={pendingId != null || index === 0}
+                  className={GHOST_BTN}
                   onClick={() => {
+                    setError(null);
+                    setPendingId(item.id);
                     startTransition(async () => {
-                      commit(await moveMuscle(item.id, "up"));
+                      try {
+                        commit(await moveMuscle(item.id, "up"));
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Could not move.");
+                      } finally {
+                        setPendingId(null);
+                      }
                     });
                   }}
                 >
@@ -87,11 +108,19 @@ export function MuscleCatalogView({
                 </button>
                 <button
                   type="button"
-                  disabled={pending || index === muscles.length - 1}
-                  className="text-xs font-bold text-muted disabled:opacity-30"
+                  disabled={pendingId != null || index === muscles.length - 1}
+                  className={GHOST_BTN}
                   onClick={() => {
+                    setError(null);
+                    setPendingId(item.id);
                     startTransition(async () => {
-                      commit(await moveMuscle(item.id, "down"));
+                      try {
+                        commit(await moveMuscle(item.id, "down"));
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Could not move.");
+                      } finally {
+                        setPendingId(null);
+                      }
                     });
                   }}
                 >
@@ -99,7 +128,7 @@ export function MuscleCatalogView({
                 </button>
                 <button
                   type="button"
-                  className="text-xs font-bold text-muted"
+                  className={GHOST_BTN}
                   onClick={() => {
                     setEditing(item);
                     setSheetOpen(true);
@@ -109,13 +138,10 @@ export function MuscleCatalogView({
                 </button>
                 <button
                   type="button"
-                  className="text-xs font-bold text-danger"
-                  onClick={async () => {
-                    await deleteMuscle(item.id);
-                    commit(muscles.filter((row) => row.id !== item.id));
-                  }}
+                  className={DANGER_BTN}
+                  onClick={() => setPendingDelete(item)}
                 >
-                  Del
+                  Delete
                 </button>
               </span>
             </li>
@@ -139,6 +165,33 @@ export function MuscleCatalogView({
           }}
         />
       ) : null}
+
+      {pendingDelete ? (
+        <ConfirmSheet
+          title={`Delete ${pendingDelete.name}?`}
+          body="This muscle will leave Settings. Hits already logged stay on those days."
+          confirmLabel="Delete muscle"
+          pending={pendingId === pendingDelete.id}
+          onClose={() => setPendingDelete(null)}
+          onConfirm={() => {
+            const target = pendingDelete;
+            setError(null);
+            setPendingId(target.id);
+            startTransition(async () => {
+              try {
+                await deleteMuscle(target.id);
+                commit(muscles.filter((row) => row.id !== target.id));
+                setPendingDelete(null);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Could not delete.");
+                setPendingDelete(null);
+              } finally {
+                setPendingId(null);
+              }
+            });
+          }}
+        />
+      ) : null}
     </section>
   );
 }
@@ -146,68 +199,74 @@ export function MuscleCatalogView({
 export function ExerciseCatalogView({
   initial,
   muscles,
-  onChange,
 }: {
   initial: CustomExercisePayload[];
   muscles: MusclePayload[];
-  onChange?: (rows: CustomExercisePayload[]) => void;
 }) {
-  const [exercises, setExercises] = useState(initial);
+  const router = useRouter();
+  const { massUnit } = useUnits();
+  const [exercises, setExercises] = useLatestProps(initial);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CustomExercisePayload | null>(null);
-
-  useEffect(() => {
-    setExercises(initial);
-  }, [initial]);
+  const [pendingDelete, setPendingDelete] = useState<CustomExercisePayload | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   function commit(rows: CustomExercisePayload[]) {
     setExercises(rows);
-    onChange?.(rows);
+    router.refresh();
   }
 
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Notebook</h2>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={() => {
             setEditing(null);
             setSheetOpen(true);
           }}
-          className="text-sm font-bold text-brand"
+          className={`${GHOST_BTN} text-brand-text`}
         >
           + Add
         </button>
       </div>
+      {error ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {error}
+        </p>
+      ) : null}
       {exercises.length === 0 ? (
-        <p className="text-sm text-muted">None yet. Add a lift and optional working weight.</p>
+        <p className="text-sm text-muted">
+          None yet. Add a lift here, then log PRs from Home.
+        </p>
       ) : (
-        <ul className="max-h-[28rem] space-y-2 overflow-y-auto">
+        <ul className="space-y-2">
           {exercises.map((item) => {
-            const working = formatLift(item.workingWeight, item.workingReps);
-            const pr = formatLift(item.prWeight, item.prReps);
+            const working = formatLift(item.workingWeight, item.workingReps, massUnit);
+            const pr = formatLift(item.prWeight, item.prReps, massUnit);
             return (
               <li
                 key={item.id}
-                className="flex items-start justify-between gap-2 rounded-xl bg-chip px-3 py-2"
+                className="flex flex-col gap-2 rounded-xl bg-chip px-3 py-2 sm:flex-row sm:items-start sm:justify-between"
               >
                 <span className="min-w-0">
-                  <span className="block text-sm font-medium text-ink">
+                  <span className="block truncate text-sm font-medium text-ink">
                     {item.name}
                     {item.muscleName ? (
                       <span className="text-muted"> · {item.muscleName}</span>
                     ) : null}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted">
-                    {working ? `Work ${working}` : "No working set"}
+                    {working ? `Working set ${working}` : "No working set"}
                     {pr ? ` · PR ${pr}` : ""}
                   </span>
                 </span>
-                <span className="flex shrink-0 gap-2 pt-0.5">
+                <span className="flex shrink-0 justify-end gap-1">
                   <button
                     type="button"
-                    className="text-xs font-bold text-muted"
+                    className={GHOST_BTN}
                     onClick={() => {
                       setEditing(item);
                       setSheetOpen(true);
@@ -217,13 +276,10 @@ export function ExerciseCatalogView({
                   </button>
                   <button
                     type="button"
-                    className="text-xs font-bold text-danger"
-                    onClick={async () => {
-                      await deleteCustomExercise(item.id);
-                      commit(exercises.filter((row) => row.id !== item.id));
-                    }}
+                    className={DANGER_BTN}
+                    onClick={() => setPendingDelete(item)}
                   >
-                    Del
+                    Delete
                   </button>
                 </span>
               </li>
@@ -249,62 +305,94 @@ export function ExerciseCatalogView({
           }}
         />
       ) : null}
+
+      {pendingDelete ? (
+        <ConfirmSheet
+          title={`Delete ${pendingDelete.name}?`}
+          body="This removes the lift and its progression snapshots. Logged PRs on this exercise will be gone."
+          confirmLabel="Delete exercise"
+          pending={pendingId === pendingDelete.id}
+          onClose={() => setPendingDelete(null)}
+          onConfirm={() => {
+            const target = pendingDelete;
+            setError(null);
+            setPendingId(target.id);
+            startTransition(async () => {
+              try {
+                await deleteCustomExercise(target.id);
+                commit(exercises.filter((row) => row.id !== target.id));
+                setPendingDelete(null);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Could not delete.");
+                setPendingDelete(null);
+              } finally {
+                setPendingId(null);
+              }
+            });
+          }}
+        />
+      ) : null}
     </section>
   );
 }
 
 export function SupplementCatalogView({
   initial,
-  onChange,
 }: {
   initial: CustomSupplementPayload[];
-  onChange?: (rows: CustomSupplementPayload[]) => void;
 }) {
-  const [supplements, setSupplements] = useState(initial);
+  const router = useRouter();
+  const [supplements, setSupplements] = useLatestProps(initial);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CustomSupplementPayload | null>(null);
-
-  useEffect(() => {
-    setSupplements(initial);
-  }, [initial]);
+  const [pendingDelete, setPendingDelete] = useState<CustomSupplementPayload | null>(
+    null,
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   function commit(rows: CustomSupplementPayload[]) {
     setSupplements(rows);
-    onChange?.(rows);
+    router.refresh();
   }
 
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-ink">Catalog</h2>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={() => {
             setEditing(null);
             setSheetOpen(true);
           }}
-          className="text-sm font-bold text-brand"
+          className={`${GHOST_BTN} text-brand-text`}
         >
           + Add
         </button>
       </div>
+      {error ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {error}
+        </p>
+      ) : null}
       {supplements.length === 0 ? (
         <p className="text-sm text-muted">None yet. Add one to log from Home.</p>
       ) : (
-        <ul className="max-h-80 space-y-2 overflow-y-auto">
+        <ul className="space-y-2">
           {supplements.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between rounded-xl bg-chip px-3 py-2"
+              className="flex flex-col gap-2 rounded-xl bg-chip px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
-              <span className="text-sm font-medium text-ink">
+              <span className="min-w-0 truncate text-sm font-medium text-ink">
                 {item.name}{" "}
                 <span className="text-muted">· {item.defaultDose}</span>
               </span>
-              <span className="flex gap-2">
+              <span className="flex justify-end gap-1">
                 <button
                   type="button"
-                  className="text-xs font-bold text-muted"
+                  className={GHOST_BTN}
                   onClick={() => {
                     setEditing(item);
                     setSheetOpen(true);
@@ -314,13 +402,10 @@ export function SupplementCatalogView({
                 </button>
                 <button
                   type="button"
-                  className="text-xs font-bold text-danger"
-                  onClick={async () => {
-                    await deleteCustomSupplement(item.id);
-                    commit(supplements.filter((row) => row.id !== item.id));
-                  }}
+                  className={DANGER_BTN}
+                  onClick={() => setPendingDelete(item)}
                 >
-                  Del
+                  Delete
                 </button>
               </span>
             </li>
@@ -341,6 +426,33 @@ export function SupplementCatalogView({
               ),
             );
             setSheetOpen(false);
+          }}
+        />
+      ) : null}
+
+      {pendingDelete ? (
+        <ConfirmSheet
+          title={`Delete ${pendingDelete.name}?`}
+          body="Past intakes stay in the log. This only removes the Home button."
+          confirmLabel="Delete supplement"
+          pending={pendingId === pendingDelete.id}
+          onClose={() => setPendingDelete(null)}
+          onConfirm={() => {
+            const target = pendingDelete;
+            setError(null);
+            setPendingId(target.id);
+            startTransition(async () => {
+              try {
+                await deleteCustomSupplement(target.id);
+                commit(supplements.filter((row) => row.id !== target.id));
+                setPendingDelete(null);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Could not delete.");
+                setPendingDelete(null);
+              } finally {
+                setPendingId(null);
+              }
+            });
           }}
         />
       ) : null}
@@ -372,7 +484,11 @@ function MuscleSheet({
           className={INPUT_CLS}
         />
       </label>
-      {error ? <p className="mb-3 text-sm text-danger">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mb-3 text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
       <button
         type="button"
         disabled={pending}
@@ -390,7 +506,7 @@ function MuscleSheet({
           });
         }}
       >
-        Save
+        {pending ? "Saving…" : "Save"}
       </button>
     </BottomSheet>
   );
@@ -407,9 +523,14 @@ function ExerciseSheet({
   onClose: () => void;
   onSave: (row: CustomExercisePayload) => void;
 }) {
+  const { massUnit } = useUnits();
   const [name, setName] = useState(initial?.name ?? "");
   const [muscleId, setMuscleId] = useState(initial?.muscleId ?? "");
-  const [weight, setWeight] = useState(initial?.workingWeight?.toString() ?? "");
+  const [weight, setWeight] = useState(
+    initial?.workingWeight != null
+      ? formatInputNumber(kgToDisplay(initial.workingWeight, massUnit))
+      : "",
+  );
   const [reps, setReps] = useState(initial?.workingReps?.toString() ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -425,7 +546,7 @@ function ExerciseSheet({
         <select
           value={muscleId}
           onChange={(event) => setMuscleId(event.target.value)}
-          className={INPUT_CLS}
+          className={SELECT_CLS}
         >
           <option value="">None</option>
           {muscles.map((muscle) => (
@@ -439,11 +560,14 @@ function ExerciseSheet({
         Working set
       </p>
       <p className="mb-2 text-xs text-muted">
-        Optional notebook note. PRs are logged from Home.
+        Optional note for your usual set. Personal records are logged from Home and
+        feed the progression chart.
       </p>
       <div className="mb-4 grid grid-cols-2 gap-2">
         <label>
-          <span className="mb-1 block text-sm font-semibold text-ink">kg</span>
+          <span className="mb-1 block text-sm font-semibold text-ink">
+            {massLabel(massUnit)}
+          </span>
           <input
             value={weight}
             onChange={(event) => setWeight(event.target.value)}
@@ -461,7 +585,11 @@ function ExerciseSheet({
           />
         </label>
       </div>
-      {error ? <p className="mb-3 text-sm text-danger">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mb-3 text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
       <button
         type="button"
         disabled={pending}
@@ -469,11 +597,13 @@ function ExerciseSheet({
         onClick={() => {
           startTransition(async () => {
             try {
+              const parsedWeight = parseDecimal(weight);
               const parsed = parseCustomExerciseInput({
                 name,
                 muscleId: muscleId || null,
-                workingWeight: weight ? Number(weight) : null,
-                workingReps: reps ? Number(reps) : null,
+                workingWeight:
+                  parsedWeight == null ? null : displayToKg(parsedWeight, massUnit),
+                workingReps: reps,
                 prWeight: initial?.prWeight ?? null,
                 prReps: initial?.prReps ?? null,
                 prDate: initial?.prDate ?? null,
@@ -488,7 +618,7 @@ function ExerciseSheet({
           });
         }}
       >
-        Save
+        {pending ? "Saving…" : "Save"}
       </button>
     </BottomSheet>
   );
@@ -523,7 +653,11 @@ function SupplementSheet({
           className={INPUT_CLS}
         />
       </label>
-      {error ? <p className="mb-3 text-sm text-danger">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="mb-3 text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
       <button
         type="button"
         disabled={pending}
@@ -545,7 +679,7 @@ function SupplementSheet({
           });
         }}
       >
-        Save
+        {pending ? "Saving…" : "Save"}
       </button>
     </BottomSheet>
   );

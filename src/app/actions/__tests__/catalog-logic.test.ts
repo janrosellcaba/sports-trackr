@@ -4,10 +4,10 @@ import {
   mergeSupplementCatalog,
   parseCustomExerciseInput,
   parseCustomSupplementInput,
-  parseDoseHint,
   parsePersonalRecordInput,
   isImprovedPersonalRecord,
   validateExerciseName,
+  formatLift,
 } from "@/lib/catalog";
 
 describe("custom exercise CRUD validation", () => {
@@ -42,6 +42,19 @@ describe("custom exercise CRUD validation", () => {
       parseCustomExerciseInput({ name: "Hack Squat", workingReps: 0 }),
     ).toThrow("Working reps must be a positive integer.");
   });
+
+  it("parses locale comma decimals for working weight", () => {
+    expect(
+      parseCustomExerciseInput({
+        name: "Hack Squat",
+        workingWeight: "82,5",
+        workingReps: "8",
+      }),
+    ).toMatchObject({
+      workingWeight: 82.5,
+      workingReps: 8,
+    });
+  });
 });
 
 describe("custom supplement CRUD validation", () => {
@@ -59,13 +72,6 @@ describe("custom supplement CRUD validation", () => {
     expect(() =>
       parseCustomSupplementInput({ name: "Electrolytes", defaultDose: "  " }),
     ).toThrow("Default dose is required.");
-  });
-
-  it("parses gram and scoop hints from a dose string", () => {
-    expect(parseDoseHint("30g / 1 scoop")).toEqual({
-      amountGrams: 30,
-      scoops: 1,
-    });
   });
 });
 
@@ -161,5 +167,12 @@ describe("personal records", () => {
         { prWeight: 90, prReps: 3 },
       ),
     ).toBe(false);
+  });
+});
+
+describe("formatLift", () => {
+  it("appends the selected mass unit", () => {
+    expect(formatLift(80, 5)).toBe("80kg × 5");
+    expect(formatLift(80, 5, "lb")).toBe("176.4lb × 5");
   });
 });

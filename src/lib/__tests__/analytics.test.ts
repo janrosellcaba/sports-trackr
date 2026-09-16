@@ -1,0 +1,30 @@
+import { describe, expect, it } from "vitest";
+import {
+  parseAnalyticsPeriod,
+  percentChange,
+  periodLabel,
+} from "@/lib/analytics";
+
+describe("parseAnalyticsPeriod", () => {
+  it("accepts 7, 30, 90, and 0 and defaults to 30", () => {
+    expect(parseAnalyticsPeriod("7")).toBe(7);
+    expect(parseAnalyticsPeriod(0)).toBe(0);
+    expect(parseAnalyticsPeriod("nope")).toBe(30);
+    expect(parseAnalyticsPeriod(3650)).toBe(30);
+  });
+});
+
+describe("percentChange", () => {
+  it("returns null when the previous period was empty", () => {
+    expect(percentChange(4, 0)).toBeNull();
+    expect(percentChange(10, 5)).toBe(100);
+    expect(percentChange(5, 10)).toBe(-50);
+  });
+});
+
+describe("periodLabel", () => {
+  it("labels All as all time", () => {
+    expect(periodLabel(9999)).toBe("All time");
+    expect(periodLabel(30)).toBe("Last 30 days");
+  });
+});

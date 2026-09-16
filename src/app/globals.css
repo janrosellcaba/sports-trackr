@@ -27,6 +27,7 @@
   --color-brand: var(--accent-primary);
   --color-brand-dark: var(--accent-hover);
   --color-brand-soft: var(--accent-soft);
+  --color-brand-text: var(--accent-primary);
 }
 
 html[data-theme="light"] {
@@ -46,6 +47,22 @@ html[data-theme="light"] {
 
   --color-chip: #ebe4d6;
   --color-chip-hover: #ddd4c3;
+}
+
+html[data-theme="light"][data-accent="volt"] {
+  --color-brand-text: #3f6212;
+}
+html[data-theme="light"][data-accent="amber"] {
+  --color-brand-text: #9a3412;
+}
+html[data-theme="light"][data-accent="crimson"] {
+  --color-brand-text: #b91c1c;
+}
+html[data-theme="light"][data-accent="ice"] {
+  --color-brand-text: #0e7490;
+}
+html[data-theme="light"][data-accent="royal"] {
+  --color-brand-text: #6d28d9;
 }
 
 html[data-accent="amber"] {
@@ -99,6 +116,7 @@ html[data-accent="royal"] {
   --color-brand: var(--color-brand);
   --color-brand-dark: var(--color-brand-dark);
   --color-brand-soft: var(--color-brand-soft);
+  --color-brand-text: var(--color-brand-text);
   --color-danger: var(--color-danger);
   --color-danger-dark: var(--color-danger-dark);
   --color-danger-soft: var(--color-danger-soft);
@@ -106,7 +124,7 @@ html[data-accent="royal"] {
   --color-chip-hover: var(--color-chip-hover);
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-outfit);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 html,
@@ -132,8 +150,18 @@ textarea {
   color-scheme: inherit;
 }
 
+select {
+  appearance: none;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
 input,
-select,
 textarea {
   appearance: none;
   background-color: var(--color-paper);
@@ -182,19 +210,26 @@ select:-webkit-autofill {
   animation: sheet-up 180ms ease-out;
 }
 
-@keyframes page-enter {
-  from {
-    opacity: 0.7;
-    transform: translateY(8px);
+@media (prefers-reduced-motion: reduce) {
+  .confetti-label,
+  .sheet-enter {
+    animation: none;
   }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 
-.page-enter {
-  animation: page-enter 180ms ease-out;
+  .confetti-label {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  button,
+  a {
+    transition: none !important;
+  }
+
+  button:hover,
+  button:active {
+    transform: none !important;
+  }
 }
 
 @keyframes confetti-label {
@@ -219,12 +254,4 @@ select:-webkit-autofill {
 .confetti-label {
   animation: confetti-label 1.35s ease-out forwards;
   text-shadow: 0 0 28px var(--accent-glow);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .confetti-label {
-    animation: none;
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
 }

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { deleteSport, logSport, updateSport } from "@/app/actions/sports";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { DateField } from "@/components/ui/DayPicker";
-import { formatDisplayDate, getTodayLocalDateISO } from "@/lib/calculations";
+import { formatDisplayDate } from "@/lib/calculations";
 import {
   EFFORT_LEVELS,
   SPORTS,
@@ -15,29 +15,53 @@ import {
   type SportDefinition,
   type SportTypeId,
 } from "@/lib/sports";
-import { CARD_CLS, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
+import { CARD_CLS, GHOST_BTN, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
+import { useUnits } from "@/components/units/UnitsProvider";
+import {
+  canonicalPace,
+  displayPace,
+  displayToKm,
+  displayToMeters,
+  formatInputNumber,
+  kmToDisplay,
+  metersToDisplay,
+  shortDistanceLabel,
+} from "@/lib/units";
 import type { SportSessionPayload } from "@/types/trackr";
 
 export function SportsBar({
   date,
   sessions,
+  lockDate = false,
   onLogged,
   onRemoved,
 }: {
   date: string;
   sessions: SportSessionPayload[];
+  lockDate?: boolean;
   onLogged: (session: SportSessionPayload) => void;
   onRemoved: (id: string) => void;
 }) {
-  const [isPending, startTransition] = useTransition();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { distanceUnit } = useUnits();
+  const [, startTransition] = useTransition();
   const [creating, setCreating] = useState<SportDefinition | null>(null);
   const [editing, setEditing] = useState<SportSessionPayload | null>(null);
   const editingSport = editing ? sportDefinition(editing.type) : null;
 
   function handleUndo(id: string) {
+    setError(null);
+    setPendingId(id);
     startTransition(async () => {
-      await deleteSport(id);
-      onRemoved(id);
+      try {
+        await deleteSport(id);
+        onRemoved(id);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not undo.");
+      } finally {
+        setPendingId(null);
+      }
     });
   }
 
@@ -46,9 +70,7 @@ export function SportsBar({
       <div>
         <p className={LABEL_CLS}>Sports session</p>
         <h2 className="text-base font-bold text-ink">Tap to log</h2>
-        {date !== getTodayLocalDateISO() ? (
-          <p className="mt-0.5 text-xs text-muted">{formatDisplayDate(date)}</p>
-        ) : null}
+        <p className="mt-0.5 text-xs text-muted">{formatDisplayDate(date)}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -56,7 +78,7 @@ export function SportsBar({
           <button
             key={item.id}
             type="button"
-            disabled={isPending}
+            disabled={pendingId != null}
             onClick={() => setCreating(item)}
             className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
           >
@@ -68,7 +90,7 @@ export function SportsBar({
       {sessions.length > 0 ? (
         <ul className="space-y-1.5 border-t border-line pt-3">
           {sessions.map((session) => {
-            const summary = formatSportSummary(session);
+            const summary = formatSportSummary(session, distanceUnit);
             return (
               <li key={session.id} className="flex items-start justify-between gap-3 text-sm">
                 <button
@@ -86,11 +108,11 @@ export function SportsBar({
                 </button>
                 <button
                   type="button"
-                  disabled={isPending}
+                  disabled={pendingId != null}
                   onClick={() => handleUndo(session.id)}
-                  className="rounded-md px-2 py-1 text-xs font-semibold text-muted hover:text-danger disabled:opacity-50"
+                  className={GHOST_BTN}
                 >
-                  Undo
+                  {pendingId === session.id ? "…" : "Undo"}
                 </button>
               </li>
             );
@@ -100,10 +122,17 @@ export function SportsBar({
         <p className="text-sm text-muted">Nothing logged yet.</p>
       )}
 
+      {error ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {error}
+        </p>
+      ) : null}
+
       {creating ? (
         <SportFormSheet
           date={date}
           sport={creating}
+          lockDate={lockDate}
           onClose={() => setCreating(null)}
           onSave={(session) => {
             onLogged(session);
@@ -117,6 +146,7 @@ export function SportsBar({
           date={editing.date}
           sport={editingSport}
           initial={editing}
+          lockDate={false}
           onClose={() => setEditing(null)}
           onSave={(session) => {
             onLogged(session);
@@ -132,30 +162,39 @@ export function SportFormSheet({
   date,
   sport,
   initial,
+  lockDate = false,
   onClose,
   onSave,
 }: {
   date: string;
   sport: SportDefinition;
   initial?: SportSessionPayload | null;
+  lockDate?: boolean;
   onClose: () => void;
   onSave: (session: SportSessionPayload) => void;
 }) {
+  const { distanceUnit } = useUnits();
   const [logDate, setLogDate] = useState(initial?.date ?? date);
   const [distanceKm, setDistanceKm] = useState(
-    initial?.distanceKm != null ? String(initial.distanceKm) : "",
+    initial?.distanceKm != null
+      ? formatInputNumber(kmToDisplay(initial.distanceKm, distanceUnit))
+      : "",
   );
   const [distanceM, setDistanceM] = useState(
-    initial?.distanceMeters != null ? String(initial.distanceMeters) : "",
+    initial?.distanceMeters != null
+      ? formatInputNumber(metersToDisplay(initial.distanceMeters, distanceUnit))
+      : "",
   );
   const [duration, setDuration] = useState(
     initial?.durationMinutes != null ? String(initial.durationMinutes) : "",
   );
-  const [pace, setPace] = useState(initial?.pace ?? "");
+  const [pace, setPace] = useState(
+    initial?.pace ? displayPace(initial.pace, distanceUnit) : "",
+  );
   const [effort, setEffort] = useState<(typeof EFFORT_LEVELS)[number] | "">(
     initial?.effort && EFFORT_LEVELS.includes(initial.effort as (typeof EFFORT_LEVELS)[number])
       ? (initial.effort as (typeof EFFORT_LEVELS)[number])
-      : "",
+      : "MODERATE",
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -164,11 +203,11 @@ export function SportFormSheet({
 
   return (
     <BottomSheet title={initial ? `Edit ${sport.label}` : sport.label} onClose={onClose}>
-      <DateField value={logDate} onChange={setLogDate} />
+      {!lockDate ? <DateField value={logDate} onChange={setLogDate} /> : null}
       {fields.has("distanceKm") ? (
         <label className="mb-3 block">
           <span className="mb-1 block text-sm font-semibold text-ink">
-            Distance (km)
+            Distance ({distanceUnit})
           </span>
           <input
             inputMode="decimal"
@@ -183,7 +222,7 @@ export function SportFormSheet({
       {fields.has("distanceM") ? (
         <label className="mb-3 block">
           <span className="mb-1 block text-sm font-semibold text-ink">
-            Distance (m)
+            Distance ({shortDistanceLabel(distanceUnit)})
           </span>
           <input
             inputMode="decimal"
@@ -198,7 +237,7 @@ export function SportFormSheet({
       {fields.has("pace") ? (
         <label className="mb-3 block">
           <span className="mb-1 block text-sm font-semibold text-ink">
-            Pace (min/km)
+            Pace (min/{distanceUnit})
           </span>
           <input
             value={pace}
@@ -254,6 +293,9 @@ export function SportFormSheet({
           maxLength={280}
           className={`${INPUT_CLS} resize-none`}
         />
+        <span className="mt-1 block text-right text-xs text-muted">
+          {notes.length}/280
+        </span>
       </label>
 
       {error ? <p className="mb-3 text-sm text-danger">{error}</p> : null}
@@ -269,13 +311,19 @@ export function SportFormSheet({
                 type: sport.id as SportTypeId,
                 date: logDate,
                 distanceKm: fields.has("distanceKm")
-                  ? Number(distanceKm.replace(",", "."))
+                  ? distanceKm.trim()
+                    ? displayToKm(Number(distanceKm.replace(",", ".")), distanceUnit)
+                    : null
                   : null,
                 distanceMeters: fields.has("distanceM")
-                  ? Number(distanceM.replace(",", "."))
+                  ? distanceM.trim()
+                    ? displayToMeters(Number(distanceM.replace(",", ".")), distanceUnit)
+                    : null
                   : null,
                 durationMinutes: fields.has("durationMinutes") ? Number(duration) : null,
-                pace: fields.has("pace") ? pace : null,
+                pace: fields.has("pace")
+                  ? canonicalPace(pace, distanceUnit)
+                  : null,
                 effort: fields.has("effort") ? effort : null,
                 notes,
               };
@@ -289,7 +337,7 @@ export function SportFormSheet({
           });
         }}
       >
-        Save
+        {pending ? "Saving…" : "Save"}
       </button>
     </BottomSheet>
   );

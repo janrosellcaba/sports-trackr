@@ -1,10 +1,18 @@
 "use client";
 
 import { Activity, Dumbbell, Flame, Pill } from "lucide-react";
+import { useUnits } from "@/components/units/UnitsProvider";
+import { kmToDisplay, trimNumber } from "@/lib/units";
 import type { AnalyticsSummary } from "@/types/trackr";
 import { CARD_CLS } from "@/lib/ui";
-
-function TrendBadge({ value }: { value: number }) {
+function TrendBadge({ value }: { value: number | null }) {
+  if (value == null) {
+    return (
+      <span className="rounded-full bg-chip px-2 py-0.5 text-[11px] font-bold text-muted">
+        New
+      </span>
+    );
+  }
   const positive = value > 0;
   const neutral = value === 0;
   return (
@@ -13,43 +21,45 @@ function TrendBadge({ value }: { value: number }) {
         neutral
           ? "bg-chip text-muted"
           : positive
-            ? "bg-brand-soft text-brand"
+            ? "bg-brand-soft text-brand-text"
             : "bg-danger-soft text-danger"
       }`}
     >
-      {neutral ? "0%" : `${positive ? "+" : ""}${value}%`}
+      {neutral ? "0%" : `${positive ? "+" : ""}${value}% vs prior`}
     </span>
   );
 }
 
 export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
+  const { distanceUnit } = useUnits();
+  const allTime = summary.days === 0;
   const cards = [
     {
       label: "Gym days",
       value: String(summary.totalWorkouts),
-      hint: `${summary.gymStreak}d streak`,
-      trend: summary.trends.workouts,
+      hint: `${summary.gymStreak}-day streak`,
+      trend: allTime ? null : summary.trends.workouts,
       icon: Dumbbell,
     },
     {
       label: "Muscle load",
       value: String(summary.totalGymLoad),
-      hint: `${summary.totalHits} hits`,
-      trend: summary.trends.gymLoad,
+      hint: `${summary.totalHits} hits · intensity 1–5 each`,
+      trend: allTime ? null : summary.trends.gymLoad,
       icon: Flame,
     },
     {
       label: "Sports",
       value: String(summary.totalSports),
-      hint: sportHint(summary.totalSportMinutes, summary.totalSportKm),
-      trend: summary.trends.sports,
+      hint: sportHint(summary.totalSportMinutes, summary.totalSportKm, distanceUnit),
+      trend: allTime ? null : summary.trends.sports,
       icon: Activity,
     },
     {
-      label: "Supplements",
-      value: `${summary.supplementStreak}d`,
-      hint: `${summary.supplementDays} days taken`,
-      trend: summary.trends.supplements,
+      label: "Supplement days",
+      value: String(summary.supplementDays),
+      hint: `${summary.supplementStreak}-day streak`,
+      trend: allTime ? null : summary.trends.supplements,
       icon: Pill,
     },
   ];
@@ -59,8 +69,14 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
       {cards.map((card) => (
         <article key={card.label} className={`${CARD_CLS} p-3.5`}>
           <div className="mb-3 flex items-start justify-between gap-2">
-            <card.icon className="h-4 w-4 text-brand" />
-            <TrendBadge value={card.trend} />
+            <card.icon className="h-4 w-4 text-brand-text" />
+            {allTime ? (
+              <span className="rounded-full bg-chip px-2 py-0.5 text-[11px] font-bold text-muted">
+                All time
+              </span>
+            ) : (
+              <TrendBadge value={card.trend} />
+            )}
           </div>
           <p className="text-2xl font-semibold tabular-nums tracking-tight text-ink">
             {card.value}
@@ -73,10 +89,10 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   );
 }
 
-function sportHint(minutes: number, km: number): string {
+function sportHint(minutes: number, km: number, unit: "km" | "mi"): string {
   const parts: string[] = [];
   if (minutes > 0) parts.push(`${minutes} min`);
-  if (km > 0) parts.push(`${km} km`);
+  if (km > 0) parts.push(`${trimNumber(kmToDisplay(km, unit))} ${unit}`);
   if (parts.length === 0) return "Sessions logged";
   return parts.join(" · ");
 }

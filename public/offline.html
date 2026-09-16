@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Offline · Trackr</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #09090b;
+        --ink: #f4f4f5;
+        --muted: #a1a1aa;
+        --brand: #84cc16;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      main {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        text-align: center;
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.4rem;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 22rem;
+      }
+      a {
+        display: inline-block;
+        margin-top: 1.5rem;
+        color: var(--brand);
+        font-weight: 700;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div>
+        <h1>You’re offline</h1>
+        <p>
+          Trackr needs a connection to log gym, sports, and supplements. Reconnect,
+          then open Home again.
+        </p>
+        <a href="/">Try Home</a>
+      </div>
+    </main>
+  </body>
+</html>

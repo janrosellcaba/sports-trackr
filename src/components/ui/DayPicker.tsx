@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { addDaysISO, formatDisplayDate, getTodayLocalDateISO } from "@/lib/calculations";
+import { addDaysISO, getTodayLocalDateISO, isDateKey } from "@/lib/calculations";
 import { INPUT_CLS, chipClass } from "@/lib/ui";
 
 export function DayPicker({
@@ -48,25 +48,28 @@ export function DayPicker({
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-chip/80 p-1">
+      <div role="group" aria-label="Day" className="grid grid-cols-3 gap-1 rounded-xl bg-chip/80 p-1">
         <button
           type="button"
           onClick={selectToday}
-          className={`${chipClass(isToday && !pickingOther)} flex items-center justify-center !rounded-lg py-2 text-xs`}
+          aria-pressed={isToday && !pickingOther}
+          className={`${chipClass(isToday && !pickingOther)} flex min-h-11 items-center justify-center !rounded-lg text-sm`}
         >
           Today
         </button>
         <button
           type="button"
           onClick={selectYesterday}
-          className={`${chipClass(isYesterday && !pickingOther)} flex items-center justify-center !rounded-lg py-2 text-xs`}
+          aria-pressed={isYesterday && !pickingOther}
+          className={`${chipClass(isYesterday && !pickingOther)} flex min-h-11 items-center justify-center !rounded-lg text-sm`}
         >
           Yesterday
         </button>
         <button
           type="button"
           onClick={openOther}
-          className={`${chipClass(isOther || pickingOther)} flex items-center justify-center !rounded-lg py-2 text-xs`}
+          aria-pressed={isOther || pickingOther}
+          className={`${chipClass(isOther || pickingOther)} flex min-h-11 items-center justify-center !rounded-lg text-sm`}
         >
           Other
         </button>
@@ -76,10 +79,15 @@ export function DayPicker({
           ref={inputRef}
           type="date"
           max={today}
-          value={date}
+          value={isDateKey(date) ? date : ""}
           onChange={(event) => {
             const next = event.target.value;
-            if (!next) return;
+            if (!next) {
+              setPickingOther(false);
+              onChange(today);
+              return;
+            }
+            if (!isDateKey(next)) return;
             if (next === today || next === yesterday) setPickingOther(false);
             else setPickingOther(true);
             onChange(next);
@@ -87,11 +95,6 @@ export function DayPicker({
           className={INPUT_CLS}
           aria-label="Pick a date"
         />
-      ) : null}
-      {isOther ? (
-        <p className="text-center text-xs font-semibold text-muted">
-          {formatDisplayDate(date)}
-        </p>
       ) : null}
     </div>
   );
@@ -115,7 +118,7 @@ export function DateField({
         value={value}
         onChange={(event) => {
           const next = event.target.value;
-          if (next) onChange(next);
+          if (next && isDateKey(next)) onChange(next);
         }}
         className={INPUT_CLS}
       />

@@ -1,47 +1,41 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import {
-  getAnalyticsSummary,
-  getNotebookExerciseNames,
-} from "@/app/actions/analytics";
-import { ActivityChart } from "@/components/analytics/ActivityChart";
-import { ExerciseProgressionChart } from "@/components/analytics/ExerciseProgressionChart";
+import Link from "next/link";
+import dynamic from "next/dynamic";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
 import { TopMuscles } from "@/components/analytics/TopMuscles";
 import { PAGE_TITLE } from "@/lib/ui";
-import type { AnalyticsPeriod, AnalyticsSummary } from "@/types/trackr";
+import type { AnalyticsPeriod, AnalyticsSummary, NotebookExercise } from "@/types/trackr";
 
-const PERIODS: { key: AnalyticsPeriod; label: string }[] = [
-  { key: 7, label: "7d" },
-  { key: 30, label: "30d" },
-  { key: 90, label: "90d" },
-  { key: 0, label: "All" },
+const ActivityChart = dynamic(
+  () => import("@/components/analytics/ActivityChart").then((mod) => mod.ActivityChart),
+  { ssr: false, loading: () => <ChartSkeleton label="Gym load" /> },
+);
+
+const ExerciseProgressionChart = dynamic(
+  () =>
+    import("@/components/analytics/ExerciseProgressionChart").then(
+      (mod) => mod.ExerciseProgressionChart,
+    ),
+  { ssr: false, loading: () => <ChartSkeleton label="Progression" /> },
+);
+
+const PERIODS: { key: AnalyticsPeriod; label: string; href: string }[] = [
+  { key: 7, label: "7d", href: "/analytics?period=7" },
+  { key: 30, label: "30d", href: "/analytics" },
+  { key: 90, label: "90d", href: "/analytics?period=90" },
+  { key: 0, label: "All", href: "/analytics?period=0" },
 ];
 
 export function AnalyticsView({
-  initialSummary,
-  initialNames,
+  summary,
+  exercises,
+  period,
 }: {
-  initialSummary: AnalyticsSummary;
-  initialNames: string[];
+  summary: AnalyticsSummary;
+  exercises: NotebookExercise[];
+  period: AnalyticsPeriod;
 }) {
-  const [period, setPeriod] = useState<AnalyticsPeriod>(30);
-  const [summary, setSummary] = useState(initialSummary);
-  const [names, setNames] = useState(initialNames);
-  const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
-    startTransition(async () => {
-      const [nextSummary, nextNames] = await Promise.all([
-        getAnalyticsSummary(period),
-        getNotebookExerciseNames(),
-      ]);
-      setSummary(nextSummary);
-      setNames(nextNames);
-    });
-  }, [period]);
-
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -50,31 +44,40 @@ export function AnalyticsView({
           <p className="mt-1 text-sm text-muted">{summary.periodLabel}</p>
         </div>
         <div className="grid grid-cols-4 gap-1 rounded-xl bg-chip/80 p-1">
-          {PERIODS.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setPeriod(item.key)}
-              className={`rounded-lg px-3 py-2 text-xs font-bold transition-all duration-150 ${
-                period === item.key
-                  ? "bg-paper text-ink shadow-sm"
-                  : "text-muted hover:text-ink"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+          {PERIODS.map((item) => {
+            const active = period === item.key;
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-bold ${
+                  active
+                    ? "bg-paper text-ink shadow-sm"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
-      <div className={isPending ? "opacity-70" : ""}>
-        <div className="space-y-5">
-          <KpiGrid summary={summary} />
-          <ActivityChart data={summary.daily} />
-          <TopMuscles items={summary.topMuscles} />
-          <ExerciseProgressionChart exerciseNames={names} />
-        </div>
+      <div className="space-y-5">
+        <KpiGrid summary={summary} />
+        <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
+        <TopMuscles items={summary.topMuscles} />
+        <ExerciseProgressionChart exercises={exercises} />
       </div>
     </div>
+  );
+}
+
+function ChartSkeleton({ label }: { label: string }) {
+  return (
+    <section className="h-56 rounded-2xl border border-line bg-paper p-4">
+      <p className="text-xs font-medium text-muted">{label}</p>
+    </section>
   );
 }

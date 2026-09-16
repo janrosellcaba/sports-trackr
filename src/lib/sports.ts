@@ -1,3 +1,14 @@
+import { isDateKey } from "@/lib/calculations";
+import {
+  DEFAULT_DISTANCE_UNIT,
+  displayPace,
+  kmToDisplay,
+  metersToDisplay,
+  shortDistanceLabel,
+  trimNumber,
+  type DistanceUnit,
+} from "@/lib/units";
+
 export const EFFORT_LEVELS = ["EASY", "MODERATE", "HARD"] as const;
 export type EffortLevel = (typeof EFFORT_LEVELS)[number];
 
@@ -83,10 +94,6 @@ export type ParsedSportSession = {
   notes: string | null;
 };
 
-function isDateKey(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
 function parsePositiveNumber(value: unknown, label: string): number {
   const number = typeof value === "number" ? value : Number(String(value ?? "").replace(",", "."));
   if (!Number.isFinite(number) || number <= 0) {
@@ -167,26 +174,31 @@ export function parseSportSessionInput(input: {
   return parsed;
 }
 
-export function formatSportSummary(session: {
-  type: string;
-  durationMinutes: number | null;
-  distanceKm: number | null;
-  distanceMeters: number | null;
-  pace: string | null;
-  effort: string | null;
-}): string {
+export function formatSportSummary(
+  session: {
+    type: string;
+    durationMinutes: number | null;
+    distanceKm: number | null;
+    distanceMeters: number | null;
+    pace: string | null;
+    effort: string | null;
+  },
+  distanceUnit: DistanceUnit = DEFAULT_DISTANCE_UNIT,
+): string {
   const parts: string[] = [];
-  if (session.distanceKm != null) parts.push(`${trimNumber(session.distanceKm)} km`);
-  if (session.distanceMeters != null) {
-    parts.push(`${trimNumber(session.distanceMeters)} m`);
+  if (session.distanceKm != null) {
+    parts.push(`${trimNumber(kmToDisplay(session.distanceKm, distanceUnit))} ${distanceUnit}`);
   }
-  if (session.pace) parts.push(`${session.pace} /km`);
+  if (session.distanceMeters != null) {
+    parts.push(
+      `${trimNumber(metersToDisplay(session.distanceMeters, distanceUnit))} ${shortDistanceLabel(distanceUnit)}`,
+    );
+  }
+  if (session.pace) {
+    parts.push(`${displayPace(session.pace, distanceUnit)} /${distanceUnit}`);
+  }
   if (session.durationMinutes != null) parts.push(`${session.durationMinutes} min`);
   const effort = effortLabel(session.effort);
   if (effort) parts.push(effort.toLowerCase());
   return parts.join(" · ");
-}
-
-function trimNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
 }

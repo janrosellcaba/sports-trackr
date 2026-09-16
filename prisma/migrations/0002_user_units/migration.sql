@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "massUnit" TEXT NOT NULL DEFAULT 'kg';
+ALTER TABLE "User" ADD COLUMN "distanceUnit" TEXT NOT NULL DEFAULT 'km';

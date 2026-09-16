@@ -1,23 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Outfit } from "next/font/google";
+import { Geist, Outfit } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { ServiceWorkerRegister } from "@/components/offline/ServiceWorkerRegister";
+import { TodayCookie } from "@/components/offline/TodayCookie";
 import {
-  resolveAccentTheme,
-  resolveColorMode,
+  DARK_THEME_COLOR,
+  LIGHT_THEME_COLOR,
   themeBootstrapScript,
-  themeColorForMode,
 } from "@/lib/theme";
-import { getCurrentUser } from "@/app/actions/auth";
 import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -28,7 +21,10 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Trackr",
+  title: {
+    default: "Trackr",
+    template: "%s · Trackr",
+  },
   description: "Gym, sports, and supplement log",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -46,42 +42,32 @@ export const metadata: Metadata = {
   },
 };
 
-export async function generateViewport(): Promise<Viewport> {
-  const user = await getCurrentUser();
-  return {
-    themeColor: themeColorForMode(resolveColorMode(user?.colorMode)),
-  };
-}
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: LIGHT_THEME_COLOR },
+    { media: "(prefers-color-scheme: dark)", color: DARK_THEME_COLOR },
+  ],
+};
 
-export const dynamic = "force-dynamic";
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUser();
-  const accent = resolveAccentTheme(user?.accentTheme).id;
-  const colorMode = resolveColorMode(user?.colorMode);
-
   return (
-    <html lang="en" data-accent={accent} data-theme={colorMode} suppressHydrationWarning>
+    <html lang="en" data-accent="volt" data-theme="dark" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: themeBootstrapScript(user?.accentTheme, user?.colorMode),
+            __html: themeBootstrapScript(),
           }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased`}
-      >
-        <ThemeProvider
-          initialTheme={user?.accentTheme}
-          initialColorMode={user?.colorMode}
-        >
+      <body className={`${geistSans.variable} ${outfit.variable} antialiased`}>
+        <ThemeProvider>
+          <TodayCookie />
           {children}
-          <ServiceWorkerRegister />
         </ThemeProvider>
       </body>
     </html>

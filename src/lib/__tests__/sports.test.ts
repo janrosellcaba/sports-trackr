@@ -84,6 +84,19 @@ describe("formatSportSummary", () => {
       }),
     ).toBe("8.2 km · 5:15 /km");
     expect(
+      formatSportSummary(
+        {
+          type: "RUNNING",
+          durationMinutes: null,
+          distanceKm: 8.04672,
+          distanceMeters: null,
+          pace: "5:00",
+          effort: null,
+        },
+        "mi",
+      ),
+    ).toBe("5 mi · 8:03 /mi");
+    expect(
       formatSportSummary({
         type: "PADEL",
         durationMinutes: 90,
