@@ -26,6 +26,17 @@ export function periodLabel(days: number): string {
   return "All time";
 }
 
+export function uniqueCount(dates: Iterable<string>): number {
+  return new Set(dates).size;
+}
+
+export function unionCount(
+  left: Iterable<string>,
+  right: Iterable<string>,
+): number {
+  return new Set([...left, ...right]).size;
+}
+
 export function perWeekRate(count: number, days: number): number | null {
   if (days <= 0) return null;
   return Math.round((count / days) * 7 * 10) / 10;

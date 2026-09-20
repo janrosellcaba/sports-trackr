@@ -10,12 +10,13 @@ import { TopMuscles } from "@/components/analytics/TopMuscles";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { formatLift } from "@/lib/catalog";
 import { kmToDisplay, trimNumber, type DistanceUnit, type MassUnit } from "@/lib/units";
+import { perWeekRate } from "@/lib/analytics";
 import { GHOST_BTN, PAGE_TITLE, SEGMENT_TRACK, segmentItemClass } from "@/lib/ui";
 import type { AnalyticsPeriod, AnalyticsSummary, NotebookExercise } from "@/types/trackr";
 
 const ActivityChart = dynamic(
   () => import("@/components/analytics/ActivityChart").then((mod) => mod.ActivityChart),
-  { ssr: false, loading: () => <ChartSkeleton label="Load" /> },
+  { ssr: false, loading: () => <ChartSkeleton label="Activity" /> },
 );
 
 const ExerciseProgressionChart = dynamic(
@@ -67,7 +68,7 @@ export function AnalyticsView({
       <div className="space-y-5">
         <KpiGrid summary={summary} />
         <div className="grid gap-5 lg:grid-cols-2">
-          <ActivityChart data={summary.daily} chartLabel="Load" />
+          <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
           <TopMuscles items={summary.topMuscles} />
         </div>
         <div className="grid gap-5 lg:grid-cols-2">
@@ -138,9 +139,18 @@ function trainerPayload(
     legend: {
       gymLoad: "Sum of muscle intensities (1–5) that day",
       intensity: "1 Light → 5 Wrecked",
+      activityDay: "A day with gym, sport, or both",
+      sportDay: "A day with at least one sport session",
+    },
+    activity: {
+      days: summary.activityDays,
+      perWeek: summary.days ? perWeekRate(summary.activityDays, summary.days) : null,
+      gymDays: summary.gymDays,
+      sportDays: summary.sportDays,
+      trendPct: summary.trends.activity,
     },
     gym: {
-      days: summary.totalWorkouts,
+      days: summary.gymDays,
       load: summary.totalGymLoad,
       hits: summary.totalHits,
       streak: summary.gymStreak,
@@ -148,7 +158,9 @@ function trainerPayload(
       loadTrendPct: summary.trends.gymLoad,
     },
     sports: {
+      days: summary.sportDays,
       sessions: summary.totalSports,
+      perWeek: summary.days ? perWeekRate(summary.sportDays, summary.days) : null,
       minutes: summary.totalSportMinutes,
       distance: summary.totalSportKm
         ? trimNumber(kmToDisplay(summary.totalSportKm, distanceUnit))

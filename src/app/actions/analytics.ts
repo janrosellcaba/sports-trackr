@@ -11,6 +11,8 @@ import {
   parseAnalyticsPeriod,
   percentChange,
   periodLabel,
+  uniqueCount,
+  unionCount,
 } from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
 import { getRequestToday } from "@/lib/request-today";
@@ -99,7 +101,7 @@ export async function getAnalyticsSummary(
         userId: user.id,
         date: { gte: previousStart, lt: rangeStart },
       },
-      select: { id: true },
+      select: { date: true },
     }),
     allTime
       ? prisma.gymSession.count({ where: { userId: user.id } })
@@ -235,6 +237,23 @@ export async function getAnalyticsSummary(
     .sort((a, b) => b.load - a.load)
     .slice(0, 8);
 
+  const gymDates = uniqueDates(chartSessions.map((item) => item.date));
+  const sportDates = uniqueDates(chartSports.map((item) => item.date));
+  const previousGymDates = uniqueDates(previousSessions.map((item) => item.date));
+  const previousSportDates = uniqueDates(previousSports.map((item) => item.date));
+  const gymDays = allTime
+    ? uniqueCount(allGymDates.map((item) => item.date))
+    : gymDates.length;
+  const sportDays = allTime
+    ? uniqueCount(allSportDates.map((item) => item.date))
+    : sportDates.length;
+  const activityDays = allTime
+    ? unionCount(
+        allGymDates.map((item) => item.date),
+        allSportDates.map((item) => item.date),
+      )
+    : unionCount(gymDates, sportDates);
+
   const totalWorkouts = allTime && workoutCount != null ? workoutCount : chartSessions.length;
   const totalSports = allTime && sportCount != null ? sportCount : chartSports.length;
   const allTimeSupplementDays = allTime
@@ -245,8 +264,11 @@ export async function getAnalyticsSummary(
     days: allTime ? 0 : rangeDays,
     periodLabel: periodLabel(allTime ? 9999 : rangeDays),
     chartLabel: allTime
-      ? `Gym load · last ${ANALYTICS_ALL_CHART_DAYS} days`
-      : "Gym load",
+      ? `Activity · last ${ANALYTICS_ALL_CHART_DAYS} days`
+      : "Activity",
+    activityDays,
+    gymDays,
+    sportDays,
     totalWorkouts,
     totalHits,
     totalGymLoad,
@@ -268,15 +290,20 @@ export async function getAnalyticsSummary(
     ),
     trends: allTime
       ? {
+          activity: null,
           workouts: null,
           gymLoad: null,
           sports: null,
           supplements: null,
         }
       : {
-          workouts: percentChange(chartSessions.length, previousSessions.length),
+          activity: percentChange(
+            unionCount(gymDates, sportDates),
+            unionCount(previousGymDates, previousSportDates),
+          ),
+          workouts: percentChange(gymDates.length, previousGymDates.length),
           gymLoad: percentChange(totalGymLoad, previousLoad),
-          sports: percentChange(chartSports.length, previousSports.length),
+          sports: percentChange(sportDates.length, previousSportDates.length),
           supplements: percentChange(
             supplementDays.size,
             previousSupplementDays.size,

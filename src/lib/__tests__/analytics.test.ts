@@ -4,6 +4,8 @@ import {
   percentChange,
   periodLabel,
   perWeekRate,
+  uniqueCount,
+  unionCount,
 } from "@/lib/analytics";
 
 describe("parseAnalyticsPeriod", () => {
@@ -35,5 +37,14 @@ describe("perWeekRate", () => {
     expect(perWeekRate(4, 7)).toBe(4);
     expect(perWeekRate(12, 30)).toBe(2.8);
     expect(perWeekRate(3, 0)).toBeNull();
+  });
+});
+
+describe("day counts", () => {
+  it("counts unique dates and unions gym with sport", () => {
+    expect(uniqueCount(["2026-09-01", "2026-09-01", "2026-09-02"])).toBe(2);
+    expect(
+      unionCount(["2026-09-01", "2026-09-02"], ["2026-09-02", "2026-09-03"]),
+    ).toBe(3);
   });
 });

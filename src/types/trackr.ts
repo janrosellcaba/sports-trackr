@@ -91,6 +91,9 @@ export type TopMuscle = {
 export type AnalyticsSummary = {
   days: number;
   periodLabel: string;
+  activityDays: number;
+  gymDays: number;
+  sportDays: number;
   totalWorkouts: number;
   totalHits: number;
   totalGymLoad: number;
@@ -103,6 +106,7 @@ export type AnalyticsSummary = {
   sportStreak: number;
   chartLabel: string;
   trends: {
+    activity: number | null;
     workouts: number | null;
     gymLoad: number | null;
     sports: number | null;

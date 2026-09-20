@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Dumbbell, Flame, Pill } from "lucide-react";
+import { Activity, CalendarDays, Dumbbell, Flame } from "lucide-react";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { perWeekRate } from "@/lib/analytics";
 import { kmToDisplay, trimNumber } from "@/lib/units";
@@ -29,11 +29,24 @@ function TrendBadge({ value }: { value: number | null }) {
 export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   const { distanceUnit } = useUnits();
   const allTime = summary.days === 0;
-  const gymPerWeek = allTime ? null : perWeekRate(summary.totalWorkouts, summary.days);
+  const activityPerWeek = allTime
+    ? null
+    : perWeekRate(summary.activityDays, summary.days);
+  const gymPerWeek = allTime ? null : perWeekRate(summary.gymDays, summary.days);
+  const sportPerWeek = allTime
+    ? null
+    : perWeekRate(summary.sportDays, summary.days);
   const cards = [
     {
+      label: "Activity",
+      value: String(summary.activityDays),
+      hint: activityHint(summary.gymDays, summary.sportDays, activityPerWeek),
+      trend: allTime ? null : summary.trends.activity,
+      icon: CalendarDays,
+    },
+    {
       label: "Gym",
-      value: String(summary.totalWorkouts),
+      value: String(summary.gymDays),
       hint: gymPerWeek != null
         ? `${summary.gymStreak} streak · ${trimNumber(gymPerWeek)}/wk`
         : `${summary.gymStreak} streak`,
@@ -41,25 +54,23 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
       icon: Dumbbell,
     },
     {
+      label: "Sports",
+      value: String(summary.sportDays),
+      hint: sportHint(
+        sportPerWeek,
+        summary.totalSportMinutes,
+        summary.totalSportKm,
+        distanceUnit,
+      ),
+      trend: allTime ? null : summary.trends.sports,
+      icon: Activity,
+    },
+    {
       label: "Load",
       value: String(summary.totalGymLoad),
       hint: `${summary.totalHits} hits`,
       trend: allTime ? null : summary.trends.gymLoad,
       icon: Flame,
-    },
-    {
-      label: "Sports",
-      value: String(summary.totalSports),
-      hint: sportHint(summary.totalSportMinutes, summary.totalSportKm, distanceUnit),
-      trend: allTime ? null : summary.trends.sports,
-      icon: Activity,
-    },
-    {
-      label: "Supps",
-      value: String(summary.supplementDays),
-      hint: `${summary.supplementStreak} streak`,
-      trend: allTime ? null : summary.trends.supplements,
-      icon: Pill,
     },
   ];
 
@@ -90,8 +101,24 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   );
 }
 
-function sportHint(minutes: number, km: number, unit: "km" | "mi"): string {
+function activityHint(
+  gymDays: number,
+  sportDays: number,
+  perWeek: number | null,
+): string {
+  const parts = [`${gymDays} gym`, `${sportDays} sport`];
+  if (perWeek != null) parts.push(`${trimNumber(perWeek)}/wk`);
+  return parts.join(" · ");
+}
+
+function sportHint(
+  perWeek: number | null,
+  minutes: number,
+  km: number,
+  unit: "km" | "mi",
+): string {
   const parts: string[] = [];
+  if (perWeek != null) parts.push(`${trimNumber(perWeek)}/wk`);
   if (minutes > 0) parts.push(`${minutes} min`);
   if (km > 0) parts.push(`${trimNumber(kmToDisplay(km, unit))} ${unit}`);
   return parts.join(" · ") || "—";
