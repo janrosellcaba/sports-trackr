@@ -27,6 +27,7 @@ export function ActivityChart({
   const brand = useAccentColor();
   const { ink, muted, line, paper } = useSurfaceColors();
   const fillId = useId().replace(/:/g, "");
+  const hatchId = `${fillId}-hatch`;
   const chartData = withColumns(data);
   const lastActive =
     [...data].reverse().find(
@@ -50,18 +51,13 @@ export function ActivityChart({
             Gym
           </span>
           <span className="flex items-center gap-1.5">
-            <svg width="8" height="14" aria-hidden="true" className="text-brand/80">
-              <line
-                x1="4"
-                y1="1"
-                x2="4"
-                y2="13"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeDasharray="2.2 2.8"
-              />
-            </svg>
+            <span
+              className="h-2 w-2.5 rounded-[2px] ring-1 ring-brand/40"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(-45deg, var(--accent-primary) 0 1px, transparent 1px 5px)",
+              }}
+            />
             Sport
           </span>
         </p>
@@ -92,6 +88,23 @@ export function ActivityChart({
                 <stop offset="0%" stopColor={brand} stopOpacity={1} />
                 <stop offset="100%" stopColor={brand} stopOpacity={0.38} />
               </linearGradient>
+              <pattern
+                id={hatchId}
+                width="10"
+                height="10"
+                patternUnits="userSpaceOnUse"
+                patternTransform="rotate(-45)"
+              >
+                <line
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="10"
+                  stroke={brand}
+                  strokeWidth="1.2"
+                  strokeOpacity="0.9"
+                />
+              </pattern>
             </defs>
             <CartesianGrid stroke={line} strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -124,6 +137,7 @@ export function ActivityChart({
                   height={props.height}
                   payload={chartPointFrom(props.payload)}
                   fill={`url(#${fillId})`}
+                  hatch={`url(#${hatchId})`}
                   stroke={brand}
                   active={Boolean(
                     (props as { isActive?: boolean }).isActive,
@@ -212,6 +226,7 @@ type ActivityColumnProps = {
   height?: number | string;
   payload?: ChartPoint;
   fill: string;
+  hatch: string;
   stroke: string;
   active: boolean;
 };
@@ -223,6 +238,7 @@ function ActivityColumn({
   height,
   payload,
   fill,
+  hatch,
   stroke,
   active,
 }: ActivityColumnProps) {
@@ -237,25 +253,18 @@ function ActivityColumn({
     payload.gymLoad > 0
       ? (payload.gymLoad / Math.max(payload.column, 1)) * tall
       : 0;
-  const gymTop = top + tall - gymHeight;
-  const cx = left + band / 2;
   const hadSport = payload.sports > 0;
-  const stitchTop = top + 3;
-  const stitchBottom = top + tall - 1;
+  const sportHeight = hadSport
+    ? Math.max(gymHeight, Math.max(16, tall * 0.2))
+    : 0;
+  const gymTop = top + tall - gymHeight;
+  const sportTop = top + tall - sportHeight;
+  const barPath = (barTop: number, barHeight: number) =>
+    roundedTopBar(left, barTop, band, barHeight, 7);
 
   return (
     <g>
-      {hadSport ? (
-        <rect
-          x={left}
-          y={top}
-          width={band}
-          height={tall}
-          fill={stroke}
-          fillOpacity={active ? 0.2 : 0.12}
-          rx={6}
-        />
-      ) : active ? (
+      {active ? (
         <rect
           x={left}
           y={top}
@@ -268,23 +277,18 @@ function ActivityColumn({
       ) : null}
       {gymHeight > 0 ? (
         <path
-          d={roundedTopBar(left, gymTop, band, gymHeight, 7)}
+          d={barPath(gymTop, gymHeight)}
           fill={fill}
           opacity={active ? 1 : 0.92}
         />
       ) : null}
       {hadSport ? (
-        <line
-          x1={cx}
-          y1={stitchTop}
-          x2={cx}
-          y2={stitchBottom}
-          stroke={stroke}
-          strokeOpacity={active ? 1 : 0.95}
-          strokeWidth={Math.max(2, Math.min(2.6, band * 0.18))}
-          strokeLinecap="round"
-          strokeDasharray={band < 8 ? "2.2 3.2" : "3 4.2"}
-        />
+        <>
+          {gymHeight === 0 ? (
+            <path d={barPath(sportTop, sportHeight)} fill={stroke} fillOpacity={0.12} />
+          ) : null}
+          <path d={barPath(sportTop, sportHeight)} fill={hatch} />
+        </>
       ) : null}
     </g>
   );

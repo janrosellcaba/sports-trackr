@@ -62,7 +62,7 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
               className="h-1.5 w-2.5 rounded-[2px] ring-1 ring-brand/40"
               style={{
                 backgroundImage:
-                  "repeating-linear-gradient(-45deg, var(--accent-primary) 0 1px, transparent 1px 2.25px)",
+                  "repeating-linear-gradient(-45deg, var(--accent-primary) 0 1px, transparent 1px 5px)",
               }}
             />
             Sport
@@ -137,11 +137,11 @@ function KindCell({ kind }: { kind: ActivityKind }) {
   if (kind === "sport") {
     return (
       <span
-        className="block h-4 rounded-[4px] ring-1 ring-brand/40"
+        className="block h-4 rounded-[4px] ring-1 ring-brand/35"
         style={{
-          backgroundColor: "color-mix(in srgb, var(--accent-primary) 14%, transparent)",
+          backgroundColor: "color-mix(in srgb, var(--accent-primary) 10%, transparent)",
           backgroundImage:
-            "repeating-linear-gradient(-45deg, var(--accent-primary) 0 1.5px, transparent 1.5px 3.25px)",
+            "repeating-linear-gradient(-45deg, var(--accent-primary) 0 1px, transparent 1px 6px)",
         }}
       />
     );
@@ -151,7 +151,7 @@ function KindCell({ kind }: { kind: ActivityKind }) {
       className="block h-4 rounded-[4px] bg-brand shadow-[0_0_10px_var(--accent-glow)]"
       style={{
         backgroundImage:
-          "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--accent-fg) 42%, transparent) 0 1.4px, transparent 1.4px 3.5px)",
+          "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--accent-fg) 38%, transparent) 0 1px, transparent 1px 7px)",
       }}
     />
   );
