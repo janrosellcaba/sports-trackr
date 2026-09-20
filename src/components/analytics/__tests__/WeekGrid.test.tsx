@@ -19,8 +19,8 @@ describe("WeekGrid", () => {
         name: "Week of Sep 14, 2 gym, 2 sport, 1 rest",
       }),
     ).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("status")).toHaveTextContent("Sep 14–Sep 20");
-    expect(screen.getByRole("status")).toHaveTextContent("1");
-    expect(screen.getByRole("status")).toHaveTextContent("Rest");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Sep 14–Sep 20 · 2 gym · 2 sport · 1 rest",
+    );
   });
 });

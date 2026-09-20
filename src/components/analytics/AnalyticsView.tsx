@@ -11,8 +11,12 @@ import { WeekGrid } from "@/components/analytics/WeekGrid";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { formatLift } from "@/lib/catalog";
 import { kmToDisplay, trimNumber, type DistanceUnit, type MassUnit } from "@/lib/units";
-import { perWeekRate } from "@/lib/analytics";
-import { GHOST_BTN, PAGE_TITLE, SEGMENT_TRACK, segmentItemClass } from "@/lib/ui";
+import {
+  buildActivityWeeks,
+  perWeekRate,
+  weekCounts,
+} from "@/lib/analytics";
+import { PAGE_TITLE, SEGMENT_TRACK, segmentItemClass } from "@/lib/ui";
 import type { AnalyticsPeriod, AnalyticsSummary, NotebookExercise } from "@/types/trackr";
 
 const ActivityChart = dynamic(
@@ -68,10 +72,6 @@ export function AnalyticsView({
 
       <div className="space-y-5">
         <KpiGrid summary={summary} />
-        <WeekGrid
-          key={`${summary.days}-${summary.daily[0]?.date ?? "empty"}`}
-          data={summary.daily}
-        />
         <div className="grid gap-5 lg:grid-cols-2">
           <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
           <TopMuscles items={summary.topMuscles} />
@@ -80,6 +80,10 @@ export function AnalyticsView({
           <BestLifts exercises={exercises} />
           <ExerciseProgressionChart exercises={exercises} />
         </div>
+        <WeekGrid
+          key={`${summary.days}-${summary.daily[0]?.date ?? "empty"}`}
+          data={summary.daily}
+        />
       </div>
     </div>
   );
@@ -103,9 +107,8 @@ function CopyTrainerJson({
   return (
     <button
       type="button"
-      className={GHOST_BTN}
-      aria-label={copied ? "Copied" : "Copy JSON"}
-      title={copied ? "Copied" : "Copy JSON"}
+      className="inline-flex min-h-11 items-center gap-2 rounded-full bg-chip/70 px-3.5 text-sm font-bold text-muted ring-1 ring-line/70 transition-all duration-150 hover:bg-chip hover:text-ink hover:ring-brand/35 motion-safe:hover:scale-[1.03] motion-safe:active:scale-[0.97]"
+      aria-label={copied ? "Copied trainer JSON" : "Copy trainer JSON"}
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(
@@ -124,10 +127,13 @@ function CopyTrainerJson({
       }}
     >
       {copied ? (
-        <Check className="h-4 w-4 text-brand-text" aria-hidden="true" />
+        <Check className="h-3.5 w-3.5 text-brand-text" aria-hidden="true" />
       ) : (
-        <Copy className="h-4 w-4" aria-hidden="true" />
+        <Copy className="h-3.5 w-3.5" aria-hidden="true" />
       )}
+      <span className="pr-0.5 text-[11px] font-semibold tracking-[0.14em] uppercase">
+        {copied ? "Copied" : "JSON"}
+      </span>
     </button>
   );
 }
@@ -184,6 +190,10 @@ function trainerPayload(
         date: item.prDate,
       })),
     daily: summary.daily,
+    weeks: buildActivityWeeks(summary.daily).map((week) => ({
+      start: week.start,
+      ...weekCounts(week),
+    })),
   };
 }
 

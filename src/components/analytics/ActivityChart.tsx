@@ -15,7 +15,7 @@ import { useAccentColor, useSurfaceColors } from "@/components/theme/ThemeProvid
 import { formatChartDate } from "@/lib/calculations";
 import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 
-type ChartPoint = DailyActivityPoint & { sportMark: number };
+type ChartPoint = DailyActivityPoint & { column: number };
 
 export function ActivityChart({
   data,
@@ -27,8 +27,7 @@ export function ActivityChart({
   const brand = useAccentColor();
   const { ink, muted, line, paper } = useSurfaceColors();
   const fillId = useId().replace(/:/g, "");
-  const glowId = `${fillId}-glow`;
-  const chartData = withSportMarks(data);
+  const chartData = withColumns(data);
   const lastActive =
     [...data].reverse().find(
       (point) => point.gymLoad > 0 || point.sports > 0 || point.supplements > 0,
@@ -73,19 +72,26 @@ export function ActivityChart({
           <ComposedChart
             data={chartData}
             margin={{ top: 12, right: 4, left: -18, bottom: 0 }}
+            onMouseMove={(state) => {
+              pick(
+                (
+                  state as { activePayload?: Array<{ payload?: DailyActivityPoint }> }
+                ).activePayload?.[0]?.payload,
+              );
+            }}
+            onClick={(state) => {
+              pick(
+                (
+                  state as { activePayload?: Array<{ payload?: DailyActivityPoint }> }
+                ).activePayload?.[0]?.payload,
+              );
+            }}
           >
             <defs>
               <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={brand} stopOpacity={1} />
                 <stop offset="100%" stopColor={brand} stopOpacity={0.38} />
               </linearGradient>
-              <filter id={glowId} x="-80%" y="-12%" width="260%" height="124%">
-                <feGaussianBlur stdDeviation="1.6" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
             </defs>
             <CartesianGrid stroke={line} strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -103,23 +109,11 @@ export function ActivityChart({
               allowDecimals={false}
             />
             <Tooltip
-              cursor={false}
-              contentStyle={{
-                background: paper,
-                border: `1px solid ${line}`,
-                borderRadius: 14,
-                color: ink,
-                fontSize: 12,
-                boxShadow: "var(--shadow-card)",
-              }}
-              labelFormatter={(label) => formatChartDate(String(label))}
-              formatter={(_value, _name, item) => {
-                const point = (item as { payload?: DailyActivityPoint }).payload;
-                return [`${point?.gymLoad ?? 0}`, "Load"];
-              }}
+              cursor={{ fill: brand, fillOpacity: 0.08, radius: 6 }}
+              content={<ActivityTooltip paper={paper} line={line} ink={ink} muted={muted} />}
             />
             <Bar
-              dataKey="sportMark"
+              dataKey="column"
               legendType="none"
               isAnimationActive={false}
               shape={(props) => (
@@ -128,11 +122,12 @@ export function ActivityChart({
                   y={props.y}
                   width={props.width}
                   height={props.height}
-                  payload={props.payload as ChartPoint | undefined}
+                  payload={chartPointFrom(props.payload)}
                   fill={`url(#${fillId})`}
                   stroke={brand}
-                  glowId={glowId}
-                  onPick={pick}
+                  active={Boolean(
+                    (props as { isActive?: boolean }).isActive,
+                  )}
                 />
               )}
             />
@@ -176,6 +171,40 @@ export function ActivityChart({
   );
 }
 
+function ActivityTooltip({
+  active,
+  payload,
+  paper,
+  line,
+  ink,
+  muted,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: DailyActivityPoint }>;
+  paper: string;
+  line: string;
+  ink: string;
+  muted: string;
+}) {
+  const point = payload?.[0]?.payload;
+  if (!active || !point) return null;
+  return (
+    <div
+      className="min-w-[9.5rem] rounded-2xl px-3 py-2.5 text-xs shadow-[var(--shadow-card)]"
+      style={{ background: paper, border: `1px solid ${line}`, color: ink }}
+    >
+      <p className="font-display text-sm font-bold">{formatChartDate(point.date)}</p>
+      <p className="mt-1.5 tabular-nums" style={{ color: muted }}>
+        Load {point.gymLoad}
+        {" · "}
+        Gym {point.workouts > 0 ? "yes" : "—"}
+        {" · "}
+        Sport {point.sports > 0 ? "yes" : "—"}
+      </p>
+    </div>
+  );
+}
+
 type ActivityColumnProps = {
   x?: number | string;
   y?: number | string;
@@ -184,8 +213,7 @@ type ActivityColumnProps = {
   payload?: ChartPoint;
   fill: string;
   stroke: string;
-  glowId: string;
-  onPick: (point: DailyActivityPoint | undefined) => void;
+  active: boolean;
 };
 
 function ActivityColumn({
@@ -196,8 +224,7 @@ function ActivityColumn({
   payload,
   fill,
   stroke,
-  glowId,
-  onPick,
+  active,
 }: ActivityColumnProps) {
   if (!payload) return null;
   const left = Number(x);
@@ -208,47 +235,67 @@ function ActivityColumn({
 
   const gymHeight =
     payload.gymLoad > 0
-      ? (payload.gymLoad / Math.max(payload.sportMark, 1)) * tall
+      ? (payload.gymLoad / Math.max(payload.column, 1)) * tall
       : 0;
   const gymTop = top + tall - gymHeight;
   const cx = left + band / 2;
-  const dash = band < 9 ? "2 3.4" : "2.4 4.2";
-  const stitchTop = top + Math.min(8, tall * 0.08);
+  const hadSport = payload.sports > 0;
+  const stitchTop = top + 3;
   const stitchBottom = top + tall - 1;
 
   return (
-    <g onClick={() => onPick(payload)}>
-      <rect x={left} y={top} width={band} height={tall} fill="transparent" />
-      {gymHeight > 0 ? (
-        <path d={roundedTopBar(left, gymTop, band, gymHeight, 7)} fill={fill} />
+    <g>
+      {hadSport ? (
+        <rect
+          x={left}
+          y={top}
+          width={band}
+          height={tall}
+          fill={stroke}
+          fillOpacity={active ? 0.2 : 0.12}
+          rx={6}
+        />
+      ) : active ? (
+        <rect
+          x={left}
+          y={top}
+          width={band}
+          height={tall}
+          fill={stroke}
+          fillOpacity={0.08}
+          rx={6}
+        />
       ) : null}
-      {payload.sports > 0 ? (
-        <g filter={`url(#${glowId})`}>
-          <line
-            x1={cx}
-            y1={stitchTop}
-            x2={cx}
-            y2={stitchBottom}
-            stroke={stroke}
-            strokeOpacity={0.28}
-            strokeWidth={Math.min(5, Math.max(3, band * 0.22))}
-            strokeLinecap="round"
-          />
-          <line
-            x1={cx}
-            y1={stitchTop}
-            x2={cx}
-            y2={stitchBottom}
-            stroke={stroke}
-            strokeOpacity={0.92}
-            strokeWidth={1.7}
-            strokeLinecap="round"
-            strokeDasharray={dash}
-          />
-        </g>
+      {gymHeight > 0 ? (
+        <path
+          d={roundedTopBar(left, gymTop, band, gymHeight, 7)}
+          fill={fill}
+          opacity={active ? 1 : 0.92}
+        />
+      ) : null}
+      {hadSport ? (
+        <line
+          x1={cx}
+          y1={stitchTop}
+          x2={cx}
+          y2={stitchBottom}
+          stroke={stroke}
+          strokeOpacity={active ? 1 : 0.95}
+          strokeWidth={Math.max(2, Math.min(2.6, band * 0.18))}
+          strokeLinecap="round"
+          strokeDasharray={band < 8 ? "2.2 3.2" : "3 4.2"}
+        />
       ) : null}
     </g>
   );
+}
+
+function chartPointFrom(value: unknown): ChartPoint | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const row = value as ChartPoint & { payload?: ChartPoint };
+  if (typeof row.date === "string") return row;
+  if (row.payload && typeof row.payload.date === "string") return row.payload;
+  return undefined;
 }
 
 function roundedTopBar(
@@ -270,12 +317,12 @@ function roundedTopBar(
   ].join(" ");
 }
 
-function withSportMarks(data: DailyActivityPoint[]): ChartPoint[] {
+function withColumns(data: DailyActivityPoint[]): ChartPoint[] {
   const maxLoad = Math.max(0, ...data.map((point) => point.gymLoad));
   const rail = Math.max(1, maxLoad);
   return data.map((point) => ({
     ...point,
-    sportMark: rail,
+    column: rail,
   }));
 }
 

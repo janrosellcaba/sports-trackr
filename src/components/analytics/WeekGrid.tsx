@@ -35,7 +35,7 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
 
   if (weeks.length === 0) {
     return (
-      <section className={`${CARD_CLS} border-dashed px-4 py-10 text-center`}>
+      <section className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
         <h2 className={`${LABEL_CLS} mb-2`}>Weeks</h2>
         <p className="text-sm text-muted">No days in this range.</p>
       </section>
@@ -43,8 +43,8 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
   }
 
   return (
-    <section className={`${CARD_CLS} p-4`}>
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <section className={`${CARD_CLS} p-3.5`}>
+      <div className="mb-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className={LABEL_CLS}>Weeks</h2>
           <p className="mt-1 text-[11px] text-muted">
@@ -54,20 +54,20 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
         </div>
         <p className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase">
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2.5 rounded-sm bg-brand shadow-[0_0_10px_var(--accent-glow)]" />
+            <span className="h-1.5 w-2 rounded-[2px] bg-brand" />
             Gym
           </span>
           <span className="flex items-center gap-1.5">
-            <svg width="8" height="12" aria-hidden="true" className="text-brand/85">
+            <svg width="7" height="10" aria-hidden="true" className="text-brand/85">
               <line
-                x1="4"
+                x1="3.5"
                 y1="1"
-                x2="4"
-                y2="11"
+                x2="3.5"
+                y2="9"
                 stroke="currentColor"
-                strokeWidth="1.7"
+                strokeWidth="1.6"
                 strokeLinecap="round"
-                strokeDasharray="2.1 2.7"
+                strokeDasharray="1.8 2.2"
               />
             </svg>
             Sport
@@ -75,19 +75,19 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
         </p>
       </div>
 
-      <div className="mb-2 grid grid-cols-[2.6rem_repeat(7,minmax(0,1fr))] gap-1 px-1.5">
+      <div className="mb-1 grid grid-cols-[2.4rem_repeat(7,minmax(0,1fr))] gap-1 px-1">
         <span />
         {WEEKDAYS.map((day, index) => (
           <span
             key={`${day}-${index}`}
-            className="text-center text-[10px] font-semibold tracking-[0.12em] text-muted uppercase"
+            className="text-center text-[9px] font-semibold tracking-[0.14em] text-muted uppercase"
           >
             {day}
           </span>
         ))}
       </div>
 
-      <div className="max-h-[22rem] space-y-0.5 overflow-y-auto pr-0.5">
+      <div className="space-y-px">
         {weeks.map((week) => {
           const active = week.start === selected?.start;
           return (
@@ -97,13 +97,13 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
               aria-pressed={active}
               aria-label={weekAriaLabel(week)}
               onClick={() => setSelectedStart(week.start)}
-              className={`grid w-full grid-cols-[2.6rem_repeat(7,minmax(0,1fr))] items-center gap-1 rounded-xl px-1.5 py-1.5 text-left transition-all duration-150 ${
+              className={`grid w-full grid-cols-[2.4rem_repeat(7,minmax(0,1fr))] items-center gap-1 rounded-lg px-1 py-1 text-left transition-colors duration-150 ${
                 active
-                  ? "bg-brand/10 ring-1 ring-brand/30"
-                  : "hover:bg-chip/50"
+                  ? "bg-brand/10 ring-1 ring-brand/25"
+                  : "hover:bg-chip/70"
               }`}
             >
-              <span className="truncate text-[10px] font-semibold tabular-nums text-muted">
+              <span className="truncate text-[9px] font-semibold tabular-nums text-muted">
                 {formatChartDate(week.start)}
               </span>
               {week.days.map((day) => (
@@ -115,39 +115,39 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
       </div>
 
       {selected && selectedCounts ? (
-        <div className="mt-4 grid grid-cols-4 gap-2 text-center" role="status">
-          <Readout
-            label="Week"
-            value={`${formatChartDate(selected.start)}–${formatChartDate(addDaysISO(selected.start, 6))}`}
-          />
-          <Readout label="Gym" value={String(selectedCounts.gym)} />
-          <Readout label="Sport" value={String(selectedCounts.sport)} />
-          <Readout label="Rest" value={String(selectedCounts.rest)} />
-        </div>
+        <p
+          className="mt-3 text-center text-[11px] text-muted"
+          role="status"
+        >
+          <span className="font-semibold text-ink">
+            {formatChartDate(selected.start)}–{formatChartDate(addDaysISO(selected.start, 6))}
+          </span>
+          {` · ${selectedCounts.gym} gym · ${selectedCounts.sport} sport · ${selectedCounts.rest} rest`}
+        </p>
       ) : null}
     </section>
   );
 }
 
 function KindCell({ kind }: { kind: ActivityKind }) {
-  if (kind === "out") return <span className="block h-7" />;
+  if (kind === "out") return <span className="block h-4" />;
   if (kind === "rest") {
-    return <span className="block h-7 rounded-md bg-chip/85" />;
+    return <span className="block h-4 rounded-[4px] bg-chip/70" />;
   }
   if (kind === "gym") {
     return (
-      <span className="block h-7 rounded-md bg-brand shadow-[0_0_14px_var(--accent-glow)]" />
+      <span className="block h-4 rounded-[4px] bg-brand shadow-[0_0_10px_var(--accent-glow)]" />
     );
   }
   if (kind === "sport") {
     return (
-      <span className="relative block h-7 overflow-hidden rounded-md bg-chip/55 ring-1 ring-line/70">
+      <span className="relative block h-4 overflow-hidden rounded-[4px] bg-chip/50 ring-1 ring-line/60">
         <Stitch />
       </span>
     );
   }
   return (
-    <span className="relative block h-7 overflow-hidden rounded-md bg-brand shadow-[0_0_14px_var(--accent-glow)]">
+    <span className="relative block h-4 overflow-hidden rounded-[4px] bg-brand shadow-[0_0_10px_var(--accent-glow)]">
       <Stitch onBrand />
     </span>
   );
@@ -158,24 +158,11 @@ function Stitch({ onBrand = false }: { onBrand?: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className="pointer-events-none absolute inset-y-[5px] left-1/2 w-[2px] -translate-x-1/2"
+      className="pointer-events-none absolute inset-y-[3px] left-1/2 w-[1.5px] -translate-x-1/2"
       style={{
-        backgroundImage: `repeating-linear-gradient(to bottom, ${color} 0 2px, transparent 2px 5.5px)`,
+        backgroundImage: `repeating-linear-gradient(to bottom, ${color} 0 1.5px, transparent 1.5px 4px)`,
       }}
     />
-  );
-}
-
-function Readout({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-xl bg-chip/70 px-1.5 py-2">
-      <p className="truncate font-display text-sm font-bold tabular-nums text-ink">
-        {value}
-      </p>
-      <p className="mt-0.5 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase">
-        {label}
-      </p>
-    </div>
   );
 }
 
