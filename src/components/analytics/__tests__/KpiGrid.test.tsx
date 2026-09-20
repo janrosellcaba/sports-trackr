@@ -9,6 +9,7 @@ const summary: AnalyticsSummary = {
   activityDays: 5,
   gymDays: 4,
   sportDays: 3,
+  restDays: 2,
   totalWorkouts: 4,
   totalHits: 12,
   totalGymLoad: 28,
@@ -19,7 +20,8 @@ const summary: AnalyticsSummary = {
   supplementStreak: 2,
   gymStreak: 1,
   sportStreak: 0,
-  chartLabel: "Activity",
+  chartLabel: "Load",
+  previous: { activityDays: 4, gymLoad: 20 },
   trends: {
     activity: 10,
     workouts: 0,
@@ -32,13 +34,16 @@ const summary: AnalyticsSummary = {
 };
 
 describe("KpiGrid", () => {
-  it("leads with activity days and weekly sport rhythm", () => {
+  it("keeps activity and load, with rest and vs counts", () => {
     render(<KpiGrid summary={summary} />);
 
     expect(screen.getByText("Activity")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
-    expect(screen.getByText("4 gym · 3 sport · 5/wk")).toBeInTheDocument();
-    expect(screen.getByText("3")).toBeInTheDocument();
-    expect(screen.getByText("3/wk · 90 min · 8.2 km")).toBeInTheDocument();
+    expect(screen.getByText("5 on · 2 off")).toBeInTheDocument();
+    expect(screen.getByText("5 vs 4")).toBeInTheDocument();
+    expect(screen.getByText("Load")).toBeInTheDocument();
+    expect(screen.getByText("28 vs 20")).toBeInTheDocument();
+    expect(screen.queryByText("Sports")).not.toBeInTheDocument();
+    expect(screen.queryByText("4 gym · 3 sport · 5/wk")).not.toBeInTheDocument();
   });
 });

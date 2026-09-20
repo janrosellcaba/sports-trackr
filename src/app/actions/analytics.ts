@@ -264,11 +264,18 @@ export async function getAnalyticsSummary(
     days: allTime ? 0 : rangeDays,
     periodLabel: periodLabel(allTime ? 9999 : rangeDays),
     chartLabel: allTime
-      ? `Activity · last ${ANALYTICS_ALL_CHART_DAYS} days`
-      : "Activity",
+      ? `Load · last ${ANALYTICS_ALL_CHART_DAYS} days`
+      : "Load",
     activityDays,
     gymDays,
     sportDays,
+    restDays: allTime ? 0 : Math.max(0, rangeDays - activityDays),
+    previous: allTime
+      ? null
+      : {
+          activityDays: unionCount(previousGymDates, previousSportDates),
+          gymLoad: previousLoad,
+        },
     totalWorkouts,
     totalHits,
     totalGymLoad,

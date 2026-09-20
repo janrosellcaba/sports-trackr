@@ -7,6 +7,7 @@ import { Check, Copy } from "lucide-react";
 import { BestLifts } from "@/components/analytics/BestLifts";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
 import { TopMuscles } from "@/components/analytics/TopMuscles";
+import { WeekGrid } from "@/components/analytics/WeekGrid";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { formatLift } from "@/lib/catalog";
 import { kmToDisplay, trimNumber, type DistanceUnit, type MassUnit } from "@/lib/units";
@@ -16,7 +17,7 @@ import type { AnalyticsPeriod, AnalyticsSummary, NotebookExercise } from "@/type
 
 const ActivityChart = dynamic(
   () => import("@/components/analytics/ActivityChart").then((mod) => mod.ActivityChart),
-  { ssr: false, loading: () => <ChartSkeleton label="Activity" /> },
+  { ssr: false, loading: () => <ChartSkeleton label="Load" /> },
 );
 
 const ExerciseProgressionChart = dynamic(
@@ -67,6 +68,10 @@ export function AnalyticsView({
 
       <div className="space-y-5">
         <KpiGrid summary={summary} />
+        <WeekGrid
+          key={`${summary.days}-${summary.daily[0]?.date ?? "empty"}`}
+          data={summary.daily}
+        />
         <div className="grid gap-5 lg:grid-cols-2">
           <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
           <TopMuscles items={summary.topMuscles} />
@@ -144,18 +149,18 @@ function trainerPayload(
     },
     activity: {
       days: summary.activityDays,
+      restDays: summary.days ? summary.restDays : null,
       perWeek: summary.days ? perWeekRate(summary.activityDays, summary.days) : null,
       gymDays: summary.gymDays,
       sportDays: summary.sportDays,
-      trendPct: summary.trends.activity,
+      previousDays: summary.previous?.activityDays ?? null,
     },
     gym: {
       days: summary.gymDays,
       load: summary.totalGymLoad,
       hits: summary.totalHits,
       streak: summary.gymStreak,
-      trendPct: summary.trends.workouts,
-      loadTrendPct: summary.trends.gymLoad,
+      previousLoad: summary.previous?.gymLoad ?? null,
     },
     sports: {
       days: summary.sportDays,
@@ -165,12 +170,10 @@ function trainerPayload(
       distance: summary.totalSportKm
         ? trimNumber(kmToDisplay(summary.totalSportKm, distanceUnit))
         : 0,
-      trendPct: summary.trends.sports,
     },
     supplements: {
       days: summary.supplementDays,
       streak: summary.supplementStreak,
-      trendPct: summary.trends.supplements,
     },
     topMuscles: summary.topMuscles,
     personalRecords: exercises

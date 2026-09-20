@@ -1,81 +1,54 @@
 "use client";
 
-import { Activity, CalendarDays, Dumbbell, Flame } from "lucide-react";
-import { useUnits } from "@/components/units/UnitsProvider";
-import { perWeekRate } from "@/lib/analytics";
-import { kmToDisplay, trimNumber } from "@/lib/units";
+import { CalendarDays, Flame } from "lucide-react";
+import { compareCounts, perWeekRate } from "@/lib/analytics";
+import { trimNumber } from "@/lib/units";
 import type { AnalyticsSummary } from "@/types/trackr";
 import { CARD_CLS } from "@/lib/ui";
 
-function TrendBadge({ value }: { value: number | null }) {
-  if (value == null) return null;
-  const positive = value > 0;
-  const neutral = value === 0;
-  return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
-        neutral
-          ? "bg-chip text-muted"
-          : positive
-            ? "bg-brand-soft text-brand-text"
-            : "bg-danger-soft text-danger"
-      }`}
-    >
-      {neutral ? "0%" : `${positive ? "+" : ""}${value}%`}
-    </span>
-  );
-}
-
 export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
-  const { distanceUnit } = useUnits();
   const allTime = summary.days === 0;
   const activityPerWeek = allTime
     ? null
     : perWeekRate(summary.activityDays, summary.days);
-  const gymPerWeek = allTime ? null : perWeekRate(summary.gymDays, summary.days);
-  const sportPerWeek = allTime
-    ? null
-    : perWeekRate(summary.sportDays, summary.days);
   const cards = [
     {
       label: "Activity",
       value: String(summary.activityDays),
-      hint: activityHint(summary.gymDays, summary.sportDays, activityPerWeek),
-      trend: allTime ? null : summary.trends.activity,
+      hint: activityHint(summary, activityPerWeek),
+      compare: allTime
+        ? null
+        : compareCounts(
+            summary.activityDays,
+            summary.previous?.activityDays ?? 0,
+          ),
+      compareUp:
+        summary.previous != null &&
+        summary.activityDays > summary.previous.activityDays,
+      compareDown:
+        summary.previous != null &&
+        summary.activityDays < summary.previous.activityDays,
       icon: CalendarDays,
-    },
-    {
-      label: "Gym",
-      value: String(summary.gymDays),
-      hint: gymPerWeek != null
-        ? `${summary.gymStreak} streak · ${trimNumber(gymPerWeek)}/wk`
-        : `${summary.gymStreak} streak`,
-      trend: allTime ? null : summary.trends.workouts,
-      icon: Dumbbell,
-    },
-    {
-      label: "Sports",
-      value: String(summary.sportDays),
-      hint: sportHint(
-        sportPerWeek,
-        summary.totalSportMinutes,
-        summary.totalSportKm,
-        distanceUnit,
-      ),
-      trend: allTime ? null : summary.trends.sports,
-      icon: Activity,
     },
     {
       label: "Load",
       value: String(summary.totalGymLoad),
       hint: `${summary.totalHits} hits`,
-      trend: allTime ? null : summary.trends.gymLoad,
+      compare: allTime
+        ? null
+        : compareCounts(summary.totalGymLoad, summary.previous?.gymLoad ?? 0),
+      compareUp:
+        summary.previous != null &&
+        summary.totalGymLoad > summary.previous.gymLoad,
+      compareDown:
+        summary.previous != null &&
+        summary.totalGymLoad < summary.previous.gymLoad,
       icon: Flame,
     },
   ];
 
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <section className="grid grid-cols-2 gap-3">
       {cards.map((card) => (
         <article key={card.label} className={`${CARD_CLS} p-4`}>
           <div className="mb-4 flex items-start justify-between gap-2">
@@ -85,7 +58,11 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
                 All
               </span>
             ) : (
-              <TrendBadge value={card.trend} />
+              <CompareBadge
+                label={card.compare}
+                up={card.compareUp}
+                down={card.compareDown}
+              />
             )}
           </div>
           <p className="font-display text-3xl leading-none font-extrabold tabular-nums tracking-tight text-ink">
@@ -101,25 +78,41 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   );
 }
 
-function activityHint(
-  gymDays: number,
-  sportDays: number,
-  perWeek: number | null,
-): string {
-  const parts = [`${gymDays} gym`, `${sportDays} sport`];
-  if (perWeek != null) parts.push(`${trimNumber(perWeek)}/wk`);
-  return parts.join(" · ");
+function CompareBadge({
+  label,
+  up,
+  down,
+}: {
+  label: string | null;
+  up: boolean;
+  down: boolean;
+}) {
+  if (!label) return null;
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
+        down
+          ? "bg-danger-soft text-danger"
+          : up
+            ? "bg-brand-soft text-brand-text"
+            : "bg-chip text-muted"
+      }`}
+    >
+      {label}
+    </span>
+  );
 }
 
-function sportHint(
+function activityHint(
+  summary: AnalyticsSummary,
   perWeek: number | null,
-  minutes: number,
-  km: number,
-  unit: "km" | "mi",
 ): string {
-  const parts: string[] = [];
-  if (perWeek != null) parts.push(`${trimNumber(perWeek)}/wk`);
-  if (minutes > 0) parts.push(`${minutes} min`);
-  if (km > 0) parts.push(`${trimNumber(kmToDisplay(km, unit))} ${unit}`);
-  return parts.join(" · ") || "—";
+  if (summary.days === 0) {
+    return `${summary.gymDays} gym · ${summary.sportDays} sport`;
+  }
+  const parts = [`${summary.activityDays} on`, `${summary.restDays} off`];
+  if (summary.days > 7 && perWeek != null) {
+    parts.push(`${trimNumber(perWeek)}/wk`);
+  }
+  return parts.join(" · ");
 }

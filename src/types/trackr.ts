@@ -104,7 +104,12 @@ export type AnalyticsSummary = {
   supplementStreak: number;
   gymStreak: number;
   sportStreak: number;
+  restDays: number;
   chartLabel: string;
+  previous: {
+    activityDays: number;
+    gymLoad: number;
+  } | null;
   trends: {
     activity: number | null;
     workouts: number | null;

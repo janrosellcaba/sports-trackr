@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  activityKind,
+  buildActivityWeeks,
+  compareCounts,
+  mondayOnOrBefore,
   parseAnalyticsPeriod,
   percentChange,
   periodLabel,
   perWeekRate,
   uniqueCount,
   unionCount,
+  weekCounts,
 } from "@/lib/analytics";
 
 describe("parseAnalyticsPeriod", () => {
@@ -46,5 +51,35 @@ describe("day counts", () => {
     expect(
       unionCount(["2026-09-01", "2026-09-02"], ["2026-09-02", "2026-09-03"]),
     ).toBe(3);
+  });
+});
+
+describe("compareCounts", () => {
+  it("hides a comparison when the previous period was empty", () => {
+    expect(compareCounts(5, 0)).toBeNull();
+    expect(compareCounts(5, 4)).toBe("5 vs 4");
+  });
+});
+
+describe("activity weeks", () => {
+  it("starts weeks on Monday and classifies gym, sport, both, and rest", () => {
+    expect(mondayOnOrBefore("2026-09-20")).toBe("2026-09-14");
+    expect(activityKind({ date: "2026-09-15", workouts: 1, sports: 1 })).toBe(
+      "both",
+    );
+
+    const weeks = buildActivityWeeks([
+      { date: "2026-09-16", workouts: 1, sports: 0 },
+      { date: "2026-09-17", workouts: 0, sports: 1 },
+      { date: "2026-09-18", workouts: 0, sports: 0 },
+    ]);
+    expect(weeks).toHaveLength(1);
+    expect(weeks[0]?.start).toBe("2026-09-14");
+    expect(weekCounts(weeks[0]!)).toEqual({
+      gym: 1,
+      sport: 1,
+      rest: 1,
+      activity: 2,
+    });
   });
 });
