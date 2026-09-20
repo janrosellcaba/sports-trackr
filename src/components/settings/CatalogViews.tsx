@@ -6,17 +6,14 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
 import {
   createCustomExercise,
-  createCustomSupplement,
   createMuscle,
   deleteCustomExercise,
-  deleteCustomSupplement,
   deleteMuscle,
   moveMuscle,
   updateCustomExercise,
-  updateCustomSupplement,
   updateMuscle,
 } from "@/app/actions/catalog";
-import { formatLift, parseCustomExerciseInput, parseCustomSupplementInput } from "@/lib/catalog";
+import { formatLift, parseCustomExerciseInput } from "@/lib/catalog";
 import { parseDecimal } from "@/lib/numbers";
 import { displayToKg, formatInputNumber, kgToDisplay, massLabel } from "@/lib/units";
 import { useUnits } from "@/components/units/UnitsProvider";
@@ -31,7 +28,6 @@ import {
 } from "@/lib/ui";
 import type {
   CustomExercisePayload,
-  CustomSupplementPayload,
   MusclePayload,
 } from "@/types/trackr";
 
@@ -341,130 +337,6 @@ export function ExerciseCatalogView({
   );
 }
 
-export function SupplementCatalogView({
-  initial,
-}: {
-  initial: CustomSupplementPayload[];
-}) {
-  const router = useRouter();
-  const [supplements, setSupplements] = useLatestProps(initial);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editing, setEditing] = useState<CustomSupplementPayload | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<CustomSupplementPayload | null>(
-    null,
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
-
-  function commit(rows: CustomSupplementPayload[]) {
-    setSupplements(rows);
-    router.refresh();
-  }
-
-  return (
-    <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <div className="flex items-center justify-end">
-        <button
-          type="button"
-          onClick={() => {
-            setEditing(null);
-            setSheetOpen(true);
-          }}
-          className={`${GHOST_BTN} text-brand-text`}
-        >
-          + Add
-        </button>
-      </div>
-      {error ? (
-        <p role="alert" className="text-sm font-medium text-danger">
-          {error}
-        </p>
-      ) : null}
-      {supplements.length === 0 ? (
-        <p className="text-sm text-muted">None yet. Add one to log from Home.</p>
-      ) : (
-        <ul className="space-y-2">
-          {supplements.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-col gap-2 rounded-xl bg-chip px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <span className="min-w-0 truncate text-sm font-medium text-ink">
-                {item.name}{" "}
-                <span className="text-muted">· {item.defaultDose}</span>
-              </span>
-              <span className="flex justify-end gap-1">
-                <button
-                  type="button"
-                  className={GHOST_BTN}
-                  onClick={() => {
-                    setEditing(item);
-                    setSheetOpen(true);
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className={DANGER_BTN}
-                  onClick={() => setPendingDelete(item)}
-                >
-                  Delete
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {sheetOpen ? (
-        <SupplementSheet
-          initial={editing}
-          onClose={() => setSheetOpen(false)}
-          onSave={(row) => {
-            commit(
-              sortByName(
-                supplements.some((item) => item.id === row.id)
-                  ? supplements.map((item) => (item.id === row.id ? row : item))
-                  : [row, ...supplements],
-              ),
-            );
-            setSheetOpen(false);
-          }}
-        />
-      ) : null}
-
-      {pendingDelete ? (
-        <ConfirmSheet
-          title={`Delete ${pendingDelete.name}?`}
-          body="Past intakes stay in the log. This only removes the Home button."
-          confirmLabel="Delete supplement"
-          pending={pendingId === pendingDelete.id}
-          onClose={() => setPendingDelete(null)}
-          onConfirm={() => {
-            const target = pendingDelete;
-            setError(null);
-            setPendingId(target.id);
-            startTransition(async () => {
-              try {
-                await deleteCustomSupplement(target.id);
-                commit(supplements.filter((row) => row.id !== target.id));
-                setPendingDelete(null);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "Could not delete.");
-                setPendingDelete(null);
-              } finally {
-                setPendingId(null);
-              }
-            });
-          }}
-        />
-      ) : null}
-    </section>
-  );
-}
-
 function MuscleSheet({
   initial,
   onClose,
@@ -632,67 +504,6 @@ function ExerciseSheet({
               const row = initial
                 ? await updateCustomExercise({ id: initial.id, ...parsed })
                 : await createCustomExercise(parsed);
-              onSave(row);
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not save.");
-            }
-          });
-        }}
-      >
-        {pending ? "Saving…" : "Save"}
-      </button>
-    </BottomSheet>
-  );
-}
-
-function SupplementSheet({
-  initial,
-  onClose,
-  onSave,
-}: {
-  initial: CustomSupplementPayload | null;
-  onClose: () => void;
-  onSave: (row: CustomSupplementPayload) => void;
-}) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [dose, setDose] = useState(initial?.defaultDose ?? "");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  return (
-    <BottomSheet title={initial ? "Edit supplement" : "Add supplement"} onClose={onClose}>
-      <label className="mb-3 block">
-        <span className="mb-1 block text-sm font-semibold text-ink">Name</span>
-        <input value={name} onChange={(event) => setName(event.target.value)} className={INPUT_CLS} />
-      </label>
-      <label className="mb-4 block">
-        <span className="mb-1 block text-sm font-semibold text-ink">Default dose</span>
-        <input
-          value={dose}
-          onChange={(event) => setDose(event.target.value)}
-          placeholder="5g, 1 scoop…"
-          className={INPUT_CLS}
-        />
-      </label>
-      {error ? (
-        <p role="alert" className="mb-3 text-sm text-danger">
-          {error}
-        </p>
-      ) : null}
-      <button
-        type="button"
-        disabled={pending}
-        className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark`}
-        onClick={() => {
-          startTransition(async () => {
-            try {
-              const parsed = parseCustomSupplementInput({
-                name,
-                defaultDose: dose,
-              });
-              const row = initial
-                ? await updateCustomSupplement({ id: initial.id, ...parsed })
-                : await createCustomSupplement(parsed);
               onSave(row);
             } catch (err) {
               setError(err instanceof Error ? err.message : "Could not save.");

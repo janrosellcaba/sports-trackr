@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { login } from "@/app/actions/auth";
 import { PasswordField } from "@/components/auth/PasswordField";
+import { SUPPORT_EMAIL } from "@/lib/contact";
 import { INPUT_CLS, PRIMARY_BTN } from "@/lib/ui";
 
 function SubmitButton() {
@@ -75,6 +76,15 @@ export function LoginForm() {
       >
         New here? Create an account
       </Link>
+      <p className="text-center text-xs text-muted">
+        Contact support{" "}
+        <a
+          href={`mailto:${SUPPORT_EMAIL}`}
+          className="font-medium text-brand-text hover:underline"
+        >
+          {SUPPORT_EMAIL}
+        </a>
+      </p>
     </form>
   );
 }

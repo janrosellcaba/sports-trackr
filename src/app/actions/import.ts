@@ -32,7 +32,6 @@ export type ImportSummary = {
   supplementsSkipped: number;
   exercisesUpserted: number;
   snapshotsUpserted: number;
-  catalogSupplementsUpserted: number;
   preferencesUpdated: boolean;
 };
 
@@ -76,7 +75,6 @@ async function applyImport(
     supplementsSkipped: 0,
     exercisesUpserted: 0,
     snapshotsUpserted: 0,
-    catalogSupplementsUpserted: 0,
     preferencesUpdated: false,
   };
 
@@ -230,34 +228,6 @@ async function applyImport(
       });
       summary.snapshotsUpserted += 1;
     }
-  }
-
-  const catalogSupplements = await tx.customSupplement.findMany({
-    where: { userId },
-  });
-  const supplementsByKey = new Map(
-    catalogSupplements.map((row) => [row.nameKey, row]),
-  );
-  for (const item of data.customSupplements) {
-    const key = nameKey(item.name);
-    const existing = supplementsByKey.get(key);
-    if (existing) {
-      await tx.customSupplement.update({
-        where: { id: existing.id },
-        data: { name: item.name, defaultDose: item.defaultDose },
-      });
-    } else {
-      const created = await tx.customSupplement.create({
-        data: {
-          userId,
-          name: item.name,
-          nameKey: key,
-          defaultDose: item.defaultDose,
-        },
-      });
-      supplementsByKey.set(key, created);
-    }
-    summary.catalogSupplementsUpserted += 1;
   }
 
   return summary;

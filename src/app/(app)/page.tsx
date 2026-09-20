@@ -26,7 +26,6 @@ export default async function HomePage({
       recovery={state.recovery}
       muscles={state.muscles}
       customExercises={state.customExercises}
-      customSupplements={state.customSupplements}
     />
   );
 }

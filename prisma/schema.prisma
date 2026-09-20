@@ -23,7 +23,6 @@ model User {
   supplements       SupplementIntake[]
   muscles           Muscle[]
   customExercises   CustomExercise[]
-  customSupplements CustomSupplement[]
 }
 
 model Session {
@@ -143,16 +142,3 @@ model ExerciseSnapshot {
   @@index([exerciseId])
 }
 
-model CustomSupplement {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  nameKey     String
-  defaultDose String
-  iconOrType  String   @default("pill")
-  createdAt   DateTime @default(now())
-
-  @@unique([userId, nameKey])
-  @@index([userId])
-}

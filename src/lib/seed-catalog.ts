@@ -1,4 +1,4 @@
-import { defaultExerciseSeeds, defaultSupplementSeeds } from "@/lib/catalog";
+import { defaultExerciseSeeds } from "@/lib/catalog";
 import { DEFAULT_MUSCLES } from "@/lib/muscles";
 import { nameKey } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
@@ -48,19 +48,12 @@ export async function seedUserCatalog(userId: string): Promise<void> {
     muscles.map((item) => [item.name.toLowerCase(), item.id]),
   );
 
-  const [exercises, supplements] = await Promise.all([
-    prisma.customExercise.findMany({
-      where: { userId },
-      select: { nameKey: true },
-    }),
-    prisma.customSupplement.findMany({
-      where: { userId },
-      select: { nameKey: true },
-    }),
-  ]);
+  const exercises = await prisma.customExercise.findMany({
+    where: { userId },
+    select: { nameKey: true },
+  });
 
   const existingExercises = new Set(exercises.map((item) => item.nameKey));
-  const existingSupplements = new Set(supplements.map((item) => item.nameKey));
 
   const exerciseCreates = defaultExerciseSeeds()
     .filter((item) => !existingExercises.has(nameKey(item.name)))
@@ -72,22 +65,9 @@ export async function seedUserCatalog(userId: string): Promise<void> {
       dualWeights: item.dualWeights,
     }));
 
-  const supplementCreates = defaultSupplementSeeds()
-    .filter((item) => !existingSupplements.has(nameKey(item.name)))
-    .map((item) => ({
-      userId,
-      name: item.name,
-      nameKey: nameKey(item.name),
-      defaultDose: item.defaultDose,
-      iconOrType: "pill",
-    }));
-
   await prisma.$transaction([
     ...(exerciseCreates.length > 0
       ? [prisma.customExercise.createMany({ data: exerciseCreates })]
-      : []),
-    ...(supplementCreates.length > 0
-      ? [prisma.customSupplement.createMany({ data: supplementCreates })]
       : []),
     prisma.user.update({
       where: { id: userId },

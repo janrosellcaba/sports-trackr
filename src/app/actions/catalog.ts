@@ -3,7 +3,6 @@
 import { requireUser } from "@/app/actions/auth";
 import {
   parseCustomExerciseInput,
-  parseCustomSupplementInput,
   parseNewMuscleName,
   parsePersonalRecordInput,
 } from "@/lib/catalog";
@@ -15,7 +14,6 @@ import { isUniqueConstraintError } from "@/lib/prisma-errors";
 import { revalidateApp } from "@/lib/revalidate";
 import type {
   CustomExercisePayload,
-  CustomSupplementPayload,
   MusclePayload,
 } from "@/types/trackr";
 
@@ -61,22 +59,6 @@ function serializeExercise(row: {
   };
 }
 
-function serializeSupplement(row: {
-  id: string;
-  name: string;
-  defaultDose: string;
-  iconOrType: string;
-  createdAt: Date;
-}): CustomSupplementPayload {
-  return {
-    id: row.id,
-    name: row.name,
-    defaultDose: row.defaultDose,
-    iconOrType: row.iconOrType,
-    createdAt: row.createdAt.toISOString(),
-  };
-}
-
 const exerciseInclude = { muscle: { select: { name: true } } };
 
 export async function listMusclesForUser(userId: string): Promise<MusclePayload[]> {
@@ -96,16 +78,6 @@ export async function listCustomExercisesForUser(
     include: exerciseInclude,
   });
   return rows.map(serializeExercise);
-}
-
-export async function listCustomSupplementsForUser(
-  userId: string,
-): Promise<CustomSupplementPayload[]> {
-  const rows = await prisma.customSupplement.findMany({
-    where: { userId },
-    orderBy: { name: "asc" },
-  });
-  return rows.map(serializeSupplement);
 }
 
 export async function listMuscles(): Promise<MusclePayload[]> {
@@ -215,11 +187,6 @@ export async function moveMuscle(
 export async function listCustomExercises(): Promise<CustomExercisePayload[]> {
   const user = await requireUser();
   return listCustomExercisesForUser(user.id);
-}
-
-export async function listCustomSupplements(): Promise<CustomSupplementPayload[]> {
-  const user = await requireUser();
-  return listCustomSupplementsForUser(user.id);
 }
 
 async function snapshotExercise(input: {
@@ -462,75 +429,5 @@ export async function deleteCustomExercise(id: string): Promise<void> {
     where: { id, userId: user.id },
   });
   if (result.count === 0) throw new Error("Custom exercise not found.");
-  revalidateApp();
-}
-
-export async function createCustomSupplement(input: {
-  name: string;
-  defaultDose: string;
-  iconOrType?: string;
-}): Promise<CustomSupplementPayload> {
-  const user = await requireUser();
-  const parsed = parseCustomSupplementInput(input);
-  try {
-    const row = await prisma.customSupplement.create({
-      data: {
-        userId: user.id,
-        name: parsed.name,
-        nameKey: nameKey(parsed.name),
-        defaultDose: parsed.defaultDose,
-        iconOrType: parsed.iconOrType,
-      },
-    });
-    revalidateApp();
-    return serializeSupplement(row);
-  } catch (error) {
-    if (isUniqueConstraintError(error)) {
-      throw new Error("A supplement with that name already exists.");
-    }
-    throw error;
-  }
-}
-
-export async function updateCustomSupplement(input: {
-  id: string;
-  name: string;
-  defaultDose: string;
-  iconOrType?: string;
-}): Promise<CustomSupplementPayload> {
-  const user = await requireUser();
-  const parsed = parseCustomSupplementInput(input);
-  const existing = await prisma.customSupplement.findFirst({
-    where: { id: input.id, userId: user.id },
-    select: { id: true },
-  });
-  if (!existing) throw new Error("Custom supplement not found.");
-
-  try {
-    const row = await prisma.customSupplement.update({
-      where: { id: input.id },
-      data: {
-        name: parsed.name,
-        nameKey: nameKey(parsed.name),
-        defaultDose: parsed.defaultDose,
-        iconOrType: parsed.iconOrType,
-      },
-    });
-    revalidateApp();
-    return serializeSupplement(row);
-  } catch (error) {
-    if (isUniqueConstraintError(error)) {
-      throw new Error("A supplement with that name already exists.");
-    }
-    throw error;
-  }
-}
-
-export async function deleteCustomSupplement(id: string): Promise<void> {
-  const user = await requireUser();
-  const result = await prisma.customSupplement.deleteMany({
-    where: { id, userId: user.id },
-  });
-  if (result.count === 0) throw new Error("Custom supplement not found.");
   revalidateApp();
 }

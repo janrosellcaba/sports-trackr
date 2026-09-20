@@ -14,6 +14,18 @@ export const LOGIN_RATE_LIMIT = {
   windowMs: 15 * 60 * 1000,
 };
 
+export const CONTACT_RATE_LIMIT = {
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000,
+};
+
+type ContactWindow = {
+  count: number;
+  windowStart: number;
+};
+
+const contactWindows = new Map<string, ContactWindow>();
+
 function prune(now: number) {
   for (const [key, bucket] of buckets) {
     if (bucket.blockedUntil > 0 && bucket.blockedUntil <= now && bucket.failures === 0) {
@@ -52,6 +64,44 @@ export function clearAuthFailures(key: string) {
   buckets.delete(key);
 }
 
+function pruneContact(now: number) {
+  for (const [key, entry] of contactWindows) {
+    if (now - entry.windowStart >= CONTACT_RATE_LIMIT.windowMs) {
+      contactWindows.delete(key);
+    }
+  }
+}
+
+export function assertContactNotRateLimited(
+  key: string,
+  now = Date.now(),
+): RateLimitResult {
+  pruneContact(now);
+  const entry = contactWindows.get(key);
+  if (!entry || entry.count < CONTACT_RATE_LIMIT.maxAttempts) {
+    return { ok: true };
+  }
+  const minutes = Math.max(
+    1,
+    Math.ceil((CONTACT_RATE_LIMIT.windowMs - (now - entry.windowStart)) / 60000),
+  );
+  return {
+    ok: false,
+    error: `Too many messages. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+  };
+}
+
+export function recordContactAttempt(key: string, now = Date.now()) {
+  pruneContact(now);
+  const existing = contactWindows.get(key);
+  if (!existing) {
+    contactWindows.set(key, { count: 1, windowStart: now });
+    return;
+  }
+  existing.count += 1;
+}
+
 export function resetRateLimitForTests() {
   buckets.clear();
+  contactWindows.clear();
 }

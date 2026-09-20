@@ -9,10 +9,10 @@ import { SETTINGS_SECTIONS, type SettingsSection } from "@/lib/settings";
 const TITLES: Record<Exclude<SettingsSection, "menu">, string> = {
   muscles: "Muscles",
   exercises: "Exercises",
-  supplements: "Supplements",
   appearance: "Appearance",
   data: "Data",
   account: "Account",
+  support: "Contact support",
 };
 
 export async function generateMetadata({
@@ -44,7 +44,6 @@ export default async function SettingsSectionPage({
       section={section as SettingsSection}
       muscles={catalog.muscles}
       customExercises={catalog.customExercises}
-      customSupplements={catalog.customSupplements}
       sessions={sessions}
     />
   );

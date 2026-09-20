@@ -3,7 +3,6 @@
 import { requireUser } from "@/app/actions/auth";
 import {
   listCustomExercisesForUser,
-  listCustomSupplementsForUser,
   listMusclesForUser,
 } from "@/app/actions/catalog";
 import { seedUserCatalog } from "@/lib/seed-catalog";
@@ -26,7 +25,6 @@ import {
 import { daysBetween } from "@/lib/recovery";
 import type {
   CustomExercisePayload,
-  CustomSupplementPayload,
   GymSessionPayload,
   MusclePayload,
   MuscleRecoveryPayload,
@@ -44,7 +42,6 @@ export type HomeDayState = {
   recovery: MuscleRecoveryPayload[];
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
-  customSupplements: CustomSupplementPayload[];
 };
 
 export type LogState = {
@@ -58,7 +55,6 @@ export type LogState = {
 export type CatalogState = {
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
-  customSupplements: CustomSupplementPayload[];
 };
 
 export async function getHomeDayState(
@@ -76,7 +72,6 @@ export async function getHomeDayState(
     latestHits,
     muscles,
     customExercises,
-    customSupplements,
   ] = await Promise.all([
     findGymSessionByDate(user.id, date),
     listSportsForDate(user.id, date),
@@ -85,7 +80,6 @@ export async function getHomeDayState(
     listLatestHitsBeforeDate(user.id, date),
     listMusclesForUser(user.id),
     listCustomExercisesForUser(user.id),
-    listCustomSupplementsForUser(user.id),
   ]);
 
   return {
@@ -101,7 +95,6 @@ export async function getHomeDayState(
     })),
     muscles,
     customExercises,
-    customSupplements,
   };
 }
 
@@ -127,10 +120,9 @@ export async function getLogState(): Promise<LogState> {
 export async function getCatalogState(): Promise<CatalogState> {
   const user = await requireUser();
   await seedUserCatalog(user.id);
-  const [muscles, customExercises, customSupplements] = await Promise.all([
+  const [muscles, customExercises] = await Promise.all([
     listMusclesForUser(user.id),
     listCustomExercisesForUser(user.id),
-    listCustomSupplementsForUser(user.id),
   ]);
-  return { muscles, customExercises, customSupplements };
+  return { muscles, customExercises };
 }

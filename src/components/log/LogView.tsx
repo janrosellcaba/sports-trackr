@@ -5,25 +5,23 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, Trash2 } from "lucide-react";
 import { deleteGymSession } from "@/app/actions/gym";
 import { deleteSport } from "@/app/actions/sports";
-import { deleteSupplement, updateSupplement } from "@/app/actions/supplements";
+import { deleteSupplement } from "@/app/actions/supplements";
 import { GymBar } from "@/components/gym/GymBar";
 import { SportFormSheet } from "@/components/sports/SportsBar";
-import { BottomSheet } from "@/components/ui/BottomSheet";
+import { SupplementFormSheet } from "@/components/supplements/SupplementBar";
 import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
-import { DateField } from "@/components/ui/DayPicker";
 import { formatDisplayDate } from "@/lib/calculations";
 import { useLatestProps } from "@/lib/use-latest-props";
 import { formatGymSummary } from "@/lib/muscles";
 import { formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
+import { supplementFromName } from "@/lib/supplements";
 import { useUnits } from "@/components/units/UnitsProvider";
 import {
   CARD_CLS,
   DANGER_BTN,
   GHOST_BTN,
-  INPUT_CLS,
   LABEL_CLS,
   PAGE_TITLE,
-  PRIMARY_BTN,
 } from "@/lib/ui";
 import type {
   GymSessionPayload,
@@ -97,6 +95,9 @@ export function LogView({
   });
 
   const editingSportDef = editingSport ? sportDefinition(editingSport.type) : null;
+  const editingSupplementKind = editingSupplement
+    ? supplementFromName(editingSupplement.name)
+    : null;
 
   function refresh() {
     router.refresh();
@@ -336,13 +337,15 @@ export function LogView({
                                   {intake.name} · {intake.dose}
                                 </p>
                                 <span className="flex shrink-0 gap-1">
-                                  <button
-                                    type="button"
-                                    className={GHOST_BTN}
-                                    onClick={() => setEditingSupplement(intake)}
-                                  >
-                                    Edit
-                                  </button>
+                                  {supplementFromName(intake.name) ? (
+                                    <button
+                                      type="button"
+                                      className={GHOST_BTN}
+                                      onClick={() => setEditingSupplement(intake)}
+                                    >
+                                      Edit
+                                    </button>
+                                  ) : null}
                                   <button
                                     type="button"
                                     disabled={pendingId != null}
@@ -395,9 +398,11 @@ export function LogView({
         />
       ) : null}
 
-      {editingSupplement ? (
-        <SupplementEditSheet
-          intake={editingSupplement}
+      {editingSupplement && editingSupplementKind ? (
+        <SupplementFormSheet
+          date={editingSupplement.date}
+          kind={editingSupplementKind}
+          initial={editingSupplement}
           onClose={() => setEditingSupplement(null)}
           onSave={(intake) => {
             setSuppRows((current) =>
@@ -419,62 +424,5 @@ export function LogView({
         />
       ) : null}
     </div>
-  );
-}
-
-function SupplementEditSheet({
-  intake,
-  onClose,
-  onSave,
-}: {
-  intake: SupplementPayload;
-  onClose: () => void;
-  onSave: (intake: SupplementPayload) => void;
-}) {
-  const [name, setName] = useState(intake.name);
-  const [dose, setDose] = useState(intake.dose);
-  const [date, setDate] = useState(intake.date);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  return (
-    <BottomSheet title="Edit supplement" onClose={onClose}>
-      <label className="mb-3 block">
-        <span className="mb-1 block text-sm font-semibold text-ink">Name</span>
-        <input value={name} onChange={(event) => setName(event.target.value)} className={INPUT_CLS} />
-      </label>
-      <label className="mb-3 block">
-        <span className="mb-1 block text-sm font-semibold text-ink">Dose</span>
-        <input value={dose} onChange={(event) => setDose(event.target.value)} className={INPUT_CLS} />
-      </label>
-      <DateField value={date} onChange={setDate} />
-      {error ? (
-        <p role="alert" className="mb-3 text-sm font-medium text-danger">
-          {error}
-        </p>
-      ) : null}
-      <button
-        type="button"
-        disabled={pending}
-        className={`${PRIMARY_BTN} w-full bg-brand hover:bg-brand-dark`}
-        onClick={() => {
-          startTransition(async () => {
-            try {
-              const next = await updateSupplement({
-                id: intake.id,
-                name,
-                dose,
-                date,
-              });
-              onSave(next);
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Could not save.");
-            }
-          });
-        }}
-      >
-        {pending ? "Saving…" : "Save"}
-      </button>
-    </BottomSheet>
   );
 }

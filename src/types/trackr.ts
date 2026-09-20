@@ -61,14 +61,6 @@ export type CustomExercisePayload = {
   createdAt: string;
 };
 
-export type CustomSupplementPayload = {
-  id: string;
-  name: string;
-  defaultDose: string;
-  iconOrType: string;
-  createdAt: string;
-};
-
 export type { AnalyticsPeriod } from "@/lib/analytics";
 
 export type NotebookExercise = {

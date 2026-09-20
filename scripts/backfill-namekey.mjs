@@ -21,7 +21,7 @@ const tables = db
   .all();
 console.log(tables.map((row) => row.name).join(", "));
 
-for (const table of ["Muscle", "CustomExercise", "CustomSupplement"]) {
+for (const table of ["Muscle", "CustomExercise"]) {
   if (tables.some((row) => row.name === table)) addNameKey(table);
 }
 

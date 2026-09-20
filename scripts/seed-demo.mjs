@@ -48,14 +48,6 @@ const EXERCISES = [
   { name: "Hanging Leg Raise", muscle: "Abs", workingWeight: 0, workingReps: 10, prWeight: 0, prReps: 15 },
 ];
 
-const SUPPLEMENTS = [
-  { name: "Whey protein", defaultDose: "1 scoop" },
-  { name: "Creatine", defaultDose: "5g" },
-  { name: "Pre-workout", defaultDose: "1 scoop" },
-  { name: "Electrolytes", defaultDose: "1 tab" },
-  { name: "Omega-3", defaultDose: "2 caps" },
-];
-
 const PUSH = [
   ["Chest", 4],
   ["Shoulders", 3],
@@ -149,12 +141,6 @@ async function main() {
             name,
             nameKey: nameKey(name),
             sortOrder,
-          })),
-        },
-        customSupplements: {
-          create: SUPPLEMENTS.map((item) => ({
-            ...item,
-            nameKey: nameKey(item.name),
           })),
         },
       },
@@ -257,21 +243,15 @@ async function main() {
       }
 
       if (ago % 2 === 0 || weekday !== 0) {
-        supplements.push({ userId: user.id, name: "Creatine", dose: "5g", date });
-      }
-      if (weekday === 1 || weekday === 3 || weekday === 5 || weekday === 2) {
-        supplements.push({ userId: user.id, name: "Omega-3", dose: "2 caps", date });
+        supplements.push({ userId: user.id, name: "Coffee", dose: "Medium", date });
       }
       if (template) {
-        supplements.push({ userId: user.id, name: "Whey protein", dose: "1 scoop", date });
-        if (weekday !== 2) {
-          supplements.push({ userId: user.id, name: "Pre-workout", dose: "1 scoop", date });
-        }
+        supplements.push({ userId: user.id, name: "Protein shake", dose: "24g", date });
       } else if (weekday === 6 || weekday === 0) {
-        supplements.push({ userId: user.id, name: "Whey protein", dose: "1 scoop", date });
+        supplements.push({ userId: user.id, name: "Protein shake", dose: "24g", date });
       }
       if (weekday === 6 || (weekday === 0 && week % 2 === 0)) {
-        supplements.push({ userId: user.id, name: "Electrolytes", dose: "1 tab", date });
+        supplements.push({ userId: user.id, name: "Energy drink", dose: "250ml", date });
       }
 
       if (weekday === 2 && week % 2 === 0) {

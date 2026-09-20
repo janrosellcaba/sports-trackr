@@ -22,6 +22,9 @@ Open [http://localhost:3000](http://localhost:3000). Phone testing on the LAN ho
 | `DATABASE_URL` | yes | SQLite file URL, e.g. `file:./dev.db` |
 | `AUTH_SECRET` | yes | At least 16 characters. Used to sign session JWTs. |
 | `REGISTRATION_CODE` | yes | Invite code for `/register`. Compared in constant time. |
+| `RESEND_API_KEY` | no | Resend key for Settings → Contact support. Leave empty to disable sending. |
+| `CONTACT_EMAIL` | no | Inbox for support messages. Defaults to `jan@janrosell.com`. |
+| `RESEND_FROM` | no | Verified From address. Defaults to `onboarding@resend.dev`. |
 
 Development falls back to insecure defaults so `npm run dev` works without a filled `.env`. Those defaults are rejected in production.
 
@@ -38,7 +41,7 @@ Creates user `test` / `test` with ~90 days of gym, sports, supplements, and PR s
 - `/` Home for a day (`?date=YYYY-MM-DD`)
 - `/log` Full history
 - `/analytics` Period via `?period=7|30|90|0`
-- `/settings/...` Muscles, exercises, supplements, appearance (including kg/lb and km/mi), export/import, account
+- `/settings/...` Muscles, exercises, appearance (including kg/lb and km/mi), export/import, account, contact support
 - `/login` and `/register`
 
 Sessions live in SQLite and are revoked on logout. Writes go through server actions. The service worker caches icons and an offline page only — it does not cache logged-in HTML and does not queue logs offline. Weights are stored in kilograms and distances in km/meters; Appearance can display pounds and miles.

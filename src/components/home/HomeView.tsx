@@ -12,7 +12,6 @@ import { DayPicker } from "@/components/ui/DayPicker";
 import { useLatestProps } from "@/lib/use-latest-props";
 import type {
   CustomExercisePayload,
-  CustomSupplementPayload,
   GymSessionPayload,
   MusclePayload,
   MuscleRecoveryPayload,
@@ -30,7 +29,6 @@ export function HomeView({
   recovery,
   muscles,
   customExercises,
-  customSupplements,
 }: {
   today: string;
   date: string;
@@ -41,7 +39,6 @@ export function HomeView({
   recovery: MuscleRecoveryPayload[];
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
-  customSupplements: CustomSupplementPayload[];
 }) {
   const router = useRouter();
   const [dayGym, setDayGym] = useLatestProps(gym);
@@ -91,7 +88,6 @@ export function HomeView({
       <SupplementBar
         date={date}
         intakes={daySupplements}
-        customSupplements={customSupplements}
         onChange={(intakes) => {
           setDaySupplements(intakes);
           router.refresh();

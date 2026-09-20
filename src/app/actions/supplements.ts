@@ -5,7 +5,7 @@ import { isDateKey } from "@/lib/calculations";
 import { getRequestToday } from "@/lib/request-today";
 import { prisma } from "@/lib/prisma";
 import { revalidateApp } from "@/lib/revalidate";
-import { MAX_TEXT_FIELD } from "@/lib/constants";
+import { parseSupplementIntakeInput } from "@/lib/supplements";
 import {
   listSupplementsForDate,
   listSupplementsForUser,
@@ -13,36 +13,25 @@ import {
 } from "@/lib/db/activity";
 import type { SupplementPayload } from "@/types/trackr";
 
-function parseIntakeFields(nameRaw: string, doseRaw: string) {
-  const name = nameRaw.trim();
-  const dose = doseRaw.trim();
-  if (!name) throw new Error("Supplement name is required.");
-  if (!dose) throw new Error("Dose is required.");
-  if (name.length > MAX_TEXT_FIELD) {
-    throw new Error(`Name must be ${MAX_TEXT_FIELD} characters or fewer.`);
-  }
-  if (dose.length > MAX_TEXT_FIELD) {
-    throw new Error(`Dose must be ${MAX_TEXT_FIELD} characters or fewer.`);
-  }
-  return { name, dose };
-}
-
 export async function logSupplement(input: {
-  name: string;
-  dose: string;
+  type: string;
+  amount: string;
   date?: string;
 }): Promise<SupplementPayload> {
   const user = await requireUser();
-  const { name, dose } = parseIntakeFields(input.name, input.dose);
   const date = input.date ?? (await getRequestToday());
-  if (!isDateKey(date)) throw new Error("Invalid date.");
+  const parsed = parseSupplementIntakeInput({
+    type: input.type,
+    amount: input.amount,
+    date,
+  });
 
   const intake = await prisma.supplementIntake.create({
     data: {
       userId: user.id,
-      name,
-      dose,
-      date,
+      name: parsed.name,
+      dose: parsed.dose,
+      date: parsed.date,
     },
   });
 
@@ -68,14 +57,17 @@ export async function getSupplementsForDate(
 
 export async function updateSupplement(input: {
   id: string;
-  name: string;
-  dose: string;
+  type: string;
+  amount: string;
   date?: string;
 }): Promise<SupplementPayload> {
   const user = await requireUser();
-  const { name, dose } = parseIntakeFields(input.name, input.dose);
   const date = input.date ?? (await getRequestToday());
-  if (!isDateKey(date)) throw new Error("Invalid date.");
+  const parsed = parseSupplementIntakeInput({
+    type: input.type,
+    amount: input.amount,
+    date,
+  });
 
   const existing = await prisma.supplementIntake.findFirst({
     where: { id: input.id, userId: user.id },
@@ -85,7 +77,7 @@ export async function updateSupplement(input: {
 
   const row = await prisma.supplementIntake.update({
     where: { id: input.id },
-    data: { name, dose, date },
+    data: { name: parsed.name, dose: parsed.dose, date: parsed.date },
   });
 
   revalidateApp();

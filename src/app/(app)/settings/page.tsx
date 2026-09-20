@@ -14,7 +14,6 @@ export default async function SettingsPage() {
       section="menu"
       muscles={catalog.muscles}
       customExercises={catalog.customExercises}
-      customSupplements={catalog.customSupplements}
     />
   );
 }

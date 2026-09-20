@@ -44,10 +44,6 @@ export type TrackrExportPayload = {
       prReps: number | null;
     }>;
   }>;
-  customSupplements?: Array<{
-    name: string;
-    defaultDose: string;
-  }>;
   preferences?: {
     massUnit?: string;
     distanceUnit?: string;
@@ -163,12 +159,6 @@ export function buildExportCsv(data: TrackrExportPayload): string {
           snap.prReps ?? "",
         ]),
       ),
-    ),
-    "",
-    "# customSupplements",
-    rowsToCsv(
-      ["name", "defaultDose"],
-      (data.customSupplements ?? []).map((item) => [item.name, item.defaultDose]),
     ),
   ].join("\n");
 }

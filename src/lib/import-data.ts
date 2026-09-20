@@ -2,7 +2,7 @@ import { isDateKey } from "@/lib/calculations";
 import { parseIntensity, parseMuscleName } from "@/lib/muscles";
 import { nameKey } from "@/lib/names";
 import { MAX_TEXT_FIELD } from "@/lib/constants";
-import { parseDualWeightsFlag, validateExerciseName, validateSupplementName } from "@/lib/catalog";
+import { parseDualWeightsFlag, validateExerciseName } from "@/lib/catalog";
 import {
   EFFORT_LEVELS,
   isSportTypeId,
@@ -20,7 +20,6 @@ const MAX_SPORTS = 4000;
 const MAX_SUPPLEMENTS = 8000;
 const MAX_EXERCISES = 200;
 const MAX_SNAPSHOTS = 2000;
-const MAX_CUSTOM_SUPPLEMENTS = 80;
 
 export type ImportSnapshot = {
   date: string;
@@ -63,7 +62,6 @@ export type NormalizedImport = {
     dualWeights?: boolean;
     snapshots: ImportSnapshot[];
   }>;
-  customSupplements: Array<{ name: string; defaultDose: string }>;
 };
 
 export type ImportParseResult =
@@ -279,22 +277,6 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
       throw new Error(`Too many exercise snapshots to import (max ${MAX_SNAPSHOTS}).`);
     }
 
-    const customSupplements = asArray(payload.customSupplements).map((row, index) => {
-      const item = asRecord(row);
-      if (!item) throw new Error(`Catalog supplement ${index + 1} is invalid.`);
-      const nameError = validateSupplementName(String(item.name ?? ""));
-      if (nameError) throw new Error(`Catalog supplement ${index + 1}: ${nameError}`);
-      const defaultDose = boundedText(
-        String(item.defaultDose ?? "").trim(),
-        `Catalog supplement ${index + 1} dose`,
-      );
-      if (!defaultDose) throw new Error(`Catalog supplement ${index + 1} needs a default dose.`);
-      return { name: String(item.name).trim(), defaultDose };
-    });
-    if (customSupplements.length > MAX_CUSTOM_SUPPLEMENTS) {
-      throw new Error(`Too many catalog supplements to import (max ${MAX_CUSTOM_SUPPLEMENTS}).`);
-    }
-
     const prefs = asRecord(payload.preferences);
     const massUnit = prefs && isMassUnit(prefs.massUnit) ? prefs.massUnit : null;
     const distanceUnit =
@@ -306,7 +288,6 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
       sports.length === 0 &&
       supplements.length === 0 &&
       exercises.length === 0 &&
-      customSupplements.length === 0 &&
       massUnit == null &&
       distanceUnit == null;
     if (empty) return { ok: false, error: "Nothing to import in that file." };
@@ -320,7 +301,6 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
         sports,
         supplements,
         exercises,
-        customSupplements,
       },
     };
   } catch (error) {

@@ -3,13 +3,7 @@ import { isDateKey } from "@/lib/calculations";
 import { parseMuscleName, sameMuscleName } from "@/lib/muscles";
 import { parseOptionalDecimal } from "@/lib/numbers";
 import { formatMass, type MassUnit } from "@/lib/units";
-import type { CustomExercisePayload, CustomSupplementPayload } from "@/types/trackr";
-
-export const SUPPLEMENT_CATALOG = [
-  { name: "Whey protein", defaultDose: "1 scoop" },
-  { name: "Creatine", defaultDose: "5g" },
-  { name: "Pre-workout", defaultDose: "1 scoop" },
-] as const;
+import type { CustomExercisePayload } from "@/types/trackr";
 
 export function defaultExerciseSeeds(): Array<{
   name: string;
@@ -23,25 +17,11 @@ export function defaultExerciseSeeds(): Array<{
   }));
 }
 
-export function defaultSupplementSeeds(): Array<{
-  name: string;
-  defaultDose: string;
-}> {
-  return SUPPLEMENT_CATALOG.map((item) => ({
-    name: item.name,
-    defaultDose: item.defaultDose,
-  }));
-}
-
 export function validateExerciseName(name: string): string | null {
   const trimmed = name.trim();
   if (trimmed.length < 2) return "Name must be at least 2 characters.";
   if (trimmed.length > 80) return "Name must be 80 characters or fewer.";
   return null;
-}
-
-export function validateSupplementName(name: string): string | null {
-  return validateExerciseName(name);
 }
 
 function parseOptionalWeight(value: number | string | null | undefined, label: string): number | null {
@@ -185,29 +165,6 @@ export function isImprovedPersonalRecord(
   );
 }
 
-export type ParsedCustomSupplement = {
-  name: string;
-  defaultDose: string;
-  iconOrType: string;
-};
-
-export function parseCustomSupplementInput(input: {
-  name: string;
-  defaultDose: string;
-  iconOrType?: string;
-}): ParsedCustomSupplement {
-  const nameError = validateSupplementName(input.name);
-  if (nameError) throw new Error(nameError);
-  const dose = input.defaultDose.trim();
-  if (!dose) throw new Error("Default dose is required.");
-  if (dose.length > 80) throw new Error("Dose must be 80 characters or fewer.");
-  return {
-    name: input.name.trim(),
-    defaultDose: dose,
-    iconOrType: input.iconOrType?.trim() || "pill",
-  };
-}
-
 export function formatLift(
   weight: number | null | undefined,
   reps: number | null | undefined,
@@ -271,25 +228,5 @@ export function mergeExerciseCatalog(custom: CustomExercisePayload[]): CatalogEx
       prWeight: item.prWeight,
       prReps: item.prReps,
       dualWeights: item.dualWeights,
-    }));
-}
-
-export type CatalogSupplement = {
-  id: string;
-  name: string;
-  source: "builtin" | "custom";
-  defaultDose: string;
-};
-
-export function mergeSupplementCatalog(
-  custom: CustomSupplementPayload[],
-): CatalogSupplement[] {
-  return [...custom]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      source: "custom" as const,
-      defaultDose: item.defaultDose,
     }));
 }

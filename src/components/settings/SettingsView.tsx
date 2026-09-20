@@ -9,9 +9,9 @@ import {
   Download,
   Dumbbell,
   Grid3x3,
+  LifeBuoy,
   LogOut,
   Palette,
-  Pill,
   User,
 } from "lucide-react";
 import { logout } from "@/app/actions/auth";
@@ -24,8 +24,8 @@ import { AdminPanel } from "@/components/settings/AdminPanel";
 import {
   ExerciseCatalogView,
   MuscleCatalogView,
-  SupplementCatalogView,
 } from "@/components/settings/CatalogViews";
+import { SupportView } from "@/components/settings/SupportView";
 import { confirmsUsername, isAdminUser } from "@/lib/auth-logic";
 import { buildExportCsv } from "@/lib/export-data";
 import type { SettingsSection } from "@/lib/settings";
@@ -33,7 +33,6 @@ import { CARD_CLS, INPUT_CLS, LABEL_CLS, PAGE_TITLE, PRIMARY_BTN } from "@/lib/u
 import type { AuthUser } from "@/lib/auth";
 import type {
   CustomExercisePayload,
-  CustomSupplementPayload,
   MusclePayload,
 } from "@/types/trackr";
 
@@ -44,7 +43,7 @@ const PAGES: {
   id: Exclude<SettingsSection, "menu">;
   label: string;
   hint: string;
-  icon: typeof Pill;
+  icon: typeof Dumbbell;
 }[] = [
   {
     id: "muscles",
@@ -57,12 +56,6 @@ const PAGES: {
     label: "Exercises",
     hint: "Lift catalog",
     icon: Dumbbell,
-  },
-  {
-    id: "supplements",
-    label: "Supplements",
-    hint: "Tap buttons on Home",
-    icon: Pill,
   },
   {
     id: "appearance",
@@ -82,6 +75,12 @@ const PAGES: {
     hint: "Password, devices, delete",
     icon: User,
   },
+  {
+    id: "support",
+    label: "Contact support",
+    hint: "Help, bug, or idea",
+    icon: LifeBuoy,
+  },
 ];
 
 export function SettingsView({
@@ -89,14 +88,12 @@ export function SettingsView({
   section,
   muscles,
   customExercises,
-  customSupplements,
   sessions = [],
 }: {
   user: AuthUser;
   section: SettingsSection;
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
-  customSupplements: CustomSupplementPayload[];
   sessions?: AccountSession[];
 }) {
   if (section !== "menu") {
@@ -116,15 +113,6 @@ export function SettingsView({
             description="Tap these after a gym session. Add Calves, or split Back into Lats and Traps, whenever you want."
           >
             <MuscleCatalogView initial={muscles} />
-          </SectionIntro>
-        ) : null}
-
-        {section === "supplements" ? (
-          <SectionIntro
-            title="Supplements"
-            description="These become the tap buttons on Home. Edit dose or remove ones you don’t use."
-          >
-            <SupplementCatalogView initial={customSupplements} />
           </SectionIntro>
         ) : null}
 
@@ -156,6 +144,15 @@ export function SettingsView({
           </SectionIntro>
         ) : null}
 
+        {section === "support" ? (
+          <SectionIntro
+            title="Contact support"
+            description="Need help, found a bug, or have an idea? Send a message to the maintainer."
+          >
+            <SupportView />
+          </SectionIntro>
+        ) : null}
+
         {section === "account" ? (
           <SectionIntro
             title="Account"
@@ -166,17 +163,7 @@ export function SettingsView({
               <p className="text-sm text-muted">Signed in</p>
             </section>
             <AccountSecurity sessions={sessions} />
-            <form action={() => logout()}>
-              <button
-                type="submit"
-                className={`${CARD_CLS} flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-chip/40`}
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-chip text-ink">
-                  <LogOut className="h-5 w-5" />
-                </span>
-                <span className="flex-1 text-base font-bold text-ink">Log out</span>
-              </button>
-            </form>
+            <LogoutButton />
             <DangerZone user={user} />
           </SectionIntro>
         ) : null}
@@ -195,7 +182,7 @@ export function SettingsView({
             <Link
               key={item.id}
               href={`/settings/${item.id}`}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-chip/40 ${
+              className={`flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left hover:bg-chip/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20 ${
                 index > 0 ? "border-t border-line" : ""
               }`}
             >
@@ -213,7 +200,25 @@ export function SettingsView({
       </div>
 
       {isAdminUser(user.username) ? <AdminPanel currentUserId={user.id} /> : null}
+
+      <LogoutButton />
     </div>
+  );
+}
+
+function LogoutButton() {
+  return (
+    <form action={logout}>
+      <button
+        type="submit"
+        className={`${CARD_CLS} flex min-h-14 w-full items-center gap-3 px-4 py-4 text-left text-danger hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-danger/20`}
+      >
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger-soft">
+          <LogOut className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <span className="flex-1 text-base font-bold">Log out</span>
+      </button>
+    </form>
   );
 }
 

@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   mergeExerciseCatalog,
-  mergeSupplementCatalog,
   parseCustomExerciseInput,
-  parseCustomSupplementInput,
   parsePersonalRecordInput,
   isImprovedPersonalRecord,
   validateExerciseName,
@@ -60,24 +58,6 @@ describe("custom exercise CRUD validation", () => {
   });
 });
 
-describe("custom supplement CRUD validation", () => {
-  it("requires a name and dose, defaulting the icon", () => {
-    expect(
-      parseCustomSupplementInput({
-        name: "Electrolytes",
-        defaultDose: "1 scoop",
-      }),
-    ).toEqual({
-      name: "Electrolytes",
-      defaultDose: "1 scoop",
-      iconOrType: "pill",
-    });
-    expect(() =>
-      parseCustomSupplementInput({ name: "Electrolytes", defaultDose: "  " }),
-    ).toThrow("Default dose is required.");
-  });
-});
-
 describe("catalog merge", () => {
   it("lists only saved catalog rows, sorted by name", () => {
     const merged = mergeExerciseCatalog([
@@ -102,27 +82,6 @@ describe("catalog merge", () => {
       muscleName: "Back",
     });
     expect(merged.some((item) => item.name === "Bench Press")).toBe(false);
-  });
-
-  it("lists only saved supplements", () => {
-    expect(mergeSupplementCatalog([])).toEqual([]);
-    const merged = mergeSupplementCatalog([
-      {
-        id: "s1",
-        name: "Beta Alanine",
-        defaultDose: "3g",
-        iconOrType: "pill",
-        createdAt: "2026-09-11T00:00:00.000Z",
-      },
-      {
-        id: "s2",
-        name: "Creatine",
-        defaultDose: "5g",
-        iconOrType: "pill",
-        createdAt: "2026-09-11T00:00:00.000Z",
-      },
-    ]);
-    expect(merged.map((item) => item.name)).toEqual(["Beta Alanine", "Creatine"]);
   });
 });
 
