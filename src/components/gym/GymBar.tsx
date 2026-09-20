@@ -3,8 +3,7 @@
 import { useState, useTransition } from "react";
 import { deleteMuscleHit, upsertMuscleHit } from "@/app/actions/gym";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { formatDisplayDate } from "@/lib/calculations";
-import { INTENSITY_LEVELS, formatGymSummary, intensityLabel } from "@/lib/muscles";
+import { INTENSITY_LEVELS, intensityLabel } from "@/lib/muscles";
 import {
   formatRecoveryDetail,
   formatRecoveryShort,
@@ -23,12 +22,14 @@ export function GymBar({
   session,
   muscles,
   recovery = [],
+  showHeading = true,
   onChange,
 }: {
   date: string;
   session: GymSessionPayload | null;
   muscles: MusclePayload[];
   recovery?: MuscleRecoveryPayload[];
+  showHeading?: boolean;
   onChange: (session: GymSessionPayload | null) => void;
 }) {
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -55,18 +56,11 @@ export function GymBar({
   }
 
   return (
-    <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <div>
-        <p className={LABEL_CLS}>Gym session</p>
-        <h2 className="text-base font-bold text-ink">Tap to log</h2>
-        <p className="mt-1 text-xs text-muted">{formatDisplayDate(date)}</p>
-        <p className="mt-1 text-xs text-muted">1 Light → 5 Wrecked · days since last hit on rest muscles</p>
-      </div>
+    <section className={`${showHeading ? `${CARD_CLS} p-4` : ""} space-y-3`}>
+      {showHeading ? <p className={LABEL_CLS}>Gym</p> : null}
 
       {muscles.length === 0 ? (
-        <p className="text-sm text-muted">
-          Add muscles in Settings, then tap them after a session.
-        </p>
+        <p className="text-sm text-muted">Add muscles in Settings.</p>
       ) : (
         <div className="grid grid-cols-3 gap-2">
           {muscles.map((muscle) => {
@@ -80,7 +74,7 @@ export function GymBar({
                 onClick={() => setEditing(muscle)}
                 className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition-all duration-150 motion-safe:hover:scale-[1.03] motion-safe:active:scale-[0.98] ${
                   hit
-                    ? "bg-brand text-[color:var(--accent-fg)]"
+                    ? "bg-brand text-[color:var(--accent-fg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]"
                     : "bg-chip text-ink hover:bg-chip-hover"
                 }`}
               >
@@ -121,10 +115,7 @@ export function GymBar({
                 }}
               >
                 <span className="truncate">{hit.muscleName}</span>
-                <span className="text-muted">
-                  {" "}
-                  · {hit.intensity} {intensityLabel(hit.intensity)}
-                </span>
+                <span className="text-muted"> · {hit.intensity}</span>
               </button>
               <button
                 type="button"
@@ -137,11 +128,7 @@ export function GymBar({
             </li>
           ))}
         </ul>
-      ) : (
-        <p className="text-sm text-muted">
-          {formatGymSummary(hits) || "Nothing logged yet."}
-        </p>
-      )}
+      ) : null}
 
       {editing ? (
         <IntensitySheet
@@ -187,14 +174,9 @@ function IntensitySheet({
 
   return (
     <BottomSheet title={muscle.name} onClose={onClose}>
-      <p className="mb-3 text-sm text-muted">
-        How hard did this muscle work this session?
-      </p>
       {recovery ? (
         <p className="mb-3 text-sm text-muted">{formatRecoveryDetail(recovery)}</p>
-      ) : (
-        <p className="mb-3 text-sm text-muted">No previous hit for this muscle.</p>
-      )}
+      ) : null}
       <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-5">
         {INTENSITY_LEVELS.map((level) => (
           <button

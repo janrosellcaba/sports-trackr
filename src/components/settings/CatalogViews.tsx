@@ -59,7 +59,7 @@ export function MuscleCatalogView({
           }}
           className={`${GHOST_BTN} text-brand-text`}
         >
-          + Add
+          Add
         </button>
       </div>
       {error ? (
@@ -163,7 +163,7 @@ export function MuscleCatalogView({
       {pendingDelete ? (
         <ConfirmSheet
           title={`Delete ${pendingDelete.name}?`}
-          body="This muscle will leave Settings. Hits already logged stay on those days."
+          body="Hits already logged stay."
           confirmLabel="Delete muscle"
           pending={pendingId === pendingDelete.id}
           onClose={() => setPendingDelete(null)}
@@ -223,7 +223,7 @@ export function ExerciseCatalogView({
           }}
           className={`${GHOST_BTN} text-brand-text`}
         >
-          + Add
+          Add
         </button>
       </div>
       {error ? (
@@ -232,9 +232,7 @@ export function ExerciseCatalogView({
         </p>
       ) : null}
       {exercises.length === 0 ? (
-        <p className="text-sm text-muted">
-          None yet. Add a lift here, then log PRs from Home.
-        </p>
+        <p className="text-sm text-muted">None yet.</p>
       ) : (
         <ul className="space-y-2">
           {exercises.map((item) => {
@@ -306,7 +304,7 @@ export function ExerciseCatalogView({
       {pendingDelete ? (
         <ConfirmSheet
           title={`Delete ${pendingDelete.name}?`}
-          body="This removes the lift and its progression snapshots. Logged PRs on this exercise will be gone."
+          body="Removes this lift and its PRs."
           confirmLabel="Delete exercise"
           pending={pendingId === pendingDelete.id}
           onClose={() => setPendingDelete(null)}
@@ -443,9 +441,7 @@ function ExerciseSheet({
         </span>
         <span>
           <span className="block text-sm font-semibold text-ink">Two weights</span>
-          <span className="text-xs text-muted">
-            Log one dumbbell. PRs show as a pair (30kg each reads as 2× 30kg).
-          </span>
+          <span className="text-xs text-muted">PRs show as a pair.</span>
         </span>
       </button>
       {error ? (

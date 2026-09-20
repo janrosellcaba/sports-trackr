@@ -52,10 +52,9 @@ export function ExerciseProgressionChart({
 
   if (exercises.length === 0) {
     return (
-      <section className={`${CARD_CLS} border-dashed px-4 py-8 text-center`}>
-        <p className="text-sm text-muted">
-          Log a personal record from Home to see strength over time.
-        </p>
+      <section className={`${CARD_CLS} border-dashed px-4 py-10 text-center`}>
+        <h2 className={`${LABEL_CLS} mb-2`}>Progression</h2>
+        <p className="text-sm text-muted">None yet.</p>
       </section>
     );
   }
@@ -63,12 +62,7 @@ export function ExerciseProgressionChart({
   return (
     <section className={`${CARD_CLS} p-4`} aria-busy={isPending}>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className={LABEL_CLS}>Progression</h2>
-          <p className="mt-1 text-xs text-muted">
-            Personal records and estimated 1RM, in {massUnit}.
-          </p>
-        </div>
+        <h2 className={LABEL_CLS}>Progression</h2>
         <label className="block w-full sm:w-56">
           <span className="sr-only">Exercise</span>
           <select
@@ -88,7 +82,7 @@ export function ExerciseProgressionChart({
       <div className={`h-56 w-full ${isPending ? "opacity-60" : ""}`}>
         {points.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
-            No personal record for this lift yet.
+            No PR for this lift.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
@@ -123,7 +117,7 @@ export function ExerciseProgressionChart({
                 contentStyle={{
                   background: paper,
                   border: `1px solid ${line}`,
-                  borderRadius: 12,
+                  borderRadius: 14,
                   color: ink,
                   fontSize: 12,
                 }}
@@ -137,8 +131,8 @@ export function ExerciseProgressionChart({
                 type="monotone"
                 dataKey="prWeight"
                 stroke={brand}
-                strokeWidth={2}
-                dot={{ r: 3, fill: brand }}
+                strokeWidth={2.4}
+                dot={{ r: 3.5, fill: brand, strokeWidth: 0 }}
                 activeDot={{ r: 5 }}
               />
               <Line
@@ -155,13 +149,13 @@ export function ExerciseProgressionChart({
       </div>
 
       {picked ? (
-        <p className="mt-3 text-sm text-ink" role="status">
+        <p className="mt-4 text-sm text-ink" role="status">
           {formatChartDate(picked.date)}
           {picked.prWeight != null
-            ? ` · PR ${formatLift(picked.prWeight, picked.prReps, massUnit, picked.dualWeights)}`
+            ? ` · ${formatLift(picked.prWeight, picked.prReps, massUnit, picked.dualWeights)}`
             : ""}
           {picked.estimatedOneRm != null
-            ? ` · est. 1RM ${trimNumber(kgToDisplay(picked.estimatedOneRm, massUnit))}${massUnit}`
+            ? ` · 1RM ${trimNumber(kgToDisplay(picked.estimatedOneRm, massUnit))}${massUnit}`
             : ""}
         </p>
       ) : null}

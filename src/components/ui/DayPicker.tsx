@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { addDaysISO, getTodayLocalDateISO, isDateKey } from "@/lib/calculations";
-import { INPUT_CLS, chipClass } from "@/lib/ui";
+import { INPUT_CLS, SEGMENT_TRACK, segmentItemClass } from "@/lib/ui";
 
 export function DayPicker({
   today,
@@ -48,12 +48,12 @@ export function DayPicker({
 
   return (
     <div className="space-y-2">
-      <div role="group" aria-label="Day" className="grid grid-cols-3 gap-1 rounded-xl bg-chip/80 p-1">
+      <div role="group" aria-label="Day" className={`${SEGMENT_TRACK} grid-cols-3`}>
         <button
           type="button"
           onClick={selectToday}
           aria-pressed={isToday && !pickingOther}
-          className={`${chipClass(isToday && !pickingOther)} flex min-h-11 items-center justify-center !rounded-lg text-sm`}
+          className={segmentItemClass(isToday && !pickingOther)}
         >
           Today
         </button>
@@ -61,7 +61,7 @@ export function DayPicker({
           type="button"
           onClick={selectYesterday}
           aria-pressed={isYesterday && !pickingOther}
-          className={`${chipClass(isYesterday && !pickingOther)} flex min-h-11 items-center justify-center !rounded-lg text-sm`}
+          className={segmentItemClass(isYesterday && !pickingOther)}
         >
           Yesterday
         </button>
@@ -69,7 +69,7 @@ export function DayPicker({
           type="button"
           onClick={openOther}
           aria-pressed={isOther || pickingOther}
-          className={`${chipClass(isOther || pickingOther)} flex min-h-11 items-center justify-center !rounded-lg text-sm`}
+          className={segmentItemClass(isOther || pickingOther)}
         >
           Other
         </button>

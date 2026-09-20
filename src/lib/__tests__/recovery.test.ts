@@ -21,7 +21,7 @@ describe("recovery copy", () => {
 
   it("names the last hit in the intensity sheet", () => {
     expect(formatRecoveryDetail({ daysAgo: 4, lastIntensity: 3 })).toBe(
-      "Last hit 4 days ago · 3 Solid",
+      "4d · 3 Solid",
     );
   });
 

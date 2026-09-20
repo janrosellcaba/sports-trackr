@@ -12,7 +12,7 @@ const TITLES: Record<Exclude<SettingsSection, "menu">, string> = {
   appearance: "Appearance",
   data: "Data",
   account: "Account",
-  support: "Contact support",
+  support: "Support",
 };
 
 export async function generateMetadata({

@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { deleteSport, logSport, updateSport } from "@/app/actions/sports";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { DateField } from "@/components/ui/DayPicker";
-import { formatDisplayDate } from "@/lib/calculations";
 import {
   EFFORT_LEVELS,
   SPORTS,
@@ -67,11 +66,7 @@ export function SportsBar({
 
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <div>
-        <p className={LABEL_CLS}>Sports session</p>
-        <h2 className="text-base font-bold text-ink">Tap to log</h2>
-        <p className="mt-0.5 text-xs text-muted">{formatDisplayDate(date)}</p>
-      </div>
+      <p className={LABEL_CLS}>Sports</p>
 
       <div className="grid grid-cols-2 gap-2">
         {SPORTS.map((item) => (
@@ -82,7 +77,7 @@ export function SportsBar({
             onClick={() => setCreating(item)}
             className={SECONDARY_BTN}
           >
-            + {item.label}
+            {item.label}
           </button>
         ))}
       </div>
@@ -118,9 +113,7 @@ export function SportsBar({
             );
           })}
         </ul>
-      ) : (
-        <p className="text-sm text-muted">Nothing logged yet.</p>
-      )}
+      ) : null}
 
       {error ? (
         <p role="alert" className="text-sm font-medium text-danger">
@@ -288,7 +281,7 @@ export function SportFormSheet({
         <textarea
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
-          placeholder="How it felt, who you played…"
+          placeholder="How it felt…"
           rows={3}
           maxLength={280}
           className={`${INPUT_CLS} resize-none`}

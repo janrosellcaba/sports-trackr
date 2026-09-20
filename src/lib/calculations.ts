@@ -63,10 +63,45 @@ const MONTHS = [
   "Dec",
 ] as const;
 
+const MONTHS_LONG = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
 export function formatDisplayDate(iso: string): string {
   const date = parseISODate(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;
+}
+
+export function formatMonthYear(iso: string): string {
+  const date = parseISODate(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return `${MONTHS_LONG[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+export function dateHeadingParts(iso: string): {
+  day: string;
+  weekday: string;
+} {
+  const date = parseISODate(iso);
+  if (Number.isNaN(date.getTime())) {
+    return { day: iso, weekday: "" };
+  }
+  return {
+    day: String(date.getDate()),
+    weekday: WEEKDAYS[date.getDay()],
+  };
 }
 
 export function formatChartDate(iso: string): string {

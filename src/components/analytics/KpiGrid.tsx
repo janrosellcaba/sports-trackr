@@ -13,7 +13,7 @@ function TrendBadge({ value }: { value: number | null }) {
   const neutral = value === 0;
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+      className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${
         neutral
           ? "bg-chip text-muted"
           : positive
@@ -21,7 +21,7 @@ function TrendBadge({ value }: { value: number | null }) {
             : "bg-danger-soft text-danger"
       }`}
     >
-      {neutral ? "Same" : `${positive ? "+" : ""}${value}%`}
+      {neutral ? "0%" : `${positive ? "+" : ""}${value}%`}
     </span>
   );
 }
@@ -32,18 +32,18 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   const gymPerWeek = allTime ? null : perWeekRate(summary.totalWorkouts, summary.days);
   const cards = [
     {
-      label: "Gym days",
+      label: "Gym",
       value: String(summary.totalWorkouts),
       hint: gymPerWeek != null
-        ? `${summary.gymStreak}-day streak · ${trimNumber(gymPerWeek)} / wk`
-        : `${summary.gymStreak}-day streak`,
+        ? `${summary.gymStreak} streak · ${trimNumber(gymPerWeek)}/wk`
+        : `${summary.gymStreak} streak`,
       trend: allTime ? null : summary.trends.workouts,
       icon: Dumbbell,
     },
     {
-      label: "Muscle load",
+      label: "Load",
       value: String(summary.totalGymLoad),
-      hint: `${summary.totalHits} hits · intensity 1–5 each`,
+      hint: `${summary.totalHits} hits`,
       trend: allTime ? null : summary.trends.gymLoad,
       icon: Flame,
     },
@@ -55,9 +55,9 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
       icon: Activity,
     },
     {
-      label: "Supplement days",
+      label: "Supps",
       value: String(summary.supplementDays),
-      hint: `${summary.supplementStreak}-day streak`,
+      hint: `${summary.supplementStreak} streak`,
       trend: allTime ? null : summary.trends.supplements,
       icon: Pill,
     },
@@ -66,22 +66,24 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   return (
     <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {cards.map((card) => (
-        <article key={card.label} className={`${CARD_CLS} p-3.5`}>
-          <div className="mb-3 flex items-start justify-between gap-2">
+        <article key={card.label} className={`${CARD_CLS} p-4`}>
+          <div className="mb-4 flex items-start justify-between gap-2">
             <card.icon className="h-4 w-4 text-brand-text" />
             {allTime ? (
               <span className="rounded-full bg-chip px-2 py-0.5 text-[11px] font-bold text-muted">
-                All time
+                All
               </span>
             ) : (
               <TrendBadge value={card.trend} />
             )}
           </div>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight text-ink">
+          <p className="font-display text-3xl leading-none font-extrabold tabular-nums tracking-tight text-ink">
             {card.value}
           </p>
-          <p className="mt-1 text-xs font-semibold text-ink">{card.label}</p>
-          <p className="mt-0.5 text-[11px] text-muted">{card.hint}</p>
+          <p className="mt-2 text-[11px] font-semibold tracking-[0.16em] text-muted uppercase">
+            {card.label}
+          </p>
+          <p className="mt-1 text-[11px] text-muted">{card.hint}</p>
         </article>
       ))}
     </section>
@@ -92,6 +94,5 @@ function sportHint(minutes: number, km: number, unit: "km" | "mi"): string {
   const parts: string[] = [];
   if (minutes > 0) parts.push(`${minutes} min`);
   if (km > 0) parts.push(`${trimNumber(kmToDisplay(km, unit))} ${unit}`);
-  if (parts.length === 0) return "Sessions logged";
-  return parts.join(" · ");
+  return parts.join(" · ") || "—";
 }

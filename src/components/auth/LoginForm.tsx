@@ -49,7 +49,6 @@ export function LoginForm() {
           placeholder="your name"
           className={INPUT_CLS}
         />
-        <span className="mt-1 block text-xs text-muted">Stored in lowercase.</span>
       </label>
 
       <label className="block">
@@ -74,10 +73,9 @@ export function LoginForm() {
         href="/register"
         className="mt-2 block w-full rounded-xl py-2 text-center text-sm font-semibold text-muted transition-all duration-150 hover:bg-chip hover:text-ink"
       >
-        New here? Create an account
+        Create an account
       </Link>
       <p className="text-center text-xs text-muted">
-        Contact support{" "}
         <a
           href={`mailto:${SUPPORT_EMAIL}`}
           className="font-medium text-brand-text hover:underline"

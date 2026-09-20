@@ -59,31 +59,28 @@ export function HomeView({
       </h1>
       <div className="space-y-3">
         <DayPicker today={today} date={date} onChange={goToDate} />
-        <div className={`${CARD_CLS} grid grid-cols-2 gap-px bg-line sm:grid-cols-4`}>
+        <div className={`${CARD_CLS} grid grid-cols-2 gap-px overflow-hidden bg-line sm:grid-cols-4`}>
           <DayStat label="Muscles" value={String(hits.length)} />
           <DayStat
-            label="Avg intensity"
-            value={hits.length === 0 ? "—" : `${avg} / 5`}
+            label="Intensity"
+            value={hits.length === 0 ? "—" : `${avg}/5`}
             accent={hits.length > 0}
           />
           <DayStat label="Sports" value={String(daySports.length)} />
-          <DayStat label="Supplements" value={String(daySupplements.length)} />
+          <DayStat label="Supps" value={String(daySupplements.length)} />
         </div>
       </div>
 
-      <div>
-        <h2 className={`mb-3 ${LABEL_CLS}`}>Gym</h2>
-        <GymBar
-          date={date}
-          session={dayGym}
-          muscles={muscles}
-          recovery={recovery}
-          onChange={(session) => {
-            setDayGym(session);
-            router.refresh();
-          }}
-        />
-      </div>
+      <GymBar
+        date={date}
+        session={dayGym}
+        muscles={muscles}
+        recovery={recovery}
+        onChange={(session) => {
+          setDayGym(session);
+          router.refresh();
+        }}
+      />
 
       <SupplementBar
         date={date}
@@ -116,7 +113,7 @@ export function HomeView({
 
       {recentSessions.length > 0 ? (
         <div>
-          <h2 className={`mb-3 ${LABEL_CLS}`}>Other gym days</h2>
+          <h2 className={`mb-3 ${LABEL_CLS}`}>Recent</h2>
           <div className="space-y-2">
             {recentSessions.map((item) => (
               <button
@@ -164,15 +161,17 @@ function DayStat({
   accent?: boolean;
 }) {
   return (
-    <div className="min-w-0 bg-paper px-3 py-3 text-center">
+    <div className="min-w-0 bg-paper/90 px-3 py-3.5 text-center">
       <p
-        className={`truncate text-lg font-semibold tabular-nums ${
+        className={`truncate font-display text-xl font-extrabold tabular-nums ${
           accent ? "text-brand-text" : "text-ink"
         }`}
       >
         {value}
       </p>
-      <p className="mt-0.5 text-[11px] text-muted">{label}</p>
+      <p className="mt-0.5 text-[10px] font-semibold tracking-[0.14em] text-muted uppercase">
+        {label}
+      </p>
     </div>
   );
 }

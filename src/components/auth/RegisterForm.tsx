@@ -48,9 +48,6 @@ export function RegisterForm() {
           placeholder="letters, numbers, . _ -"
           className={INPUT_CLS}
         />
-        <span className="mt-1 block text-xs text-muted">
-          2–32 characters, saved in lowercase.
-        </span>
       </label>
 
       <label className="block">
@@ -90,7 +87,7 @@ export function RegisterForm() {
         href="/login"
         className="mt-2 block w-full rounded-xl py-2 text-center text-sm font-semibold text-muted transition-all duration-150 hover:bg-chip hover:text-ink"
       >
-        Already have an account? Log in
+        Log in
       </Link>
     </form>
   );

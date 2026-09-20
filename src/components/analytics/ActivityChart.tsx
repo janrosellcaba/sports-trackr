@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -17,13 +17,14 @@ import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 
 export function ActivityChart({
   data,
-  chartLabel = "Gym load",
+  chartLabel = "Load",
 }: {
   data: DailyActivityPoint[];
   chartLabel?: string;
 }) {
   const brand = useAccentColor();
   const { ink, muted, line, paper } = useSurfaceColors();
+  const fillId = useId().replace(/:/g, "");
   const lastActive =
     [...data].reverse().find(
       (point) => point.gymLoad > 0 || point.sports > 0 || point.supplements > 0,
@@ -34,16 +35,17 @@ export function ActivityChart({
 
   return (
     <section className={`${CARD_CLS} p-4`}>
-      <div className="mb-4">
-        <h2 className={LABEL_CLS}>{chartLabel}</h2>
-        <p className="mt-1 text-xs text-muted">
-          Bars are gym intensity sum (1–5 per muscle). Tap a day for the breakdown.
-        </p>
-      </div>
+      <h2 className={`${LABEL_CLS} mb-4`}>{chartLabel}</h2>
 
       <div className="h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+            <defs>
+              <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={brand} stopOpacity={1} />
+                <stop offset="100%" stopColor={brand} stopOpacity={0.38} />
+              </linearGradient>
+            </defs>
             <CartesianGrid stroke={line} strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="date"
@@ -64,17 +66,18 @@ export function ActivityChart({
               contentStyle={{
                 background: paper,
                 border: `1px solid ${line}`,
-                borderRadius: 12,
+                borderRadius: 14,
                 color: ink,
                 fontSize: 12,
+                boxShadow: "var(--shadow-card)",
               }}
               labelFormatter={(label) => formatChartDate(String(label))}
-              formatter={(value) => [`${value ?? 0}`, "Gym load"]}
+              formatter={(value) => [`${value ?? 0}`, "Load"]}
             />
             <Bar
               dataKey="gymLoad"
-              fill={brand}
-              radius={[6, 6, 0, 0]}
+              fill={`url(#${fillId})`}
+              radius={[7, 7, 0, 0]}
               onClick={(entry) => {
                 const payload = (
                   entry as { payload?: DailyActivityPoint }
@@ -87,15 +90,17 @@ export function ActivityChart({
       </div>
 
       {selected ? (
-        <p className="mt-3 text-sm text-ink" role="status">
-          {formatChartDate(selected.date)} · gym load {selected.gymLoad} ·{" "}
-          {selected.workouts} gym session{selected.workouts === 1 ? "" : "s"} ·{" "}
-          {selected.sports} sport{selected.sports === 1 ? "" : "s"} ·{" "}
-          {selected.supplements} supplement
-          {selected.supplements === 1 ? "" : "s"}
-        </p>
+        <div
+          className="mt-4 grid grid-cols-4 gap-2 text-center"
+          role="status"
+        >
+          <Readout label="Day" value={formatChartDate(selected.date)} />
+          <Readout label="Load" value={String(selected.gymLoad)} />
+          <Readout label="Sports" value={String(selected.sports)} />
+          <Readout label="Supps" value={String(selected.supplements)} />
+        </div>
       ) : (
-        <p className="mt-3 text-sm text-muted">No days in this range.</p>
+        <p className="mt-4 text-sm text-muted">No days in this range.</p>
       )}
 
       <table className="sr-only">
@@ -120,5 +125,18 @@ export function ActivityChart({
         </tbody>
       </table>
     </section>
+  );
+}
+
+function Readout({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-xl bg-chip/70 px-1.5 py-2">
+      <p className="truncate font-display text-sm font-bold tabular-nums text-ink">
+        {value}
+      </p>
+      <p className="mt-0.5 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase">
+        {label}
+      </p>
+    </div>
   );
 }

@@ -10,9 +10,8 @@ import { GymBar } from "@/components/gym/GymBar";
 import { SportFormSheet } from "@/components/sports/SportsBar";
 import { SupplementFormSheet } from "@/components/supplements/SupplementBar";
 import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
-import { formatDisplayDate } from "@/lib/calculations";
+import { dateHeadingParts, formatMonthYear } from "@/lib/calculations";
 import { useLatestProps } from "@/lib/use-latest-props";
-import { formatGymSummary } from "@/lib/muscles";
 import { formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
 import { supplementFromName } from "@/lib/supplements";
 import { useUnits } from "@/components/units/UnitsProvider";
@@ -22,6 +21,8 @@ import {
   GHOST_BTN,
   LABEL_CLS,
   PAGE_TITLE,
+  SEGMENT_TRACK,
+  segmentItemClass,
 } from "@/lib/ui";
 import type {
   GymSessionPayload,
@@ -38,6 +39,13 @@ type DayGroup = {
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
 };
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "gym", label: "Gym" },
+  { key: "sports", label: "Sports" },
+  { key: "supplements", label: "Supps" },
+];
 
 export function LogView({
   today,
@@ -94,6 +102,11 @@ export function LogView({
     return true;
   });
 
+  const multiMonth = useMemo(
+    () => new Set(visible.map((day) => day.date.slice(0, 7))).size > 1,
+    [visible],
+  );
+
   const editingSportDef = editingSport ? sportDefinition(editingSport.type) : null;
   const editingSupplementKind = editingSupplement
     ? supplementFromName(editingSupplement.name)
@@ -120,30 +133,19 @@ export function LogView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <h1 className={PAGE_TITLE}>Log</h1>
 
-      <div className="grid grid-cols-4 gap-1 rounded-xl bg-chip/80 p-1">
-        {(
-          [
-            ["all", "All"],
-            ["gym", "Gym"],
-            ["sports", "Sports"],
-            ["supplements", "Supplements"],
-          ] as const
-        ).map(([key, label]) => (
+      <div className={`${SEGMENT_TRACK} grid-cols-4`} role="group" aria-label="Filter">
+        {FILTERS.map((item) => (
           <button
-            key={key}
+            key={item.key}
             type="button"
-            aria-pressed={filter === key}
-            onClick={() => setFilter(key)}
-            className={`min-h-11 rounded-lg px-1 text-[11px] font-bold transition-all duration-150 sm:text-xs ${
-              filter === key
-                ? "bg-paper text-ink shadow-sm"
-                : "text-muted hover:bg-paper/60 hover:text-ink motion-safe:hover:scale-[1.03]"
-            }`}
+            aria-pressed={filter === item.key}
+            onClick={() => setFilter(item.key)}
+            className={`${segmentItemClass(filter === item.key)} text-[11px] sm:text-sm`}
           >
-            {label}
+            {item.label}
           </button>
         ))}
       </div>
@@ -155,117 +157,118 @@ export function LogView({
       ) : null}
 
       {visible.length === 0 ? (
-        <section className={`${CARD_CLS} border-dashed px-4 py-10 text-center`}>
-          <p className="text-sm text-muted">
-            Nothing here yet. Log gym, a sport, or a supplement on Home.
-          </p>
+        <section className={`${CARD_CLS} border-dashed px-4 py-12 text-center`}>
+          <p className="text-sm text-muted">Nothing logged.</p>
         </section>
       ) : (
-        <section className="space-y-3">
-          {visible.map((day) => {
+        <section className="space-y-2.5">
+          {visible.map((day, index) => {
             const open = openDate === day.date;
-            const gymLine = day.gym ? formatGymSummary(day.gym.hits) : null;
+            const heading = dateHeadingParts(day.date);
+            const prevMonth = index > 0 ? visible[index - 1].date.slice(0, 7) : null;
+            const showMonth = multiMonth && day.date.slice(0, 7) !== prevMonth;
+            const chips = logChips(day, filter);
             return (
-              <article key={day.date} className={`${CARD_CLS} overflow-hidden`}>
-                <button
-                  type="button"
-                  aria-expanded={open}
-                  onClick={() => setOpenDate(open ? null : day.date)}
-                  className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-chip/40"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-ink">
-                      {formatDisplayDate(day.date)}
-                      {day.date === today ? (
-                        <span className="ml-2 text-xs font-bold text-brand-text">
-                          Today
-                        </span>
-                      ) : null}
-                    </p>
-                    <div className="mt-2 space-y-1">
-                      {day.gym ? (
-                        <p className="text-sm font-bold text-ink">
-                          Gym{gymLine ? ` · ${gymLine}` : ""}
-                        </p>
-                      ) : null}
-                      {day.sports.map((session) => {
-                        const summary = formatSportSummary(session, distanceUnit);
-                        return (
-                          <p key={session.id} className="text-sm text-ink">
-                            {sportLabel(session.type)}
-                            {summary ? ` · ${summary}` : ""}
-                          </p>
-                        );
-                      })}
-                      {day.supplements.length > 0 ? (
-                        <p className="text-sm text-muted">
-                          {day.supplements.map((item) => item.name).join(" · ")}
-                        </p>
-                      ) : null}
+              <div key={day.date}>
+                {showMonth ? (
+                  <p className={`${LABEL_CLS} px-1 pt-3 pb-2 first:pt-0`}>
+                    {formatMonthYear(day.date)}
+                  </p>
+                ) : null}
+                <article className={`${CARD_CLS} overflow-hidden`}>
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() => setOpenDate(open ? null : day.date)}
+                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-chip/35"
+                  >
+                    <div className="w-11 shrink-0 text-center">
+                      <p
+                        className={`font-display text-2xl leading-none font-extrabold tabular-nums ${
+                          day.date === today ? "text-brand-text" : "text-ink"
+                        }`}
+                      >
+                        {heading.day}
+                      </p>
+                      <p className="mt-1 text-[10px] font-semibold tracking-[0.16em] text-muted uppercase">
+                        {heading.weekday}
+                      </p>
                     </div>
-                  </div>
-                  <ChevronDown
-                    className={`mt-1 h-4 w-4 shrink-0 text-muted transition ${
-                      open ? "rotate-180" : ""
-                    }`}
-                    aria-hidden="true"
-                  />
-                </button>
-
-                {open ? (
-                  <div className="space-y-5 border-t border-line px-4 py-4">
-                    {(filter === "all" || filter === "gym") && (
-                      <section className="space-y-2">
-                        <p className={LABEL_CLS}>Gym</p>
-                        <GymBar
-                          date={day.date}
-                          session={day.gym}
-                          muscles={muscles}
-                          onChange={(next) => {
-                            setGym((current) => {
-                              const without = current.filter(
-                                (item) => item.date !== day.date,
-                              );
-                              return next
-                                ? [next, ...without].sort((a, b) =>
-                                    b.date.localeCompare(a.date),
-                                  )
-                                : without;
-                            });
-                            refresh();
-                          }}
-                        />
-                        {day.gym ? (
-                          <button
-                            type="button"
-                            disabled={pendingId != null}
-                            onClick={() =>
-                              setConfirm({
-                                title: "Delete gym session?",
-                                body: "This removes every muscle hit logged on this day.",
-                                run: async () => {
-                                  await deleteGymSession(day.gym!.id);
-                                  setGym((current) =>
-                                    current.filter((item) => item.id !== day.gym!.id),
-                                  );
-                                },
-                              })
-                            }
-                            className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-sm font-bold text-danger transition-all duration-150 hover:brightness-110 disabled:opacity-50"
+                    <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                      {chips.length > 0 ? (
+                        chips.map((chip, chipIndex) => (
+                          <span
+                            key={`${chip}-${chipIndex}`}
+                            className="max-w-full truncate rounded-full bg-chip px-2.5 py-1 text-[11px] font-semibold text-ink"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete gym
-                          </button>
-                        ) : null}
-                      </section>
-                    )}
+                            {chip}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted">—</span>
+                      )}
+                    </div>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-muted transition ${
+                        open ? "rotate-180" : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
 
-                    {(filter === "all" || filter === "sports") && (
-                      <section className="space-y-2">
-                        <p className={LABEL_CLS}>Sports</p>
-                        {day.sports.length === 0 ? (
-                          <p className="text-sm text-muted">No sports this day.</p>
-                        ) : (
+                  {open ? (
+                    <div className="space-y-5 border-t border-line px-4 py-4">
+                      {(filter === "all" || filter === "gym") && (
+                        <section className="space-y-2">
+                          <p className={LABEL_CLS}>Gym</p>
+                          <GymBar
+                            date={day.date}
+                            session={day.gym}
+                            muscles={muscles}
+                            showHeading={false}
+                            onChange={(next) => {
+                              setGym((current) => {
+                                const without = current.filter(
+                                  (item) => item.date !== day.date,
+                                );
+                                return next
+                                  ? [next, ...without].sort((a, b) =>
+                                      b.date.localeCompare(a.date),
+                                    )
+                                  : without;
+                              });
+                              refresh();
+                            }}
+                          />
+                          {day.gym ? (
+                            <button
+                              type="button"
+                              disabled={pendingId != null}
+                              onClick={() =>
+                                setConfirm({
+                                  title: "Delete gym session?",
+                                  body: "Removes every muscle hit on this day.",
+                                  run: async () => {
+                                    await deleteGymSession(day.gym!.id);
+                                    setGym((current) =>
+                                      current.filter((item) => item.id !== day.gym!.id),
+                                    );
+                                  },
+                                })
+                              }
+                              className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-sm font-bold text-danger transition-all duration-150 hover:brightness-110 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Delete gym
+                            </button>
+                          ) : null}
+                        </section>
+                      )}
+
+                      {(filter === "all" || filter === "sports") &&
+                      day.sports.length > 0 ? (
+                        <section className="space-y-2">
+                          <p className={LABEL_CLS}>Sports</p>
                           <ul className="space-y-2">
                             {day.sports.map((session) => {
                               const summary = formatSportSummary(session, distanceUnit);
@@ -278,11 +281,12 @@ export function LogView({
                                     <div className="min-w-0">
                                       <p className="text-sm font-bold text-ink">
                                         {sportLabel(session.type)}
-                                        {summary ? ` · ${summary}` : ""}
                                       </p>
-                                      {session.notes ? (
+                                      {summary || session.notes ? (
                                         <p className="mt-0.5 text-xs text-muted">
-                                          {session.notes}
+                                          {[summary, session.notes]
+                                            .filter(Boolean)
+                                            .join(" · ")}
                                         </p>
                                       ) : null}
                                     </div>
@@ -319,16 +323,13 @@ export function LogView({
                               );
                             })}
                           </ul>
-                        )}
-                      </section>
-                    )}
+                        </section>
+                      ) : null}
 
-                    {(filter === "all" || filter === "supplements") && (
-                      <section className="space-y-2">
-                        <p className={LABEL_CLS}>Supplements</p>
-                        {day.supplements.length === 0 ? (
-                          <p className="text-sm text-muted">No supplements this day.</p>
-                        ) : (
+                      {(filter === "all" || filter === "supplements") &&
+                      day.supplements.length > 0 ? (
+                        <section className="space-y-2">
+                          <p className={LABEL_CLS}>Supplements</p>
                           <ul className="space-y-2">
                             {day.supplements.map((intake) => (
                               <li
@@ -355,7 +356,7 @@ export function LogView({
                                     onClick={() =>
                                       setConfirm({
                                         title: "Delete supplement?",
-                                        body: `Remove ${intake.name} from this day?`,
+                                        body: `Remove ${intake.name}?`,
                                         run: async () => {
                                           await deleteSupplement(intake.id);
                                           setSuppRows((current) =>
@@ -371,12 +372,12 @@ export function LogView({
                               </li>
                             ))}
                           </ul>
-                        )}
-                      </section>
-                    )}
-                  </div>
-                ) : null}
-              </article>
+                        </section>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </article>
+              </div>
             );
           })}
         </section>
@@ -427,4 +428,18 @@ export function LogView({
       ) : null}
     </div>
   );
+}
+
+function logChips(day: DayGroup, filter: Filter): string[] {
+  const chips: string[] = [];
+  if ((filter === "all" || filter === "gym") && day.gym) {
+    chips.push(`Gym · ${day.gym.hitCount}`);
+  }
+  if (filter === "all" || filter === "sports") {
+    for (const session of day.sports) chips.push(sportLabel(session.type));
+  }
+  if (filter === "all" || filter === "supplements") {
+    for (const intake of day.supplements) chips.push(intake.name);
+  }
+  return chips;
 }

@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { deleteSupplement, logSupplement, updateSupplement } from "@/app/actions/supplements";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { DateField } from "@/components/ui/DayPicker";
-import { formatDisplayDate } from "@/lib/calculations";
 import {
   COFFEE_SIZES,
   SUPPLEMENTS,
@@ -54,11 +53,7 @@ export function SupplementBar({
 
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <div>
-        <p className={LABEL_CLS}>Supplements</p>
-        <h2 className="text-base font-bold text-ink">Tap to log</h2>
-        <p className="mt-0.5 text-xs text-muted">{formatDisplayDate(date)}</p>
-      </div>
+      <p className={LABEL_CLS}>Supplements</p>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {SUPPLEMENTS.map((item) => (
@@ -69,7 +64,7 @@ export function SupplementBar({
             onClick={() => setCreating(item)}
             className={SECONDARY_BTN}
           >
-            + {item.name}
+            {item.name}
           </button>
         ))}
       </div>
@@ -115,9 +110,7 @@ export function SupplementBar({
             );
           })}
         </ul>
-      ) : (
-        <p className="text-sm text-muted">Nothing logged yet for this day.</p>
-      )}
+      ) : null}
 
       {creating ? (
         <SupplementFormSheet

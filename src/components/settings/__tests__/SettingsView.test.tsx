@@ -23,7 +23,7 @@ const user: AuthUser = {
 };
 
 describe("SettingsView", () => {
-  it("puts Contact support and Log out on the main settings screen", () => {
+  it("puts Support and Log out on the main settings screen", () => {
     render(
       <SettingsView
         user={user}
@@ -33,7 +33,7 @@ describe("SettingsView", () => {
       />,
     );
 
-    expect(screen.getByRole("link", { name: /Contact support/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Support/ })).toHaveAttribute(
       "href",
       "/settings/support",
     );

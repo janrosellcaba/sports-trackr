@@ -58,9 +58,6 @@ describe("GymBar", () => {
     expect(screen.getByRole("button", { name: /Back, last hit 4d ago/ })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Back, last hit 4d ago/ }));
     expect(screen.getByRole("dialog", { name: "Back" })).toBeInTheDocument();
-    expect(
-      screen.getByText("How hard did this muscle work this session?"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Last hit 4 days ago · 3 Solid")).toBeInTheDocument();
+    expect(screen.getByText("4d · 3 Solid")).toBeInTheDocument();
   });
 });

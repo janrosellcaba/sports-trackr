@@ -24,10 +24,10 @@ export function formatRecoveryDetail(recovery: {
   daysAgo: number;
   lastIntensity: number;
 }): string {
-  const when =
-    recovery.daysAgo === 1 ? "1 day ago" : `${recovery.daysAgo} days ago`;
   const label = intensityLabel(recovery.lastIntensity);
-  return `Last hit ${when} · ${recovery.lastIntensity}${label ? ` ${label}` : ""}`;
+  return `${formatRecoveryShort(recovery.daysAgo)} · ${recovery.lastIntensity}${
+    label ? ` ${label}` : ""
+  }`;
 }
 
 export function recoveryAriaLabel(

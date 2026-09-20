@@ -45,10 +45,7 @@ export function PrBar({
 
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
-      <div>
-        <p className={LABEL_CLS}>Personal records</p>
-        <h2 className="text-base font-bold text-ink">Best lifts</h2>
-      </div>
+      <p className={LABEL_CLS}>PRs</p>
 
       {records.length > 0 ? (
         <ul className="space-y-1.5 sm:max-h-64 sm:overflow-y-auto">
@@ -81,9 +78,7 @@ export function PrBar({
         </ul>
       ) : (
         <p className="text-sm text-muted">
-          {canAdd
-            ? "No records yet. Log one when you hit it."
-            : "Add a lift in Settings → Exercises first."}
+          {canAdd ? "None yet." : "Add a lift in Settings."}
         </p>
       )}
 
@@ -97,7 +92,7 @@ export function PrBar({
         }}
         className={SECONDARY_BTN}
       >
-        + Add PR
+        Add PR
       </button>
 
       {open ? (
@@ -262,7 +257,7 @@ function PrSheet({
     {confirmLower ? (
       <ConfirmSheet
         title="Replace current PR?"
-        body="This lift is not better than your current personal record. Replace it anyway?"
+        body="Not a better PR. Replace it anyway?"
         confirmLabel="Replace PR"
         danger={false}
         pending={pending}

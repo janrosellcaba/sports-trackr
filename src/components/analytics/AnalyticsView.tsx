@@ -5,12 +5,12 @@ import dynamic from "next/dynamic";
 import { BestLifts } from "@/components/analytics/BestLifts";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
 import { TopMuscles } from "@/components/analytics/TopMuscles";
-import { PAGE_TITLE } from "@/lib/ui";
+import { PAGE_TITLE, SEGMENT_TRACK, segmentItemClass } from "@/lib/ui";
 import type { AnalyticsPeriod, AnalyticsSummary, NotebookExercise } from "@/types/trackr";
 
 const ActivityChart = dynamic(
   () => import("@/components/analytics/ActivityChart").then((mod) => mod.ActivityChart),
-  { ssr: false, loading: () => <ChartSkeleton label="Gym load" /> },
+  { ssr: false, loading: () => <ChartSkeleton label="Load" /> },
 );
 
 const ExerciseProgressionChart = dynamic(
@@ -39,12 +39,9 @@ export function AnalyticsView({
 }) {
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className={PAGE_TITLE}>Analytics</h1>
-          <p className="mt-1 text-sm text-muted">{summary.periodLabel}</p>
-        </div>
-        <div className="grid grid-cols-4 gap-1 rounded-xl bg-chip/80 p-1">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <h1 className={PAGE_TITLE}>Analytics</h1>
+        <div className={`${SEGMENT_TRACK} grid-cols-4 sm:w-72`}>
           {PERIODS.map((item) => {
             const active = period === item.key;
             return (
@@ -52,11 +49,7 @@ export function AnalyticsView({
                 key={item.key}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-bold transition-all duration-150 ${
-                  active
-                    ? "bg-paper text-ink shadow-sm"
-                    : "text-muted hover:bg-paper/60 hover:text-ink motion-safe:hover:scale-[1.03]"
-                }`}
+                className={segmentItemClass(active)}
               >
                 {item.label}
               </Link>
@@ -68,7 +61,7 @@ export function AnalyticsView({
       <div className="space-y-5">
         <KpiGrid summary={summary} />
         <div className="grid gap-5 lg:grid-cols-2">
-          <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
+          <ActivityChart data={summary.daily} chartLabel="Load" />
           <TopMuscles items={summary.topMuscles} />
         </div>
         <div className="grid gap-5 lg:grid-cols-2">
@@ -82,8 +75,10 @@ export function AnalyticsView({
 
 function ChartSkeleton({ label }: { label: string }) {
   return (
-    <section className="h-56 rounded-2xl border border-line bg-paper p-4">
-      <p className="text-xs font-medium text-muted">{label}</p>
+    <section className="card-lux h-56 rounded-[1.35rem] p-4">
+      <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
+        {label}
+      </p>
     </section>
   );
 }

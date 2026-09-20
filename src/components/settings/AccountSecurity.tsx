@@ -28,9 +28,7 @@ function ChangePasswordForm() {
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <p className={LABEL_CLS}>Password</p>
-      <p className="text-sm text-muted">
-        Changing it signs out every other device.
-      </p>
+      <p className="text-sm text-muted">Signs out other devices.</p>
       <form
         className="space-y-3"
         action={(formData) => {

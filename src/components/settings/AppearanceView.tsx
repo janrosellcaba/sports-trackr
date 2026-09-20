@@ -47,7 +47,6 @@ export function AppearanceView() {
 
       <section className={`${CARD_CLS} space-y-3 p-4`}>
         <p className={LABEL_CLS}>Weight</p>
-        <p className="text-sm text-muted">Personal records. Stored in kilograms.</p>
         <div className="grid grid-cols-2 gap-2" role="group" aria-label="Weight unit">
           {MASS_UNITS.map((unit) => (
             <button
@@ -65,9 +64,6 @@ export function AppearanceView() {
 
       <section className={`${CARD_CLS} space-y-3 p-4`}>
         <p className={LABEL_CLS}>Distance</p>
-        <p className="text-sm text-muted">
-          Runs, rides, and walks. Pool distance becomes yards when miles are on.
-        </p>
         <div className="grid grid-cols-2 gap-2" role="group" aria-label="Distance unit">
           {DISTANCE_UNITS.map((unit) => (
             <button
@@ -85,9 +81,6 @@ export function AppearanceView() {
 
       <section className={`${CARD_CLS} space-y-3 p-4`}>
         <p className={LABEL_CLS}>Accent</p>
-        <p className="text-sm text-muted">
-          Accent colors update buttons, dock, badges, and charts instantly.
-        </p>
         <div className="grid grid-cols-1 gap-2" role="listbox" aria-label="Accent">
           {ACCENT_THEME_IDS.map((id) => {
             const preset = ACCENT_THEMES[id];

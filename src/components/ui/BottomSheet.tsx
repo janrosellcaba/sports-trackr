@@ -81,25 +81,25 @@ export function BottomSheet({
   }
 
   const sheet = (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 backdrop-blur-[3px] sm:items-center">
       <div className="absolute inset-0" />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        className="sheet-enter relative z-10 max-h-[min(90dvh,100svh)] w-full max-w-md overflow-y-auto rounded-t-3xl bg-paper p-6 sm:rounded-3xl"
+        className="card-lux sheet-enter relative z-10 max-h-[min(90dvh,100svh)] w-full max-w-md overflow-y-auto rounded-t-[1.75rem] p-6 shadow-[var(--shadow-float)] sm:rounded-[1.75rem]"
       >
         <div
           className="mx-auto -mt-1 mb-4 flex h-8 w-full items-start justify-center sm:hidden"
           onPointerDown={onHandlePointerDown}
           onPointerUp={onHandlePointerUp}
         >
-          <span className="mt-1 h-1.5 w-10 rounded-full bg-muted/25" />
+          <span className="mt-1 h-1.5 w-10 rounded-full bg-muted/30" />
         </div>
         {title ? (
           <div className="mb-4 flex items-center justify-between">
-            <h2 id={titleId} className="text-xl font-bold text-ink">
+            <h2 id={titleId} className="font-display text-xl font-extrabold tracking-tight text-ink">
               {title}
             </h2>
             <button

@@ -48,7 +48,7 @@ const PAGES: {
   {
     id: "muscles",
     label: "Muscles",
-    hint: "Tap targets on Home",
+    hint: "Gym tiles",
     icon: Grid3x3,
   },
   {
@@ -60,25 +60,25 @@ const PAGES: {
   {
     id: "appearance",
     label: "Appearance",
-    hint: "Dark, light, units, accent",
+    hint: "Look & units",
     icon: Palette,
   },
   {
     id: "data",
     label: "Data",
-    hint: "Export or import JSON",
+    hint: "Export · import",
     icon: Download,
   },
   {
     id: "account",
     label: "Account",
-    hint: "Password, devices, delete",
+    hint: "Security",
     icon: User,
   },
   {
     id: "support",
-    label: "Contact support",
-    hint: "Help, bug, or idea",
+    label: "Support",
+    hint: "Help, bug, idea",
     icon: LifeBuoy,
   },
 ];
@@ -108,59 +108,40 @@ export function SettingsView({
         </Link>
 
         {section === "muscles" ? (
-          <SectionIntro
-            title="Muscles"
-            description="Tap these after a gym session. Add Calves, or split Back into Lats and Traps, whenever you want."
-          >
+          <SectionIntro title="Muscles">
             <MuscleCatalogView initial={muscles} />
           </SectionIntro>
         ) : null}
 
         {section === "exercises" ? (
-          <SectionIntro
-            title="Exercises"
-            description="Add lifts here first. Turn on two weights for dumbbells so each PR shows as a pair. Personal records are logged from Home with + Add PR."
-          >
+          <SectionIntro title="Exercises">
             <ExerciseCatalogView initial={customExercises} muscles={muscles} />
           </SectionIntro>
         ) : null}
 
         {section === "appearance" ? (
-          <SectionIntro
-            title="Appearance"
-            description="Dark or light, kg or lb, km or miles, plus the accent used on buttons and charts."
-          >
+          <SectionIntro title="Appearance">
             <AppearanceView />
           </SectionIntro>
         ) : null}
 
         {section === "data" ? (
-          <SectionIntro
-            title="Data"
-            description="Download your gym, sports, and supplement history, including PR snapshots. Import merges a Trackr JSON export into this account."
-          >
+          <SectionIntro title="Data">
             <ExportSection />
             <ImportSection />
           </SectionIntro>
         ) : null}
 
         {section === "support" ? (
-          <SectionIntro
-            title="Contact support"
-            description="Need help, found a bug, or have an idea? Send a message to the maintainer."
-          >
+          <SectionIntro title="Support">
             <SupportView />
           </SectionIntro>
         ) : null}
 
         {section === "account" ? (
-          <SectionIntro
-            title="Account"
-            description="Signed in as this user. Deleting the account cannot be undone."
-          >
+          <SectionIntro title="Account">
             <section className={`${CARD_CLS} p-4`}>
-              <p className="text-lg font-semibold text-ink">{user.username}</p>
-              <p className="text-sm text-muted">Signed in</p>
+              <p className="font-display text-lg font-extrabold text-ink">{user.username}</p>
             </section>
             <AccountSecurity sessions={sessions} />
             <LogoutButton />
@@ -224,19 +205,14 @@ function LogoutButton() {
 
 function SectionIntro({
   title,
-  description,
   children,
 }: {
   title: string;
-  description: string;
   children: ReactNode;
 }) {
   return (
     <div className="space-y-3">
-      <div>
-        <h1 className={PAGE_TITLE}>{title}</h1>
-        <p className="mt-1 text-sm text-muted">{description}</p>
-      </div>
+      <h1 className={PAGE_TITLE}>{title}</h1>
       {children}
     </div>
   );
@@ -365,10 +341,6 @@ function ImportSection() {
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <p className={LABEL_CLS}>Import JSON</p>
-      <p className="text-sm text-muted">
-        Merges a Trackr export into this account. Matching gym days and names update;
-        identical sports and supplement rows are skipped.
-      </p>
       <label className="block">
         <span className="sr-only">Choose JSON export</span>
         <input
@@ -407,8 +379,8 @@ function DangerZone({ user }: { user: AuthUser }) {
     <section className={`${CARD_CLS} space-y-3 border-danger/30 p-4`}>
       <p className={LABEL_CLS}>Delete account</p>
       <p className="text-sm text-muted">
-        Permanently delete your account and every gym, sport, and supplement log. Type{" "}
-        <span className="font-mono text-ink">{user.username}</span> to confirm.
+        Type <span className="font-mono text-ink">{user.username}</span> to delete
+        everything.
       </p>
       <label className="block">
         <span className="mb-1 block text-sm font-semibold text-ink">

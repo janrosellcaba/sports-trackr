@@ -30,8 +30,8 @@ export function AppChrome({
         massUnit={user.massUnit}
         distanceUnit={user.distanceUnit}
       >
-      <div className="fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col bg-cream">
-        <header className="shrink-0 border-b border-line bg-paper/90 px-5 py-4 backdrop-blur [padding-top:max(1rem,env(safe-area-inset-top))]">
+      <div className="app-shell fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col">
+        <header className="relative shrink-0 bg-paper/70 px-5 py-3.5 backdrop-blur-xl [padding-top:max(0.9rem,env(safe-area-inset-top))] after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-[var(--color-line)] after:to-transparent">
           <div className="flex items-center justify-between gap-2">
             <Link
               href="/"
@@ -39,13 +39,15 @@ export function AppChrome({
             >
               <Logo />
             </Link>
-            <p className="truncate text-sm font-bold text-muted">{user.username}</p>
+            <p className="max-w-[40%] truncate rounded-full bg-chip/80 px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
+              {user.username}
+            </p>
           </div>
         </header>
 
         <main className="flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
           <div
-            className={`mx-auto px-5 pt-6 pb-6 ${
+            className={`mx-auto px-5 pt-7 pb-8 ${
               wide ? "max-w-md lg:max-w-6xl" : "max-w-md"
             }`}
           >
