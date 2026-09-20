@@ -32,7 +32,6 @@ export type ImportSummary = {
   supplementsSkipped: number;
   exercisesUpserted: number;
   snapshotsUpserted: number;
-  preferencesUpdated: boolean;
 };
 
 export async function importMyData(
@@ -75,21 +74,7 @@ async function applyImport(
     supplementsSkipped: 0,
     exercisesUpserted: 0,
     snapshotsUpserted: 0,
-    preferencesUpdated: false,
   };
-
-  if (data.preferences.massUnit || data.preferences.distanceUnit) {
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        ...(data.preferences.massUnit ? { massUnit: data.preferences.massUnit } : {}),
-        ...(data.preferences.distanceUnit
-          ? { distanceUnit: data.preferences.distanceUnit }
-          : {}),
-      },
-    });
-    summary.preferencesUpdated = true;
-  }
 
   const muscles = await tx.muscle.findMany({ where: { userId } });
   const musclesByKey = new Map(muscles.map((row) => [row.nameKey, row]));

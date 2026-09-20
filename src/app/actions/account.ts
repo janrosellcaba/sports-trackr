@@ -15,7 +15,6 @@ import {
 import { validatePassword, confirmsUsername } from "@/lib/auth-logic";
 import { MAX_PASSWORD_LENGTH } from "@/lib/constants";
 import { resolveAccentTheme, resolveColorMode } from "@/lib/theme";
-import { resolveDistanceUnit, resolveMassUnit } from "@/lib/units";
 import { revalidateApp } from "@/lib/revalidate";
 import {
   assertNotRateLimited,
@@ -50,24 +49,6 @@ export async function updateColorMode(mode: string): Promise<void> {
   await prisma.user.update({
     where: { id: user.id },
     data: { colorMode: resolveColorMode(mode) },
-  });
-  revalidateApp();
-}
-
-export async function updateMassUnit(unit: string): Promise<void> {
-  const user = await requireUser();
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { massUnit: resolveMassUnit(unit) },
-  });
-  revalidateApp();
-}
-
-export async function updateDistanceUnit(unit: string): Promise<void> {
-  const user = await requireUser();
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { distanceUnit: resolveDistanceUnit(unit) },
   });
   revalidateApp();
 }

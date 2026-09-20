@@ -482,8 +482,8 @@ export async function exportMyData() {
       })),
     })),
     preferences: {
-      massUnit: user.massUnit,
-      distanceUnit: user.distanceUnit,
+      massUnit: "kg",
+      distanceUnit: "km",
     },
   };
 }

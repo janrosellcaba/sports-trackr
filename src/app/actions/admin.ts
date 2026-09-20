@@ -10,8 +10,6 @@ export type AdminUserRow = {
   id: string;
   username: string;
   createdAt: string;
-  massUnit: string;
-  distanceUnit: string;
   gymDays: number;
   sports: number;
   supplements: number;
@@ -37,8 +35,6 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
       id: true,
       username: true,
       createdAt: true,
-      massUnit: true,
-      distanceUnit: true,
       _count: {
         select: {
           gymSessions: true,
@@ -69,8 +65,6 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
     id: row.id,
     username: row.username,
     createdAt: row.createdAt.toISOString(),
-    massUnit: row.massUnit,
-    distanceUnit: row.distanceUnit,
     gymDays: row._count.gymSessions,
     sports: row._count.sports,
     supplements: row._count.supplements,

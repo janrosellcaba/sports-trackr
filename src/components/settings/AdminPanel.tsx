@@ -164,9 +164,6 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
                       <div className="col-span-2">
                         Last supplement {formatDay(row.lastSupplementDate)}
                       </div>
-                      <div className="col-span-2">
-                        Units {row.massUnit} / {row.distanceUnit}
-                      </div>
                     </dl>
                   </li>
                 ))}

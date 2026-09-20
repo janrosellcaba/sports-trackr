@@ -60,7 +60,7 @@ const PAGES: {
   {
     id: "appearance",
     label: "Appearance",
-    hint: "Look & units",
+    hint: "Look",
     icon: Palette,
   },
   {
@@ -312,7 +312,6 @@ function ImportSection() {
       summary.supplementsAdded ? `${summary.supplementsAdded} supplement logs` : null,
       summary.exercisesUpserted ? `${summary.exercisesUpserted} exercises` : null,
       summary.musclesCreated ? `${summary.musclesCreated} new muscles` : null,
-      summary.preferencesUpdated ? "units" : null,
     ].filter(Boolean);
     if (parts.length === 0) return "Nothing new to merge.";
     return `Imported ${parts.join(", ")}.`;

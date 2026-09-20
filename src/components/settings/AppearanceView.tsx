@@ -1,30 +1,21 @@
 "use client";
 
 import { useAccentTheme } from "@/components/theme/ThemeProvider";
-import { useUnits } from "@/components/units/UnitsProvider";
 import {
   ACCENT_THEMES,
   ACCENT_THEME_IDS,
   type AccentThemeId,
 } from "@/lib/theme";
-import { DISTANCE_UNITS, MASS_UNITS } from "@/lib/units";
 import { CARD_CLS, LABEL_CLS, chipClass } from "@/lib/ui";
 
 export function AppearanceView() {
   const { theme, setTheme, colorMode, setColorMode, saveError } = useAccentTheme();
-  const {
-    massUnit,
-    distanceUnit,
-    setMassUnit,
-    setDistanceUnit,
-    saveError: unitsError,
-  } = useUnits();
 
   return (
     <div className="space-y-3">
-      {saveError || unitsError ? (
+      {saveError ? (
         <p role="alert" className="text-sm font-medium text-danger">
-          {saveError || unitsError}
+          {saveError}
         </p>
       ) : null}
 
@@ -40,40 +31,6 @@ export function AppearanceView() {
               className={`${chipClass(colorMode === mode)} w-full py-3`}
             >
               {mode === "dark" ? "Dark" : "Light"}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className={`${CARD_CLS} space-y-3 p-4`}>
-        <p className={LABEL_CLS}>Weight</p>
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Weight unit">
-          {MASS_UNITS.map((unit) => (
-            <button
-              key={unit}
-              type="button"
-              aria-pressed={massUnit === unit}
-              onClick={() => setMassUnit(unit)}
-              className={`${chipClass(massUnit === unit)} w-full py-3`}
-            >
-              {unit === "kg" ? "Kilograms" : "Pounds"}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className={`${CARD_CLS} space-y-3 p-4`}>
-        <p className={LABEL_CLS}>Distance</p>
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Distance unit">
-          {DISTANCE_UNITS.map((unit) => (
-            <button
-              key={unit}
-              type="button"
-              aria-pressed={distanceUnit === unit}
-              onClick={() => setDistanceUnit(unit)}
-              className={`${chipClass(distanceUnit === unit)} w-full py-3`}
-            >
-              {unit === "km" ? "Kilometers" : "Miles"}
             </button>
           ))}
         </div>

@@ -41,10 +41,10 @@ Creates user `test` / `test` with ~90 days of gym, sports, supplements, and PR s
 - `/` Home for a day (`?date=YYYY-MM-DD`)
 - `/log` Full history
 - `/analytics` Period via `?period=7|30|90|0`
-- `/settings/...` Muscles, exercises, appearance (including kg/lb and km/mi), export/import, account, contact support
+- `/settings/...` Muscles, exercises, appearance, export/import, account, contact support
 - `/login` and `/register`
 
-Sessions live in SQLite and are revoked on logout. Writes go through server actions. The service worker caches icons and an offline page only — it does not cache logged-in HTML and does not queue logs offline. Weights are stored in kilograms and distances in km/meters; Appearance can display pounds and miles.
+Sessions live in SQLite and are revoked on logout. Writes go through server actions. The service worker caches icons and an offline page only — it does not cache logged-in HTML and does not queue logs offline. Weights are kilograms and distances are km/meters.
 
 ## Scripts
 
