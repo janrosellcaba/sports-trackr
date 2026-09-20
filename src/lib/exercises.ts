@@ -1,9 +1,10 @@
 export const EXERCISE_CATALOG: {
   name: string;
   muscle: string;
+  dualWeights?: boolean;
 }[] = [
   { name: "Bench Press", muscle: "Chest" },
-  { name: "Incline Dumbbell Press", muscle: "Chest" },
+  { name: "Incline Dumbbell Press", muscle: "Chest", dualWeights: true },
   { name: "Chest Fly", muscle: "Chest" },
   { name: "Push-Up", muscle: "Chest" },
   { name: "Lat Pulldown", muscle: "Back" },

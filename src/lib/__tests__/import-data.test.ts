@@ -46,7 +46,6 @@ const baseExport = {
       ],
     },
   ],
-  customSupplements: [{ name: "Creatine", defaultDose: "5g" }],
   preferences: { massUnit: "lb", distanceUnit: "mi" },
 };
 
@@ -57,6 +56,7 @@ describe("parseTrackrImport", () => {
     if (!parsed.ok) return;
     expect(parsed.data.gymSessions[0]?.hits[0]?.intensity).toBe(3);
     expect(parsed.data.preferences.massUnit).toBe("lb");
+    expect(parsed.data.exercises[0]?.dualWeights).toBeUndefined();
   });
 
   it("rejects invalid dates and intensity", () => {
@@ -75,6 +75,21 @@ describe("parseTrackrImport", () => {
   it("rejects empty payloads", () => {
     expect(parseTrackrImport({}).ok).toBe(false);
     expect(parseTrackrImport("nope").ok).toBe(false);
+  });
+
+  it("preserves the two-weight flag when present", () => {
+    const parsed = parseTrackrImport({
+      ...baseExport,
+      customExercises: [
+        {
+          ...baseExport.customExercises[0],
+          dualWeights: true,
+        },
+      ],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.exercises[0]?.dualWeights).toBe(true);
   });
 });
 

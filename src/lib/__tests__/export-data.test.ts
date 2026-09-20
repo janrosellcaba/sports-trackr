@@ -27,5 +27,6 @@ describe("buildExportCsv", () => {
     });
     expect(csv).toContain("# exerciseSnapshots");
     expect(csv).toContain("Bench Press,2026-08-01,72,6,80,3");
+    expect(csv).toContain("dualWeights");
   });
 });

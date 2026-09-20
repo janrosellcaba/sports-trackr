@@ -57,6 +57,7 @@ export type CustomExercisePayload = {
   prWeight: number | null;
   prReps: number | null;
   prDate: string | null;
+  dualWeights: boolean;
   createdAt: string;
 };
 
@@ -97,6 +98,7 @@ export type AnalyticsSummary = {
   totalWorkouts: number;
   totalHits: number;
   totalGymLoad: number;
+  totalLiftedKg: number;
   totalSports: number;
   totalSportMinutes: number;
   totalSportKm: number;
@@ -110,6 +112,7 @@ export type AnalyticsSummary = {
     gymLoad: number | null;
     sports: number | null;
     supplements: number | null;
+    liftedKg: number | null;
   };
   daily: DailyActivityPoint[];
   topMuscles: TopMuscle[];

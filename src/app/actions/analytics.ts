@@ -14,6 +14,8 @@ import {
 } from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
 import { getRequestToday } from "@/lib/request-today";
+import { sumLiftedKg } from "@/lib/catalog";
+import { roundTo } from "@/lib/units";
 import type {
   AnalyticsPeriod,
   AnalyticsSummary,
@@ -68,6 +70,8 @@ export async function getAnalyticsSummary(
     allSupplementDates,
     allSportDates,
     topHits,
+    liftedSnaps,
+    previousLiftedSnaps,
   ] = await Promise.all([
     prisma.gymSession.findMany({
       where: { userId: user.id, date: { gte: rangeStart } },
@@ -143,6 +147,30 @@ export async function getAnalyticsSummary(
           _count: true,
         })
       : Promise.resolve(null),
+    prisma.exerciseSnapshot.findMany({
+      where: {
+        exercise: { userId: user.id },
+        workingWeight: { not: null },
+        ...(allTime ? {} : { date: { gte: rangeStart } }),
+      },
+      select: {
+        workingWeight: true,
+        exercise: { select: { dualWeights: true } },
+      },
+    }),
+    allTime
+      ? Promise.resolve([])
+      : prisma.exerciseSnapshot.findMany({
+          where: {
+            exercise: { userId: user.id },
+            workingWeight: { not: null },
+            date: { gte: previousStart, lt: rangeStart },
+          },
+          select: {
+            workingWeight: true,
+            exercise: { select: { dualWeights: true } },
+          },
+        }),
   ]);
 
   const dailyMap = new Map(
@@ -240,6 +268,24 @@ export async function getAnalyticsSummary(
   const allTimeSupplementDays = allTime
     ? uniqueDates(allSupplementDates.map((item) => item.date)).length
     : supplementDays.size;
+  const totalLiftedKg = roundTo(
+    sumLiftedKg(
+      liftedSnaps.map((snap) => ({
+        workingWeight: snap.workingWeight,
+        dualWeights: snap.exercise.dualWeights,
+      })),
+    ),
+    2,
+  );
+  const previousLiftedKg = roundTo(
+    sumLiftedKg(
+      previousLiftedSnaps.map((snap) => ({
+        workingWeight: snap.workingWeight,
+        dualWeights: snap.exercise.dualWeights,
+      })),
+    ),
+    2,
+  );
 
   return {
     days: allTime ? 0 : rangeDays,
@@ -250,6 +296,7 @@ export async function getAnalyticsSummary(
     totalWorkouts,
     totalHits,
     totalGymLoad,
+    totalLiftedKg,
     totalSports,
     totalSportMinutes,
     totalSportKm: Math.round(totalSportKm * 10) / 10,
@@ -267,7 +314,13 @@ export async function getAnalyticsSummary(
       new Date(`${today}T12:00:00`),
     ),
     trends: allTime
-      ? { workouts: null, gymLoad: null, sports: null, supplements: null }
+      ? {
+          workouts: null,
+          gymLoad: null,
+          sports: null,
+          supplements: null,
+          liftedKg: null,
+        }
       : {
           workouts: percentChange(chartSessions.length, previousSessions.length),
           gymLoad: percentChange(totalGymLoad, previousLoad),
@@ -276,6 +329,7 @@ export async function getAnalyticsSummary(
             supplementDays.size,
             previousSupplementDays.size,
           ),
+          liftedKg: percentChange(totalLiftedKg, previousLiftedKg),
         },
     daily: Array.from(dailyMap.values()),
     topMuscles,
@@ -354,7 +408,7 @@ export async function getExerciseProgression(
 export async function exportMyData() {
   const user = await requireUser();
 
-  const [sessions, supplements, sports, muscles, customExercises, customSupplements] =
+  const [sessions, supplements, sports, muscles, customExercises] =
     await Promise.all([
       prisma.gymSession.findMany({
         where: { userId: user.id },
@@ -377,10 +431,6 @@ export async function exportMyData() {
         where: { userId: user.id },
         orderBy: { name: "asc" },
         include: { muscle: { select: { name: true } }, snapshots: true },
-      }),
-      prisma.customSupplement.findMany({
-        where: { userId: user.id },
-        orderBy: { name: "asc" },
       }),
     ]);
 
@@ -423,6 +473,7 @@ export async function exportMyData() {
       prWeight: item.prWeight,
       prReps: item.prReps,
       prDate: item.prDate,
+      dualWeights: item.dualWeights,
       snapshots: item.snapshots.map((snap) => ({
         date: snap.date,
         workingWeight: snap.workingWeight,
@@ -430,10 +481,6 @@ export async function exportMyData() {
         prWeight: snap.prWeight,
         prReps: snap.prReps,
       })),
-    })),
-    customSupplements: customSupplements.map((item) => ({
-      name: item.name,
-      defaultDose: item.defaultDose,
     })),
     preferences: {
       massUnit: user.massUnit,

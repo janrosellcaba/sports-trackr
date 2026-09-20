@@ -2,7 +2,7 @@ import { isDateKey } from "@/lib/calculations";
 import { parseIntensity, parseMuscleName } from "@/lib/muscles";
 import { nameKey } from "@/lib/names";
 import { MAX_TEXT_FIELD } from "@/lib/constants";
-import { validateExerciseName, validateSupplementName } from "@/lib/catalog";
+import { parseDualWeightsFlag, validateExerciseName, validateSupplementName } from "@/lib/catalog";
 import {
   EFFORT_LEVELS,
   isSportTypeId,
@@ -60,6 +60,7 @@ export type NormalizedImport = {
     prWeight: number | null;
     prReps: number | null;
     prDate: string | null;
+    dualWeights?: boolean;
     snapshots: ImportSnapshot[];
   }>;
   customSupplements: Array<{ name: string; defaultDose: string }>;
@@ -265,6 +266,8 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
         prWeight: optionalNumber(item.prWeight),
         prReps: optionalInt(item.prReps),
         prDate: prDate && isDateKey(prDate) ? prDate : null,
+        dualWeights:
+          item.dualWeights === undefined ? undefined : parseDualWeightsFlag(item.dualWeights),
         snapshots,
       };
     });

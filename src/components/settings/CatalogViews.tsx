@@ -257,6 +257,11 @@ export function ExerciseCatalogView({
                     {item.muscleName ? (
                       <span className="text-muted"> · {item.muscleName}</span>
                     ) : null}
+                    {item.dualWeights ? (
+                      <span className="ml-1 rounded-md bg-brand-soft px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-text">
+                        2×
+                      </span>
+                    ) : null}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted">
                     {working ? `Working set ${working}` : "No working set"}
@@ -532,6 +537,7 @@ function ExerciseSheet({
       : "",
   );
   const [reps, setReps] = useState(initial?.workingReps?.toString() ?? "");
+  const [dualWeights, setDualWeights] = useState(initial?.dualWeights ?? false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -585,6 +591,20 @@ function ExerciseSheet({
           />
         </label>
       </div>
+      <label className="mb-4 flex items-start gap-3 rounded-xl bg-chip px-3 py-3">
+        <input
+          type="checkbox"
+          checked={dualWeights}
+          onChange={(event) => setDualWeights(event.target.checked)}
+          className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent-primary)]"
+        />
+        <span>
+          <span className="block text-sm font-semibold text-ink">Two weights</span>
+          <span className="text-xs text-muted">
+            Log one dumbbell. Analytics totals both (30kg each counts as 60kg).
+          </span>
+        </span>
+      </label>
       {error ? (
         <p role="alert" className="mb-3 text-sm text-danger">
           {error}
@@ -607,6 +627,7 @@ function ExerciseSheet({
                 prWeight: initial?.prWeight ?? null,
                 prReps: initial?.prReps ?? null,
                 prDate: initial?.prDate ?? null,
+                dualWeights,
               });
               const row = initial
                 ? await updateCustomExercise({ id: initial.id, ...parsed })

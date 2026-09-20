@@ -1,8 +1,8 @@
 "use client";
 
-import { Activity, Dumbbell, Flame, Pill } from "lucide-react";
+import { Activity, Dumbbell, Flame, Pill, Weight } from "lucide-react";
 import { useUnits } from "@/components/units/UnitsProvider";
-import { kmToDisplay, trimNumber } from "@/lib/units";
+import { kgToDisplay, kmToDisplay, trimNumber } from "@/lib/units";
 import type { AnalyticsSummary } from "@/types/trackr";
 import { CARD_CLS } from "@/lib/ui";
 function TrendBadge({ value }: { value: number | null }) {
@@ -31,7 +31,7 @@ function TrendBadge({ value }: { value: number | null }) {
 }
 
 export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
-  const { distanceUnit } = useUnits();
+  const { massUnit, distanceUnit } = useUnits();
   const allTime = summary.days === 0;
   const cards = [
     {
@@ -40,6 +40,13 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
       hint: `${summary.gymStreak}-day streak`,
       trend: allTime ? null : summary.trends.workouts,
       icon: Dumbbell,
+    },
+    {
+      label: `Total ${massUnit}`,
+      value: trimNumber(kgToDisplay(summary.totalLiftedKg, massUnit)),
+      hint: "Working sets · two-weight lifts count both",
+      trend: allTime ? null : summary.trends.liftedKg,
+      icon: Weight,
     },
     {
       label: "Muscle load",
@@ -65,7 +72,7 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   ];
 
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       {cards.map((card) => (
         <article key={card.label} className={`${CARD_CLS} p-3.5`}>
           <div className="mb-3 flex items-start justify-between gap-2">

@@ -35,6 +35,7 @@ export type TrackrExportPayload = {
     prWeight: number | null;
     prReps: number | null;
     prDate: string | null;
+    dualWeights?: boolean;
     snapshots?: Array<{
       date: string;
       workingWeight: number | null;
@@ -135,6 +136,7 @@ export function buildExportCsv(data: TrackrExportPayload): string {
         "prWeight",
         "prReps",
         "prDate",
+        "dualWeights",
       ],
       (data.customExercises ?? []).map((item) => [
         item.name,
@@ -144,6 +146,7 @@ export function buildExportCsv(data: TrackrExportPayload): string {
         item.prWeight ?? "",
         item.prReps ?? "",
         item.prDate ?? "",
+        item.dualWeights ? "true" : "false",
       ]),
     ),
     "",

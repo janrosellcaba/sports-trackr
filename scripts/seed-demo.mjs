@@ -24,7 +24,7 @@ const MUSCLES = [
 
 const EXERCISES = [
   { name: "Bench Press", muscle: "Chest", workingWeight: 80, workingReps: 6, prWeight: 90, prReps: 3 },
-  { name: "Incline Dumbbell Press", muscle: "Chest", workingWeight: 28, workingReps: 10, prWeight: 32, prReps: 8 },
+  { name: "Incline Dumbbell Press", muscle: "Chest", workingWeight: 28, workingReps: 10, prWeight: 32, prReps: 8, dualWeights: true },
   { name: "Chest Fly", muscle: "Chest", workingWeight: 12, workingReps: 12, prWeight: 14, prReps: 10 },
   { name: "Push-Up", muscle: "Chest", workingWeight: 0, workingReps: 15, prWeight: 0, prReps: 25 },
   { name: "Lat Pulldown", muscle: "Back", workingWeight: 55, workingReps: 10, prWeight: 65, prReps: 8 },
@@ -179,6 +179,7 @@ async function main() {
           prWeight: item.prWeight,
           prReps: item.prReps,
           prDate: toISO(daysAgo(3)),
+          dualWeights: Boolean(item.dualWeights),
         };
       }),
     });

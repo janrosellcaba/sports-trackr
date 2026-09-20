@@ -69,6 +69,7 @@ export async function seedUserCatalog(userId: string): Promise<void> {
       name: item.name,
       nameKey: nameKey(item.name),
       muscleId: muscleIdByName.get(item.muscle.toLowerCase()) ?? null,
+      dualWeights: item.dualWeights,
     }));
 
   const supplementCreates = defaultSupplementSeeds()

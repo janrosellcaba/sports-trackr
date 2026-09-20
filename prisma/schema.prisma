@@ -120,6 +120,7 @@ model CustomExercise {
   prWeight      Float?
   prReps        Int?
   prDate        String?
+  dualWeights   Boolean            @default(false)
   createdAt     DateTime           @default(now())
   snapshots     ExerciseSnapshot[]
 

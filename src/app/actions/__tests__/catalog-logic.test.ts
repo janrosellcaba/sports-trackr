@@ -8,6 +8,8 @@ import {
   isImprovedPersonalRecord,
   validateExerciseName,
   formatLift,
+  effectiveWeightKg,
+  sumLiftedKg,
 } from "@/lib/catalog";
 
 describe("custom exercise CRUD validation", () => {
@@ -30,6 +32,7 @@ describe("custom exercise CRUD validation", () => {
       prWeight: 100,
       prReps: 5,
       prDate: "2026-09-16",
+      dualWeights: false,
     });
   });
 
@@ -89,6 +92,7 @@ describe("catalog merge", () => {
         prReps: 3,
         prDate: "2026-09-11",
         createdAt: "2026-09-11T00:00:00.000Z",
+        dualWeights: false,
       },
     ]);
     expect(merged).toHaveLength(1);
@@ -174,5 +178,26 @@ describe("formatLift", () => {
   it("appends the selected mass unit", () => {
     expect(formatLift(80, 5)).toBe("80kg × 5");
     expect(formatLift(80, 5, "lb")).toBe("176.4lb × 5");
+  });
+});
+
+describe("dual-weight load", () => {
+  it("counts both dumbbells in analytics totals", () => {
+    expect(
+      parseCustomExerciseInput({
+        name: "Incline Dumbbell Press",
+        dualWeights: true,
+        workingWeight: 30,
+        workingReps: 6,
+      }),
+    ).toMatchObject({ dualWeights: true, workingWeight: 30 });
+    expect(effectiveWeightKg(30, true)).toBe(60);
+    expect(effectiveWeightKg(80, false)).toBe(80);
+    expect(
+      sumLiftedKg([
+        { workingWeight: 30, dualWeights: true },
+        { workingWeight: 80, dualWeights: false },
+      ]),
+    ).toBe(140);
   });
 });

@@ -202,6 +202,10 @@ async function applyImport(
       prWeight: item.prWeight,
       prReps: item.prReps,
       prDate: item.prDate,
+      dualWeights:
+        item.dualWeights === undefined
+          ? existing?.dualWeights ?? false
+          : item.dualWeights,
     };
     const saved = existing
       ? await tx.customExercise.update({

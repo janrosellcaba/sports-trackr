@@ -131,7 +131,7 @@ export function SettingsView({
         {section === "exercises" ? (
           <SectionIntro
             title="Exercises"
-            description="Add lifts here first. Personal records are logged from Home with + Add PR."
+            description="Add lifts here first. Check two weights for dumbbells so analytics totals both sides. Personal records are logged from Home with + Add PR."
           >
             <ExerciseCatalogView initial={customExercises} muscles={muscles} />
           </SectionIntro>

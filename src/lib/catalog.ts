@@ -14,10 +14,12 @@ export const SUPPLEMENT_CATALOG = [
 export function defaultExerciseSeeds(): Array<{
   name: string;
   muscle: string;
+  dualWeights: boolean;
 }> {
   return EXERCISE_CATALOG.map((item) => ({
     name: item.name,
     muscle: item.muscle,
+    dualWeights: Boolean(item.dualWeights),
   }));
 }
 
@@ -71,7 +73,34 @@ export type ParsedCustomExercise = {
   prWeight: number | null;
   prReps: number | null;
   prDate: string | null;
+  dualWeights: boolean;
 };
+
+export function parseDualWeightsFlag(value: unknown): boolean {
+  return value === true || value === "true" || value === 1 || value === "1";
+}
+
+/** Per-hand weight becomes total load for two-dumbbell lifts. */
+export function effectiveWeightKg(
+  weight: number | null | undefined,
+  dualWeights: boolean,
+): number {
+  if (weight == null || !Number.isFinite(weight)) return 0;
+  return dualWeights ? weight * 2 : weight;
+}
+
+export function sumLiftedKg(
+  rows: Array<{
+    workingWeight?: number | null;
+    dualWeights?: boolean;
+  }>,
+): number {
+  return rows.reduce(
+    (sum, row) =>
+      sum + effectiveWeightKg(row.workingWeight, Boolean(row.dualWeights)),
+    0,
+  );
+}
 
 export function parseCustomExerciseInput(input: {
   name: string;
@@ -81,6 +110,7 @@ export function parseCustomExerciseInput(input: {
   prWeight?: number | string | null;
   prReps?: number | string | null;
   prDate?: string | null;
+  dualWeights?: unknown;
 }): ParsedCustomExercise {
   const nameError = validateExerciseName(input.name);
   if (nameError) throw new Error(nameError);
@@ -110,6 +140,7 @@ export function parseCustomExerciseInput(input: {
     prWeight,
     prReps,
     prDate,
+    dualWeights: parseDualWeightsFlag(input.dualWeights),
   };
 }
 
@@ -224,6 +255,7 @@ export type CatalogExercise = {
   workingReps: number | null;
   prWeight: number | null;
   prReps: number | null;
+  dualWeights: boolean;
 };
 
 export function mergeExerciseCatalog(custom: CustomExercisePayload[]): CatalogExercise[] {
@@ -238,6 +270,7 @@ export function mergeExerciseCatalog(custom: CustomExercisePayload[]): CatalogEx
       workingReps: item.workingReps,
       prWeight: item.prWeight,
       prReps: item.prReps,
+      dualWeights: item.dualWeights,
     }));
 }
 

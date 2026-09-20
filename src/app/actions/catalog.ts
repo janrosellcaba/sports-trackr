@@ -43,6 +43,7 @@ function serializeExercise(row: {
   prWeight: number | null;
   prReps: number | null;
   prDate: string | null;
+  dualWeights: boolean;
   createdAt: Date;
 }): CustomExercisePayload {
   return {
@@ -55,6 +56,7 @@ function serializeExercise(row: {
     prWeight: row.prWeight,
     prReps: row.prReps,
     prDate: row.prDate,
+    dualWeights: row.dualWeights,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -278,6 +280,7 @@ export async function createCustomExercise(input: {
   prWeight?: number | string | null;
   prReps?: number | string | null;
   prDate?: string | null;
+  dualWeights?: unknown;
 }): Promise<CustomExercisePayload> {
   const user = await requireUser();
   const parsed = parseCustomExerciseInput(input);
@@ -306,6 +309,7 @@ export async function createCustomExercise(input: {
         prWeight: parsed.prWeight,
         prReps: parsed.prReps,
         prDate,
+        dualWeights: parsed.dualWeights,
       },
       include: exerciseInclude,
     });
@@ -336,6 +340,7 @@ export async function updateCustomExercise(input: {
   prWeight?: number | string | null;
   prReps?: number | string | null;
   prDate?: string | null;
+  dualWeights?: unknown;
 }): Promise<CustomExercisePayload> {
   const user = await requireUser();
   const parsed = parseCustomExerciseInput(input);
@@ -370,6 +375,7 @@ export async function updateCustomExercise(input: {
         prWeight: parsed.prWeight,
         prReps: parsed.prReps,
         prDate,
+        dualWeights: parsed.dualWeights,
       },
       include: exerciseInclude,
     });
