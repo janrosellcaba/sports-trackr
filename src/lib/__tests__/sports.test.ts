@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatSportGlance,
   formatSportSummary,
   parsePace,
   parseSportSessionInput,
@@ -106,5 +107,28 @@ describe("formatSportSummary", () => {
         effort: "HARD",
       }),
     ).toBe("90 min · hard");
+  });
+});
+
+describe("formatSportGlance", () => {
+  it("keeps only the lead metric", () => {
+    expect(
+      formatSportGlance({
+        durationMinutes: null,
+        distanceKm: 8.2,
+        distanceMeters: null,
+        pace: "5:15",
+        effort: null,
+      }),
+    ).toBe("8.2 km");
+    expect(
+      formatSportGlance({
+        durationMinutes: 90,
+        distanceKm: null,
+        distanceMeters: null,
+        pace: null,
+        effort: "HARD",
+      }),
+    ).toBe("90 min");
   });
 });

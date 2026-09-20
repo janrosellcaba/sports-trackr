@@ -174,17 +174,16 @@ export function parseSportSessionInput(input: {
   return parsed;
 }
 
-export function formatSportSummary(
+function sportSummaryParts(
   session: {
-    type: string;
     durationMinutes: number | null;
     distanceKm: number | null;
     distanceMeters: number | null;
     pace: string | null;
     effort: string | null;
   },
-  distanceUnit: DistanceUnit = DEFAULT_DISTANCE_UNIT,
-): string {
+  distanceUnit: DistanceUnit,
+): string[] {
   const parts: string[] = [];
   if (session.distanceKm != null) {
     parts.push(`${trimNumber(kmToDisplay(session.distanceKm, distanceUnit))} ${distanceUnit}`);
@@ -200,5 +199,32 @@ export function formatSportSummary(
   if (session.durationMinutes != null) parts.push(`${session.durationMinutes} min`);
   const effort = effortLabel(session.effort);
   if (effort) parts.push(effort.toLowerCase());
-  return parts.join(" · ");
+  return parts;
+}
+
+export function formatSportSummary(
+  session: {
+    type: string;
+    durationMinutes: number | null;
+    distanceKm: number | null;
+    distanceMeters: number | null;
+    pace: string | null;
+    effort: string | null;
+  },
+  distanceUnit: DistanceUnit = DEFAULT_DISTANCE_UNIT,
+): string {
+  return sportSummaryParts(session, distanceUnit).join(" · ");
+}
+
+export function formatSportGlance(
+  session: {
+    durationMinutes: number | null;
+    distanceKm: number | null;
+    distanceMeters: number | null;
+    pace: string | null;
+    effort: string | null;
+  },
+  distanceUnit: DistanceUnit = DEFAULT_DISTANCE_UNIT,
+): string {
+  return sportSummaryParts(session, distanceUnit)[0] ?? "";
 }

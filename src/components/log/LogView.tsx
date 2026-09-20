@@ -12,9 +12,10 @@ import { SupplementFormSheet } from "@/components/supplements/SupplementBar";
 import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
 import { dateHeadingParts, formatMonthYear } from "@/lib/calculations";
 import { useLatestProps } from "@/lib/use-latest-props";
-import { formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
+import { formatSportGlance, formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
 import { supplementFromName } from "@/lib/supplements";
 import { useUnits } from "@/components/units/UnitsProvider";
+import type { DistanceUnit } from "@/lib/units";
 import {
   CARD_CLS,
   DANGER_BTN,
@@ -167,7 +168,7 @@ export function LogView({
             const heading = dateHeadingParts(day.date);
             const prevMonth = index > 0 ? visible[index - 1].date.slice(0, 7) : null;
             const showMonth = multiMonth && day.date.slice(0, 7) !== prevMonth;
-            const chips = logChips(day, filter);
+            const chips = logChips(day, filter, distanceUnit);
             return (
               <div key={day.date}>
                 {showMonth ? (
@@ -446,7 +447,11 @@ type LogChip = {
   size: "sm" | "md";
 };
 
-function logChips(day: DayGroup, filter: Filter): LogChip[] {
+function logChips(
+  day: DayGroup,
+  filter: Filter,
+  distanceUnit: DistanceUnit,
+): LogChip[] {
   const chips: LogChip[] = [];
   if ((filter === "all" || filter === "gym") && day.gym) {
     const hits = [...day.gym.hits].sort(
@@ -463,10 +468,12 @@ function logChips(day: DayGroup, filter: Filter): LogChip[] {
   }
   if (filter === "all" || filter === "sports") {
     for (const session of day.sports) {
+      const glance = formatSportGlance(session, distanceUnit);
       chips.push({
         id: session.id,
         label: sportLabel(session.type),
-        size: "md",
+        detail: glance || undefined,
+        size: "sm",
       });
     }
   }

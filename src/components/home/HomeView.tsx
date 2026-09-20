@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { formatDisplayDate } from "@/lib/calculations";
-import { averageIntensity, formatGymSummary } from "@/lib/muscles";
-import { CARD_CLS, LABEL_CLS, PAGE_TITLE } from "@/lib/ui";
+import { averageIntensity } from "@/lib/muscles";
+import { CARD_CLS, PAGE_TITLE } from "@/lib/ui";
 import { GymBar } from "@/components/gym/GymBar";
 import { PrBar } from "@/components/gym/PrBar";
 import { SportsBar } from "@/components/sports/SportsBar";
@@ -25,7 +25,6 @@ export function HomeView({
   gym,
   sports,
   supplements,
-  recentSessions,
   recovery,
   muscles,
   customExercises,
@@ -35,7 +34,6 @@ export function HomeView({
   gym: GymSessionPayload | null;
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
-  recentSessions: GymSessionPayload[];
   recovery: MuscleRecoveryPayload[];
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
@@ -110,29 +108,6 @@ export function HomeView({
           router.refresh();
         }}
       />
-
-      {recentSessions.length > 0 ? (
-        <div>
-          <h2 className={`mb-3 ${LABEL_CLS}`}>Recent</h2>
-          <div className="space-y-2">
-            {recentSessions.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => goToDate(item.date)}
-                className={`${CARD_CLS} w-full px-4 py-3 text-left transition-colors duration-150 hover:bg-chip/40`}
-              >
-                <p className="text-sm font-semibold text-ink">
-                  {formatDisplayDate(item.date)}
-                </p>
-                <p className="mt-0.5 text-xs text-muted">
-                  {formatGymSummary(item.hits) || `${item.hitCount} muscles`}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <PrBar
         date={date}

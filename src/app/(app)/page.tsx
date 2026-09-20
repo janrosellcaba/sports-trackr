@@ -22,7 +22,6 @@ export default async function HomePage({
       gym={state.gym}
       sports={state.sports}
       supplements={state.supplements}
-      recentSessions={state.recentSessions}
       recovery={state.recovery}
       muscles={state.muscles}
       customExercises={state.customExercises}

@@ -11,7 +11,6 @@ import {
   findGymSessionByDate,
   listGymSessionsForUser,
   listLatestHitsBeforeDate,
-  listRecentGymSessionsForUser,
   serializeGymSession,
 } from "@/lib/db/gym";
 import {
@@ -38,7 +37,6 @@ export type HomeDayState = {
   gym: GymSessionPayload | null;
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
-  recentSessions: GymSessionPayload[];
   recovery: MuscleRecoveryPayload[];
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
@@ -68,7 +66,6 @@ export async function getHomeDayState(
     gymRow,
     sportsRows,
     supplementRows,
-    recentRows,
     latestHits,
     muscles,
     customExercises,
@@ -76,7 +73,6 @@ export async function getHomeDayState(
     findGymSessionByDate(user.id, date),
     listSportsForDate(user.id, date),
     listSupplementsForDate(user.id, date),
-    listRecentGymSessionsForUser(user.id, date),
     listLatestHitsBeforeDate(user.id, date),
     listMusclesForUser(user.id),
     listCustomExercisesForUser(user.id),
@@ -88,7 +84,6 @@ export async function getHomeDayState(
     gym: gymRow ? serializeGymSession(gymRow) : null,
     sports: sportsRows.map(serializeSport),
     supplements: supplementRows.map(serializeSupplement),
-    recentSessions: recentRows.map(serializeGymSession),
     recovery: latestHits.map((hit) => ({
       ...hit,
       daysAgo: daysBetween(hit.lastDate, date),
