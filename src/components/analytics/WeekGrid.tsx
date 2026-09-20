@@ -58,18 +58,13 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
             Gym
           </span>
           <span className="flex items-center gap-1.5">
-            <svg width="7" height="10" aria-hidden="true" className="text-brand/85">
-              <line
-                x1="3.5"
-                y1="1"
-                x2="3.5"
-                y2="9"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeDasharray="1.8 2.2"
-              />
-            </svg>
+            <span
+              className="h-1.5 w-2.5 rounded-[2px] ring-1 ring-brand/40"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(-45deg, var(--accent-primary) 0 1px, transparent 1px 2.25px)",
+              }}
+            />
             Sport
           </span>
         </p>
@@ -141,26 +136,22 @@ function KindCell({ kind }: { kind: ActivityKind }) {
   }
   if (kind === "sport") {
     return (
-      <span className="relative block h-4 overflow-hidden rounded-[4px] bg-chip/50 ring-1 ring-line/60">
-        <Stitch />
-      </span>
+      <span
+        className="block h-4 rounded-[4px] ring-1 ring-brand/40"
+        style={{
+          backgroundColor: "color-mix(in srgb, var(--accent-primary) 14%, transparent)",
+          backgroundImage:
+            "repeating-linear-gradient(-45deg, var(--accent-primary) 0 1.5px, transparent 1.5px 3.25px)",
+        }}
+      />
     );
   }
   return (
-    <span className="relative block h-4 overflow-hidden rounded-[4px] bg-brand shadow-[0_0_10px_var(--accent-glow)]">
-      <Stitch onBrand />
-    </span>
-  );
-}
-
-function Stitch({ onBrand = false }: { onBrand?: boolean }) {
-  const color = onBrand ? "var(--accent-fg)" : "var(--accent-primary)";
-  return (
     <span
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-y-[3px] left-1/2 w-[1.5px] -translate-x-1/2"
+      className="block h-4 rounded-[4px] bg-brand shadow-[0_0_10px_var(--accent-glow)]"
       style={{
-        backgroundImage: `repeating-linear-gradient(to bottom, ${color} 0 1.5px, transparent 1.5px 4px)`,
+        backgroundImage:
+          "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--accent-fg) 42%, transparent) 0 1.4px, transparent 1.4px 3.5px)",
       }}
     />
   );
