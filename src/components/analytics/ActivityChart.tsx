@@ -5,8 +5,8 @@ import {
   Bar,
   CartesianGrid,
   ComposedChart,
+  Line,
   ResponsiveContainer,
-  Scatter,
   Tooltip,
   XAxis,
   YAxis,
@@ -41,6 +41,7 @@ export function ActivityChart({
   const gymDays = data.filter((point) => point.workouts > 0).length;
   const sportDays = data.filter((point) => point.sports > 0).length;
   const sportPerWeek = perWeekRate(sportDays, data.length);
+  const dashWidth = Math.max(6, Math.min(14, Math.round(240 / Math.max(data.length, 1))));
 
   function pick(point: DailyActivityPoint | undefined) {
     if (point) setSelected(point);
@@ -62,10 +63,18 @@ export function ActivityChart({
             Gym
           </span>
           <span className="flex items-center gap-1.5">
-            <span
-              className="h-2 w-2 rounded-full border-2 border-brand bg-paper"
-              aria-hidden="true"
-            />
+            <svg width="16" height="8" aria-hidden="true" className="text-brand/65">
+              <line
+                x1="0"
+                y1="4"
+                x2="16"
+                y2="4"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeDasharray="4 3.5"
+              />
+            </svg>
             Sport
           </span>
         </p>
@@ -122,24 +131,28 @@ export function ActivityChart({
                 pick((entry as { payload?: DailyActivityPoint }).payload);
               }}
             />
-            <Scatter
+            <Line
               dataKey="sportMark"
-              fill={paper}
+              type="linear"
               stroke={brand}
-              strokeWidth={2}
+              strokeOpacity={0.58}
+              strokeWidth={2.2}
+              strokeDasharray="5 6"
+              strokeLinecap="round"
+              connectNulls={false}
               tooltipType="none"
-              shape={(props) => (
-                <SportDot
+              isAnimationActive={false}
+              activeDot={false}
+              dot={(props) => (
+                <SportDash
                   cx={props.cx}
                   cy={props.cy}
                   payload={props.payload as ChartPoint | undefined}
-                  fill={paper}
                   stroke={brand}
+                  width={dashWidth}
+                  onPick={pick}
                 />
               )}
-              onClick={(entry) => {
-                pick((entry as { payload?: DailyActivityPoint }).payload);
-              }}
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -181,34 +194,50 @@ export function ActivityChart({
   );
 }
 
-type SportDotProps = {
+type SportDashProps = {
   cx?: number;
   cy?: number;
   payload?: ChartPoint;
-  fill: string;
   stroke: string;
+  width: number;
+  onPick: (point: DailyActivityPoint | undefined) => void;
 };
 
-function SportDot({ cx, cy, payload, fill, stroke }: SportDotProps) {
+function SportDash({ cx, cy, payload, stroke, width, onPick }: SportDashProps) {
   if (cx == null || cy == null || !payload?.sports) return null;
+  const half = width / 2;
   return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={4.5}
-      fill={fill}
-      stroke={stroke}
-      strokeWidth={2}
-    />
+    <g
+      style={{ cursor: "pointer" }}
+      onClick={() => onPick(payload)}
+    >
+      <rect
+        x={cx - half - 2}
+        y={cy - 10}
+        width={width + 4}
+        height={20}
+        fill="transparent"
+      />
+      <line
+        x1={cx - half}
+        y1={cy}
+        x2={cx + half}
+        y2={cy}
+        stroke={stroke}
+        strokeOpacity={0.72}
+        strokeWidth={2.75}
+        strokeLinecap="round"
+      />
+    </g>
   );
 }
 
 function withSportMarks(data: DailyActivityPoint[]): ChartPoint[] {
   const maxLoad = Math.max(0, ...data.map((point) => point.gymLoad));
-  const floor = Math.max(1, Math.round(maxLoad * 0.12) || 1);
+  const rail = Math.max(1, maxLoad);
   return data.map((point) => ({
     ...point,
-    sportMark: point.sports > 0 ? Math.max(point.gymLoad, floor) : null,
+    sportMark: point.sports > 0 ? rail : null,
   }));
 }
 
