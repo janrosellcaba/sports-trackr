@@ -15,7 +15,7 @@ import {
   type SportDefinition,
   type SportTypeId,
 } from "@/lib/sports";
-import { CARD_CLS, GHOST_BTN, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
+import { CARD_CLS, GHOST_BTN, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, SECONDARY_BTN, TAP_ROW, chipClass } from "@/lib/ui";
 import { useUnits } from "@/components/units/UnitsProvider";
 import {
   canonicalPace,
@@ -80,7 +80,7 @@ export function SportsBar({
             type="button"
             disabled={pendingId != null}
             onClick={() => setCreating(item)}
-            className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
+            className={SECONDARY_BTN}
           >
             + {item.label}
           </button>
@@ -95,7 +95,7 @@ export function SportsBar({
               <li key={session.id} className="flex items-start justify-between gap-3 text-sm">
                 <button
                   type="button"
-                  className="min-w-0 flex-1 text-left"
+                  className={`min-w-0 flex-1 text-left ${TAP_ROW}`}
                   onClick={() => setEditing(session)}
                 >
                   <span className="font-medium text-ink">

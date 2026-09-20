@@ -138,7 +138,9 @@ export function LogView({
             aria-pressed={filter === key}
             onClick={() => setFilter(key)}
             className={`min-h-11 rounded-lg px-1 text-[11px] font-bold transition-all duration-150 sm:text-xs ${
-              filter === key ? "bg-paper text-ink" : "text-muted hover:text-ink"
+              filter === key
+                ? "bg-paper text-ink shadow-sm"
+                : "text-muted hover:bg-paper/60 hover:text-ink motion-safe:hover:scale-[1.03]"
             }`}
           >
             {label}
@@ -169,7 +171,7 @@ export function LogView({
                   type="button"
                   aria-expanded={open}
                   onClick={() => setOpenDate(open ? null : day.date)}
-                  className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
+                  className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-chip/40"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-ink">
@@ -249,7 +251,7 @@ export function LogView({
                                 },
                               })
                             }
-                            className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-sm font-bold text-danger disabled:opacity-50"
+                            className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-sm font-bold text-danger transition-all duration-150 hover:brightness-110 disabled:opacity-50"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                             Delete gym

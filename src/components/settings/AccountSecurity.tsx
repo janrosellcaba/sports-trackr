@@ -130,7 +130,7 @@ function SessionsCard({ sessions }: { sessions: AccountSession[] }) {
                 <button
                   type="button"
                   disabled={pending}
-                  className="min-h-11 rounded-xl px-3 text-sm font-bold text-danger disabled:opacity-50"
+                  className="min-h-11 rounded-xl px-3 text-sm font-bold text-danger transition-all duration-150 hover:bg-danger-soft disabled:opacity-50"
                   onClick={() => {
                     setError(null);
                     startTransition(async () => {
@@ -151,7 +151,7 @@ function SessionsCard({ sessions }: { sessions: AccountSession[] }) {
         <button
           type="button"
           disabled={pending}
-          className="w-full rounded-2xl border border-line bg-chip py-3 text-base font-bold text-ink disabled:opacity-60"
+          className="w-full rounded-2xl border border-line bg-chip py-3 text-base font-bold text-ink transition-all duration-150 hover:bg-chip-hover motion-safe:hover:scale-[1.01] disabled:opacity-60"
           onClick={() => {
             setError(null);
             startTransition(async () => {

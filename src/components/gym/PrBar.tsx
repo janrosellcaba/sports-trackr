@@ -11,7 +11,7 @@ import { formatDisplayDate } from "@/lib/calculations";
 import { parseDecimal } from "@/lib/numbers";
 import { displayToKg, formatInputNumber, kgToDisplay, massLabel } from "@/lib/units";
 import { useUnits } from "@/components/units/UnitsProvider";
-import { CARD_CLS, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, SELECT_CLS } from "@/lib/ui";
+import { CARD_CLS, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, SECONDARY_BTN, SELECT_CLS, TAP_ROW } from "@/lib/ui";
 import type { CustomExercisePayload } from "@/types/trackr";
 
 export function PrBar({
@@ -56,7 +56,7 @@ export function PrBar({
             <li key={item.id}>
               <button
                 type="button"
-                className="flex w-full items-baseline justify-between gap-3 rounded-xl px-1 py-1.5 text-left hover:bg-chip/50"
+                className={`flex w-full items-baseline justify-between gap-3 py-1.5 text-left ${TAP_ROW}`}
                 onClick={() => {
                   setEditing(item);
                   setOpen(true);
@@ -73,7 +73,7 @@ export function PrBar({
                   ) : null}
                 </span>
                 <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-ink">
-                  {formatLift(item.prWeight, item.prReps, massUnit)}
+                  {formatLift(item.prWeight, item.prReps, massUnit, item.dualWeights)}
                 </span>
               </button>
             </li>
@@ -95,7 +95,7 @@ export function PrBar({
           setEditing(null);
           setOpen(true);
         }}
-        className="flex h-12 w-full items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        className={SECONDARY_BTN}
       >
         + Add PR
       </button>
@@ -201,7 +201,7 @@ function PrSheet({
               <option key={item.id} value={item.id}>
                 {item.name}
                 {item.prWeight != null
-                  ? ` · ${formatLift(item.prWeight, item.prReps, massUnit)}`
+                  ? ` · ${formatLift(item.prWeight, item.prReps, massUnit, item.dualWeights)}`
                   : ""}
               </option>
             ))}

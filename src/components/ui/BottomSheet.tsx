@@ -91,7 +91,7 @@ export function BottomSheet({
         className="sheet-enter relative z-10 max-h-[min(90dvh,100svh)] w-full max-w-md overflow-y-auto rounded-t-3xl bg-paper p-6 sm:rounded-3xl"
       >
         <div
-          className="mx-auto -mt-1 mb-4 flex h-8 w-full cursor-grab items-start justify-center sm:hidden"
+          className="mx-auto -mt-1 mb-4 flex h-8 w-full items-start justify-center sm:hidden"
           onPointerDown={onHandlePointerDown}
           onPointerUp={onHandlePointerUp}
         >
@@ -107,7 +107,7 @@ export function BottomSheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-chip hover:text-ink"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-all duration-150 hover:bg-chip hover:text-ink motion-safe:hover:scale-[1.06]"
             >
               <X className="h-5 w-5" />
             </button>

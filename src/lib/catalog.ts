@@ -169,12 +169,14 @@ export function formatLift(
   weight: number | null | undefined,
   reps: number | null | undefined,
   massUnit: MassUnit = "kg",
+  dualWeights = false,
 ): string {
   if (weight == null && reps == null) return "";
   if (weight == null) return `${reps} reps`;
   const mass = formatMass(weight, massUnit);
-  if (reps == null) return mass;
-  return `${mass} × ${reps}`;
+  const load = dualWeights ? `2× ${mass}` : mass;
+  if (reps == null) return load;
+  return `${load} × ${reps}`;
 }
 
 export function muscleNameById(

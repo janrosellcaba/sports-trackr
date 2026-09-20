@@ -41,7 +41,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
           setOpen(true);
           load();
         }}
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-muted hover:bg-chip hover:text-ink"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-muted transition-all duration-150 hover:bg-chip hover:text-ink motion-safe:hover:scale-[1.04]"
       >
         <Shield className="h-4 w-4" aria-hidden="true" />
         Admin
@@ -70,7 +70,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
               <button
                 type="button"
                 disabled={pending}
-                className="w-full rounded-2xl border-2 border-danger/30 bg-danger-soft py-4 text-lg font-bold text-danger disabled:opacity-60"
+                className="w-full rounded-2xl border-2 border-danger/30 bg-danger-soft py-4 text-lg font-bold text-danger transition-all duration-150 hover:brightness-110 disabled:opacity-60"
                 onClick={() => {
                   const target = pendingDelete;
                   startTransition(async () => {
@@ -90,7 +90,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
               <button
                 type="button"
                 disabled={pending}
-                className="min-h-11 w-full py-2 text-sm font-bold text-muted hover:text-ink"
+                className="min-h-11 w-full rounded-xl py-2 text-sm font-bold text-muted transition-all duration-150 hover:bg-chip hover:text-ink"
                 onClick={() => {
                   setPendingDelete(null);
                   setError(null);

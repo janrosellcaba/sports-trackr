@@ -137,6 +137,7 @@ describe("formatLift", () => {
   it("appends the selected mass unit", () => {
     expect(formatLift(80, 5)).toBe("80kg × 5");
     expect(formatLift(80, 5, "lb")).toBe("176.4lb × 5");
+    expect(formatLift(30, 8, "kg", true)).toBe("2× 30kg × 8");
   });
 });
 

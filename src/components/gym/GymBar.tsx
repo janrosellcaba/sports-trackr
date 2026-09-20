@@ -10,7 +10,7 @@ import {
   formatRecoveryShort,
   recoveryAriaLabel,
 } from "@/lib/recovery";
-import { CARD_CLS, DANGER_BTN, GHOST_BTN, LABEL_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
+import { CARD_CLS, DANGER_BTN, GHOST_BTN, LABEL_CLS, PRIMARY_BTN, TAP_ROW, chipClass } from "@/lib/ui";
 import type {
   GymSessionPayload,
   MuscleHitPayload,
@@ -78,7 +78,7 @@ export function GymBar({
                 type="button"
                 aria-label={recoveryAriaLabel(muscle.name, hit, last)}
                 onClick={() => setEditing(muscle)}
-                className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition-all duration-150 active:scale-[0.98] ${
+                className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition-all duration-150 motion-safe:hover:scale-[1.03] motion-safe:active:scale-[0.98] ${
                   hit
                     ? "bg-brand text-[color:var(--accent-fg)]"
                     : "bg-chip text-ink hover:bg-chip-hover"
@@ -114,7 +114,7 @@ export function GymBar({
             <li key={hit.id} className="flex items-center justify-between gap-3 text-sm">
               <button
                 type="button"
-                className="min-h-11 min-w-0 flex-1 text-left font-medium text-ink"
+                className={`min-h-11 min-w-0 flex-1 text-left font-medium text-ink ${TAP_ROW}`}
                 onClick={() => {
                   const muscle = muscles.find((item) => item.id === hit.muscleId);
                   if (muscle) setEditing(muscle);

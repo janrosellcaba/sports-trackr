@@ -123,7 +123,7 @@ export function HomeView({
                 key={item.id}
                 type="button"
                 onClick={() => goToDate(item.date)}
-                className={`${CARD_CLS} w-full px-4 py-3 text-left hover:bg-chip/40`}
+                className={`${CARD_CLS} w-full px-4 py-3 text-left transition-colors duration-150 hover:bg-chip/40`}
               >
                 <p className="text-sm font-semibold text-ink">
                   {formatDisplayDate(item.date)}

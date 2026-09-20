@@ -25,3 +25,8 @@ export function periodLabel(days: number): string {
   if (days <= 90) return "Last 90 days";
   return "All time";
 }
+
+export function perWeekRate(count: number, days: number): number | null {
+  if (days <= 0) return null;
+  return Math.round((count / days) * 7 * 10) / 10;
+}

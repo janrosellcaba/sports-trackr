@@ -13,6 +13,7 @@ import {
 import { getExerciseProgression } from "@/app/actions/analytics";
 import { useAccentColor, useSurfaceColors } from "@/components/theme/ThemeProvider";
 import { useUnits } from "@/components/units/UnitsProvider";
+import { formatLift } from "@/lib/catalog";
 import { formatChartDate } from "@/lib/calculations";
 import { kgToDisplay, trimNumber, type MassUnit } from "@/lib/units";
 import type { NotebookExercise, ProgressionPoint } from "@/types/trackr";
@@ -48,7 +49,6 @@ export function ExerciseProgressionChart({
   }, [selected]);
 
   const displayPoints = points.map((point) => toDisplayPoint(point, massUnit));
-  const displayPicked = picked ? toDisplayPoint(picked, massUnit) : null;
 
   if (exercises.length === 0) {
     return (
@@ -66,7 +66,7 @@ export function ExerciseProgressionChart({
         <div>
           <h2 className={LABEL_CLS}>Progression</h2>
           <p className="mt-1 text-xs text-muted">
-            Snapshots from personal records and working sets, in {massUnit}.
+            Personal records and estimated 1RM, in {massUnit}.
           </p>
         </div>
         <label className="block w-full sm:w-56">
@@ -88,7 +88,7 @@ export function ExerciseProgressionChart({
       <div className={`h-56 w-full ${isPending ? "opacity-60" : ""}`}>
         {points.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
-            No working weight or PR recorded for this lift yet.
+            No personal record for this lift yet.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
@@ -130,16 +130,12 @@ export function ExerciseProgressionChart({
                 labelFormatter={(label) => formatChartDate(String(label))}
                 formatter={(value, name) => [
                   value == null ? "—" : `${value} ${massUnit}`,
-                  name === "estimatedOneRm"
-                    ? "Est. 1RM"
-                    : name === "prWeight"
-                      ? "PR"
-                      : "Working",
+                  name === "estimatedOneRm" ? "Est. 1RM" : "PR",
                 ]}
               />
               <Line
                 type="monotone"
-                dataKey="workingWeight"
+                dataKey="prWeight"
                 stroke={brand}
                 strokeWidth={2}
                 dot={{ r: 3, fill: brand }}
@@ -147,7 +143,7 @@ export function ExerciseProgressionChart({
               />
               <Line
                 type="monotone"
-                dataKey="prWeight"
+                dataKey="estimatedOneRm"
                 stroke={muted}
                 strokeWidth={2}
                 strokeDasharray="4 4"
@@ -158,17 +154,14 @@ export function ExerciseProgressionChart({
         )}
       </div>
 
-      {displayPicked ? (
+      {picked ? (
         <p className="mt-3 text-sm text-ink" role="status">
-          {formatChartDate(displayPicked.date)}
-          {displayPicked.workingWeight != null
-            ? ` · working ${trimNumber(displayPicked.workingWeight)}${massUnit}`
+          {formatChartDate(picked.date)}
+          {picked.prWeight != null
+            ? ` · PR ${formatLift(picked.prWeight, picked.prReps, massUnit, picked.dualWeights)}`
             : ""}
-          {displayPicked.prWeight != null
-            ? ` · PR ${trimNumber(displayPicked.prWeight)}${massUnit}`
-            : ""}
-          {displayPicked.estimatedOneRm != null
-            ? ` · est. 1RM ${trimNumber(displayPicked.estimatedOneRm)}${massUnit}`
+          {picked.estimatedOneRm != null
+            ? ` · est. 1RM ${trimNumber(kgToDisplay(picked.estimatedOneRm, massUnit))}${massUnit}`
             : ""}
         </p>
       ) : null}
@@ -179,8 +172,6 @@ export function ExerciseProgressionChart({
 function toDisplayPoint(point: ProgressionPoint, unit: MassUnit): ProgressionPoint {
   return {
     ...point,
-    workingWeight:
-      point.workingWeight == null ? null : kgToDisplay(point.workingWeight, unit),
     prWeight: point.prWeight == null ? null : kgToDisplay(point.prWeight, unit),
     estimatedOneRm:
       point.estimatedOneRm == null ? null : kgToDisplay(point.estimatedOneRm, unit),

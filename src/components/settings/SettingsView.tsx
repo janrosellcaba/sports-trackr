@@ -101,7 +101,7 @@ export function SettingsView({
       <div className="space-y-4">
         <Link
           href="/settings"
-          className="inline-flex min-h-11 items-center gap-1 text-sm font-bold text-muted hover:text-ink"
+          className="inline-flex min-h-11 items-center gap-1 rounded-lg px-1 text-sm font-bold text-muted transition-all duration-150 hover:bg-chip hover:text-ink motion-safe:hover:scale-[1.03]"
         >
           <ChevronLeft className="h-4 w-4" />
           Settings
@@ -119,7 +119,7 @@ export function SettingsView({
         {section === "exercises" ? (
           <SectionIntro
             title="Exercises"
-            description="Add lifts here first. Check two weights for dumbbells so analytics totals both sides. Personal records are logged from Home with + Add PR."
+            description="Add lifts here first. Turn on two weights for dumbbells so each PR shows as a pair. Personal records are logged from Home with + Add PR."
           >
             <ExerciseCatalogView initial={customExercises} muscles={muscles} />
           </SectionIntro>
@@ -182,7 +182,7 @@ export function SettingsView({
             <Link
               key={item.id}
               href={`/settings/${item.id}`}
-              className={`flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left hover:bg-chip/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20 ${
+              className={`flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-chip/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20 ${
                 index > 0 ? "border-t border-line" : ""
               }`}
             >
@@ -211,7 +211,7 @@ function LogoutButton() {
     <form action={logout}>
       <button
         type="submit"
-        className={`${CARD_CLS} flex min-h-14 w-full items-center gap-3 px-4 py-4 text-left text-danger hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-danger/20`}
+        className={`${CARD_CLS} flex min-h-14 w-full items-center gap-3 px-4 py-4 text-left text-danger transition-colors duration-150 hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-danger/20`}
       >
         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger-soft">
           <LogOut className="h-5 w-5" aria-hidden="true" />
@@ -304,7 +304,7 @@ function ExportSection() {
         type="button"
         disabled={pending != null}
         onClick={() => handleExport("csv")}
-        className="w-full rounded-2xl border border-line bg-chip py-3 text-base font-bold text-ink disabled:opacity-60"
+        className="w-full rounded-2xl border border-line bg-chip py-3 text-base font-bold text-ink transition-all duration-150 hover:bg-chip-hover motion-safe:hover:scale-[1.01] disabled:opacity-60"
       >
         {pending === "csv" ? "Exporting…" : "Export CSV"}
       </button>
@@ -435,7 +435,7 @@ function DangerZone({ user }: { user: AuthUser }) {
             if (result?.error) setDangerError(result.error);
           });
         }}
-        className="w-full rounded-2xl border-2 border-danger/30 bg-danger-soft py-3 text-base font-bold text-danger disabled:opacity-50"
+        className="w-full rounded-2xl border-2 border-danger/30 bg-danger-soft py-3 text-base font-bold text-danger transition-all duration-150 hover:brightness-110 disabled:opacity-50"
       >
         {isPending ? "Deleting…" : "Delete account"}
       </button>

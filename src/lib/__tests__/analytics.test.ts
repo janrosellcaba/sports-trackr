@@ -3,6 +3,7 @@ import {
   parseAnalyticsPeriod,
   percentChange,
   periodLabel,
+  perWeekRate,
 } from "@/lib/analytics";
 
 describe("parseAnalyticsPeriod", () => {
@@ -26,5 +27,13 @@ describe("periodLabel", () => {
   it("labels All as all time", () => {
     expect(periodLabel(9999)).toBe("All time");
     expect(periodLabel(30)).toBe("Last 30 days");
+  });
+});
+
+describe("perWeekRate", () => {
+  it("scales a period count into a weekly rate", () => {
+    expect(perWeekRate(4, 7)).toBe(4);
+    expect(perWeekRate(12, 30)).toBe(2.8);
+    expect(perWeekRate(3, 0)).toBeNull();
   });
 });

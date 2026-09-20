@@ -142,12 +142,33 @@ body {
   letter-spacing: 0;
 }
 
+/* The cursor stays the plain system arrow — hover states carry the affordance. */
+*,
+*::before,
+*::after {
+  cursor: default !important;
+}
+
 button,
 input,
 select,
 textarea {
   touch-action: manipulation;
   color-scheme: inherit;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea {
+  appearance: none;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent-primary);
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 select {
@@ -159,13 +180,6 @@ select {
   background-position: right 0.9rem center;
   background-size: 1rem;
   padding-right: 2.5rem;
-}
-
-input,
-textarea {
-  appearance: none;
-  background-color: var(--color-paper);
-  color: var(--color-ink);
 }
 
 input:-webkit-autofill,
@@ -227,7 +241,9 @@ select:-webkit-autofill {
   }
 
   button:hover,
-  button:active {
+  button:active,
+  a:hover,
+  a:active {
     transform: none !important;
   }
 }

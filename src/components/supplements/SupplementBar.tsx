@@ -12,7 +12,7 @@ import {
   type SupplementDefinition,
   supplementFromName,
 } from "@/lib/supplements";
-import { CARD_CLS, GHOST_BTN, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, chipClass } from "@/lib/ui";
+import { CARD_CLS, GHOST_BTN, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, SECONDARY_BTN, TAP_ROW, chipClass } from "@/lib/ui";
 import type { SupplementPayload } from "@/types/trackr";
 
 export function SupplementBar({
@@ -67,7 +67,7 @@ export function SupplementBar({
             type="button"
             disabled={pendingId != null}
             onClick={() => setCreating(item)}
-            className="flex h-12 items-center justify-center rounded-xl bg-chip text-sm font-bold text-ink transition-all duration-150 hover:bg-chip-hover active:scale-[0.98] disabled:opacity-60"
+            className={SECONDARY_BTN}
           >
             + {item.name}
           </button>
@@ -93,7 +93,7 @@ export function SupplementBar({
                 {kind ? (
                   <button
                     type="button"
-                    className="min-w-0 flex-1 truncate text-left font-medium text-ink"
+                    className={`min-w-0 flex-1 truncate text-left font-medium text-ink ${TAP_ROW}`}
                     onClick={() => setEditing(intake)}
                   >
                     {label}

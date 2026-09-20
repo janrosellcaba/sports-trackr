@@ -16,7 +16,7 @@ export default function ErrorView({
       <button
         type="button"
         onClick={reset}
-        className="mt-6 rounded-2xl bg-brand px-5 py-3 font-bold text-[color:var(--accent-fg)]"
+        className="mt-6 rounded-2xl bg-brand px-5 py-3 font-bold text-[color:var(--accent-fg)] transition-all duration-150 hover:bg-brand-dark motion-safe:hover:-translate-y-0.5"
       >
         Try again
       </button>

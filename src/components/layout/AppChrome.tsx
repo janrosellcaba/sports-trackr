@@ -35,7 +35,7 @@ export function AppChrome({
           <div className="flex items-center justify-between gap-2">
             <Link
               href="/"
-              className="min-w-0 rounded-lg focus:outline-none focus:ring-4 focus:ring-brand/20"
+              className="min-w-0 rounded-lg transition-transform duration-150 motion-safe:hover:scale-[1.03] focus:outline-none focus:ring-4 focus:ring-brand/20"
             >
               <Logo />
             </Link>

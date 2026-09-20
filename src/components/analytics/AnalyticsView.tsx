@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { BestLifts } from "@/components/analytics/BestLifts";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
 import { TopMuscles } from "@/components/analytics/TopMuscles";
 import { PAGE_TITLE } from "@/lib/ui";
@@ -51,10 +52,10 @@ export function AnalyticsView({
                 key={item.key}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-bold ${
+                className={`flex min-h-11 items-center justify-center rounded-lg px-3 text-sm font-bold transition-all duration-150 ${
                   active
                     ? "bg-paper text-ink shadow-sm"
-                    : "text-muted hover:text-ink"
+                    : "text-muted hover:bg-paper/60 hover:text-ink motion-safe:hover:scale-[1.03]"
                 }`}
               >
                 {item.label}
@@ -66,9 +67,14 @@ export function AnalyticsView({
 
       <div className="space-y-5">
         <KpiGrid summary={summary} />
-        <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
-        <TopMuscles items={summary.topMuscles} />
-        <ExerciseProgressionChart exercises={exercises} />
+        <div className="grid gap-5 lg:grid-cols-2">
+          <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
+          <TopMuscles items={summary.topMuscles} />
+        </div>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <BestLifts exercises={exercises} />
+          <ExerciseProgressionChart exercises={exercises} />
+        </div>
       </div>
     </div>
   );

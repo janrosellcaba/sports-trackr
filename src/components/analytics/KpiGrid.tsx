@@ -1,18 +1,14 @@
 "use client";
 
-import { Activity, Dumbbell, Flame, Pill, Weight } from "lucide-react";
+import { Activity, Dumbbell, Flame, Pill } from "lucide-react";
 import { useUnits } from "@/components/units/UnitsProvider";
-import { kgToDisplay, kmToDisplay, trimNumber } from "@/lib/units";
+import { perWeekRate } from "@/lib/analytics";
+import { kmToDisplay, trimNumber } from "@/lib/units";
 import type { AnalyticsSummary } from "@/types/trackr";
 import { CARD_CLS } from "@/lib/ui";
+
 function TrendBadge({ value }: { value: number | null }) {
-  if (value == null) {
-    return (
-      <span className="rounded-full bg-chip px-2 py-0.5 text-[11px] font-bold text-muted">
-        New
-      </span>
-    );
-  }
+  if (value == null) return null;
   const positive = value > 0;
   const neutral = value === 0;
   return (
@@ -25,28 +21,24 @@ function TrendBadge({ value }: { value: number | null }) {
             : "bg-danger-soft text-danger"
       }`}
     >
-      {neutral ? "0%" : `${positive ? "+" : ""}${value}% vs prior`}
+      {neutral ? "Same" : `${positive ? "+" : ""}${value}%`}
     </span>
   );
 }
 
 export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
-  const { massUnit, distanceUnit } = useUnits();
+  const { distanceUnit } = useUnits();
   const allTime = summary.days === 0;
+  const gymPerWeek = allTime ? null : perWeekRate(summary.totalWorkouts, summary.days);
   const cards = [
     {
       label: "Gym days",
       value: String(summary.totalWorkouts),
-      hint: `${summary.gymStreak}-day streak`,
+      hint: gymPerWeek != null
+        ? `${summary.gymStreak}-day streak · ${trimNumber(gymPerWeek)} / wk`
+        : `${summary.gymStreak}-day streak`,
       trend: allTime ? null : summary.trends.workouts,
       icon: Dumbbell,
-    },
-    {
-      label: `Total ${massUnit}`,
-      value: trimNumber(kgToDisplay(summary.totalLiftedKg, massUnit)),
-      hint: "Working sets · two-weight lifts count both",
-      trend: allTime ? null : summary.trends.liftedKg,
-      icon: Weight,
     },
     {
       label: "Muscle load",
@@ -72,7 +64,7 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   ];
 
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {cards.map((card) => (
         <article key={card.label} className={`${CARD_CLS} p-3.5`}>
           <div className="mb-3 flex items-start justify-between gap-2">

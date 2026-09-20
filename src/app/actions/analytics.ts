@@ -14,8 +14,6 @@ import {
 } from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
 import { getRequestToday } from "@/lib/request-today";
-import { sumLiftedKg } from "@/lib/catalog";
-import { roundTo } from "@/lib/units";
 import type {
   AnalyticsPeriod,
   AnalyticsSummary,
@@ -70,8 +68,6 @@ export async function getAnalyticsSummary(
     allSupplementDates,
     allSportDates,
     topHits,
-    liftedSnaps,
-    previousLiftedSnaps,
   ] = await Promise.all([
     prisma.gymSession.findMany({
       where: { userId: user.id, date: { gte: rangeStart } },
@@ -147,30 +143,6 @@ export async function getAnalyticsSummary(
           _count: true,
         })
       : Promise.resolve(null),
-    prisma.exerciseSnapshot.findMany({
-      where: {
-        exercise: { userId: user.id },
-        workingWeight: { not: null },
-        ...(allTime ? {} : { date: { gte: rangeStart } }),
-      },
-      select: {
-        workingWeight: true,
-        exercise: { select: { dualWeights: true } },
-      },
-    }),
-    allTime
-      ? Promise.resolve([])
-      : prisma.exerciseSnapshot.findMany({
-          where: {
-            exercise: { userId: user.id },
-            workingWeight: { not: null },
-            date: { gte: previousStart, lt: rangeStart },
-          },
-          select: {
-            workingWeight: true,
-            exercise: { select: { dualWeights: true } },
-          },
-        }),
   ]);
 
   const dailyMap = new Map(
@@ -268,24 +240,6 @@ export async function getAnalyticsSummary(
   const allTimeSupplementDays = allTime
     ? uniqueDates(allSupplementDates.map((item) => item.date)).length
     : supplementDays.size;
-  const totalLiftedKg = roundTo(
-    sumLiftedKg(
-      liftedSnaps.map((snap) => ({
-        workingWeight: snap.workingWeight,
-        dualWeights: snap.exercise.dualWeights,
-      })),
-    ),
-    2,
-  );
-  const previousLiftedKg = roundTo(
-    sumLiftedKg(
-      previousLiftedSnaps.map((snap) => ({
-        workingWeight: snap.workingWeight,
-        dualWeights: snap.exercise.dualWeights,
-      })),
-    ),
-    2,
-  );
 
   return {
     days: allTime ? 0 : rangeDays,
@@ -296,7 +250,6 @@ export async function getAnalyticsSummary(
     totalWorkouts,
     totalHits,
     totalGymLoad,
-    totalLiftedKg,
     totalSports,
     totalSportMinutes,
     totalSportKm: Math.round(totalSportKm * 10) / 10,
@@ -319,7 +272,6 @@ export async function getAnalyticsSummary(
           gymLoad: null,
           sports: null,
           supplements: null,
-          liftedKg: null,
         }
       : {
           workouts: percentChange(chartSessions.length, previousSessions.length),
@@ -329,7 +281,6 @@ export async function getAnalyticsSummary(
             supplementDays.size,
             previousSupplementDays.size,
           ),
-          liftedKg: percentChange(totalLiftedKg, previousLiftedKg),
         },
     daily: Array.from(dailyMap.values()),
     topMuscles,
@@ -342,15 +293,38 @@ export async function getNotebookExercises(): Promise<NotebookExercise[]> {
     where: {
       userId: user.id,
       OR: [
-        { workingWeight: { not: null } },
         { prWeight: { not: null } },
-        { snapshots: { some: {} } },
+        { snapshots: { some: { prWeight: { not: null } } } },
       ],
     },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      name: true,
+      prWeight: true,
+      prReps: true,
+      prDate: true,
+      dualWeights: true,
+    },
     orderBy: { name: "asc" },
   });
   return rows;
+}
+
+function toProgressionPoint(
+  date: string,
+  prWeight: number | null,
+  prReps: number | null,
+  dualWeights: boolean,
+): ProgressionPoint | null {
+  if (prWeight == null) return null;
+  return {
+    date,
+    prWeight,
+    prReps,
+    estimatedOneRm:
+      prReps != null ? estimatedOneRm(prWeight, prReps) : prWeight,
+    dualWeights,
+  };
 }
 
 export async function getExerciseProgression(
@@ -368,37 +342,35 @@ export async function getExerciseProgression(
   });
   if (!exercise) return [];
 
-  const points: ProgressionPoint[] = exercise.snapshots.map((snap) => ({
-    date: snap.date,
-    workingWeight: snap.workingWeight,
-    prWeight: snap.prWeight,
-    estimatedOneRm:
-      snap.prWeight != null && snap.prReps != null
-        ? estimatedOneRm(snap.prWeight, snap.prReps)
-        : snap.prWeight,
-  }));
+  const points: ProgressionPoint[] = exercise.snapshots
+    .map((snap) =>
+      toProgressionPoint(
+        snap.date,
+        snap.prWeight,
+        snap.prReps,
+        exercise.dualWeights,
+      ),
+    )
+    .filter((point): point is ProgressionPoint => point != null);
 
   const last = points[points.length - 1];
-  const currentOneRm =
-    exercise.prWeight != null && exercise.prReps != null
-      ? estimatedOneRm(exercise.prWeight, exercise.prReps)
-      : exercise.prWeight;
-  const differs =
-    !last ||
-    last.workingWeight !== exercise.workingWeight ||
-    last.prWeight !== exercise.prWeight;
   const pointDate = exercise.prDate ?? (await getRequestToday());
+  const current = toProgressionPoint(
+    pointDate,
+    exercise.prWeight,
+    exercise.prReps,
+    exercise.dualWeights,
+  );
+  const differs =
+    current != null &&
+    (!last ||
+      last.prWeight !== current.prWeight ||
+      last.prReps !== current.prReps);
 
-  if (differs && (exercise.workingWeight != null || exercise.prWeight != null)) {
-    const existingIndex = points.findIndex((item) => item.date === pointDate);
-    const nextPoint = {
-      date: pointDate,
-      workingWeight: exercise.workingWeight,
-      prWeight: exercise.prWeight,
-      estimatedOneRm: currentOneRm,
-    };
-    if (existingIndex >= 0) points[existingIndex] = nextPoint;
-    else points.push(nextPoint);
+  if (current && differs) {
+    const existingIndex = points.findIndex((item) => item.date === current.date);
+    if (existingIndex >= 0) points[existingIndex] = current;
+    else points.push(current);
     points.sort((a, b) => a.date.localeCompare(b.date));
   }
 

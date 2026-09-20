@@ -66,6 +66,10 @@ export type { AnalyticsPeriod } from "@/lib/analytics";
 export type NotebookExercise = {
   id: string;
   name: string;
+  prWeight: number | null;
+  prReps: number | null;
+  prDate: string | null;
+  dualWeights: boolean;
 };
 
 export type DailyActivityPoint = {
@@ -90,7 +94,6 @@ export type AnalyticsSummary = {
   totalWorkouts: number;
   totalHits: number;
   totalGymLoad: number;
-  totalLiftedKg: number;
   totalSports: number;
   totalSportMinutes: number;
   totalSportKm: number;
@@ -104,7 +107,6 @@ export type AnalyticsSummary = {
     gymLoad: number | null;
     sports: number | null;
     supplements: number | null;
-    liftedKg: number | null;
   };
   daily: DailyActivityPoint[];
   topMuscles: TopMuscle[];
@@ -112,7 +114,8 @@ export type AnalyticsSummary = {
 
 export type ProgressionPoint = {
   date: string;
-  workingWeight: number | null;
   prWeight: number | null;
+  prReps: number | null;
   estimatedOneRm: number | null;
+  dualWeights: boolean;
 };

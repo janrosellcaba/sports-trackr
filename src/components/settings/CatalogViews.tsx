@@ -14,8 +14,6 @@ import {
   updateMuscle,
 } from "@/app/actions/catalog";
 import { formatLift, parseCustomExerciseInput } from "@/lib/catalog";
-import { parseDecimal } from "@/lib/numbers";
-import { displayToKg, formatInputNumber, kgToDisplay, massLabel } from "@/lib/units";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { useLatestProps } from "@/lib/use-latest-props";
 import {
@@ -240,8 +238,7 @@ export function ExerciseCatalogView({
       ) : (
         <ul className="space-y-2">
           {exercises.map((item) => {
-            const working = formatLift(item.workingWeight, item.workingReps, massUnit);
-            const pr = formatLift(item.prWeight, item.prReps, massUnit);
+            const pr = formatLift(item.prWeight, item.prReps, massUnit, item.dualWeights);
             return (
               <li
                 key={item.id}
@@ -260,8 +257,7 @@ export function ExerciseCatalogView({
                     ) : null}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted">
-                    {working ? `Working set ${working}` : "No working set"}
-                    {pr ? ` · PR ${pr}` : ""}
+                    {pr ? `PR ${pr}` : "No PR yet"}
                   </span>
                 </span>
                 <span className="flex shrink-0 justify-end gap-1">
@@ -400,15 +396,8 @@ function ExerciseSheet({
   onClose: () => void;
   onSave: (row: CustomExercisePayload) => void;
 }) {
-  const { massUnit } = useUnits();
   const [name, setName] = useState(initial?.name ?? "");
   const [muscleId, setMuscleId] = useState(initial?.muscleId ?? "");
-  const [weight, setWeight] = useState(
-    initial?.workingWeight != null
-      ? formatInputNumber(kgToDisplay(initial.workingWeight, massUnit))
-      : "",
-  );
-  const [reps, setReps] = useState(initial?.workingReps?.toString() ?? "");
   const [dualWeights, setDualWeights] = useState(initial?.dualWeights ?? false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -434,49 +423,31 @@ function ExerciseSheet({
           ))}
         </select>
       </label>
-      <p className="mb-1 text-xs font-bold uppercase tracking-wide text-muted">
-        Working set
-      </p>
-      <p className="mb-2 text-xs text-muted">
-        Optional note for your usual set. Personal records are logged from Home and
-        feed the progression chart.
-      </p>
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        <label>
-          <span className="mb-1 block text-sm font-semibold text-ink">
-            {massLabel(massUnit)}
-          </span>
-          <input
-            value={weight}
-            onChange={(event) => setWeight(event.target.value)}
-            inputMode="decimal"
-            className={INPUT_CLS}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={dualWeights}
+        onClick={() => setDualWeights((current) => !current)}
+        className="mb-4 flex w-full items-start gap-3 rounded-xl bg-chip px-3 py-3 text-left transition-all duration-150 hover:bg-chip-hover motion-safe:hover:scale-[1.01] motion-safe:active:scale-[0.99]"
+      >
+        <span
+          className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors duration-150 ${
+            dualWeights ? "bg-brand" : "bg-line"
+          }`}
+        >
+          <span
+            className={`h-5 w-5 rounded-full bg-paper shadow-sm transition-transform duration-150 ${
+              dualWeights ? "translate-x-4" : "translate-x-0"
+            }`}
           />
-        </label>
-        <label>
-          <span className="mb-1 block text-sm font-semibold text-ink">Reps</span>
-          <input
-            value={reps}
-            onChange={(event) => setReps(event.target.value)}
-            inputMode="numeric"
-            className={INPUT_CLS}
-          />
-        </label>
-      </div>
-      <label className="mb-4 flex items-start gap-3 rounded-xl bg-chip px-3 py-3">
-        <input
-          type="checkbox"
-          checked={dualWeights}
-          onChange={(event) => setDualWeights(event.target.checked)}
-          className="mt-1 h-4 w-4 shrink-0 accent-[var(--accent-primary)]"
-        />
+        </span>
         <span>
           <span className="block text-sm font-semibold text-ink">Two weights</span>
           <span className="text-xs text-muted">
-            Log one dumbbell. Analytics totals both (30kg each counts as 60kg).
+            Log one dumbbell. PRs show as a pair (30kg each reads as 2× 30kg).
           </span>
         </span>
-      </label>
+      </button>
       {error ? (
         <p role="alert" className="mb-3 text-sm text-danger">
           {error}
@@ -489,13 +460,11 @@ function ExerciseSheet({
         onClick={() => {
           startTransition(async () => {
             try {
-              const parsedWeight = parseDecimal(weight);
               const parsed = parseCustomExerciseInput({
                 name,
                 muscleId: muscleId || null,
-                workingWeight:
-                  parsedWeight == null ? null : displayToKg(parsedWeight, massUnit),
-                workingReps: reps,
+                workingWeight: initial?.workingWeight ?? null,
+                workingReps: initial?.workingReps ?? null,
                 prWeight: initial?.prWeight ?? null,
                 prReps: initial?.prReps ?? null,
                 prDate: initial?.prDate ?? null,

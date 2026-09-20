@@ -88,7 +88,7 @@ export function RegisterForm() {
 
       <Link
         href="/login"
-        className="mt-2 block w-full text-center text-sm font-semibold text-muted transition-colors duration-150 hover:text-ink"
+        className="mt-2 block w-full rounded-xl py-2 text-center text-sm font-semibold text-muted transition-all duration-150 hover:bg-chip hover:text-ink"
       >
         Already have an account? Log in
       </Link>
