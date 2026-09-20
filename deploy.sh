@@ -7,21 +7,16 @@ git pull origin main
 echo "📦 [2/5] Instal·lant dependències..."
 npm install
 
-echo "🗄️ [3/5] Sincronitzant base de dades (additive only)..."
-# Backup the SQLite file before schema sync. Never wipe existing tracking data.
-if [ -f .env ]; then
-  DB_PATH="$(node -e "require('dotenv').config(); const u=process.env.DATABASE_URL||''; process.stdout.write(u.startsWith('file:') ? u.slice(5) : '')")"
-  if [ -n "$DB_PATH" ] && [ -f "$DB_PATH" ]; then
-    STAMP="$(date +%Y%m%d-%H%M%S)"
-    cp -a "$DB_PATH" "${DB_PATH}.bak-${STAMP}"
-    echo "Backed up SQLite to ${DB_PATH}.bak-${STAMP}"
-  fi
-fi
+echo "🗄️ [3/5] Sincronitzant base de dades..."
+# Snapshot the live SQLite file first (consistent copy, even if the app is writing).
+node scripts/backup-sqlite.mjs
 npx prisma generate
 # Explicit additive column. This cannot drop tables or existing rows.
 node scripts/add-dual-weights-column.mjs
-# Additive schema sync only. Do not pass --force-reset; Prisma will refuse
-# destructive changes instead of wiping tracking data.
+# Only the unused custom-supplement catalog. Gym, sports, and intake logs stay.
+node scripts/drop-custom-supplements.mjs
+# Schema sync. CustomSupplement is already gone, so this should not prompt.
+# Do not pass --force-reset or --accept-data-loss.
 npx prisma db push
 
 echo "🔨 [4/5] Compilant Next.js..."
