@@ -180,9 +180,9 @@ export function LogView({
                     type="button"
                     aria-expanded={open}
                     onClick={() => setOpenDate(open ? null : day.date)}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-chip/35"
+                    className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-chip/35"
                   >
-                    <div className="w-11 shrink-0 text-center">
+                    <div className="w-11 shrink-0 pt-0.5 text-center">
                       <p
                         className={`font-display text-2xl leading-none font-extrabold tabular-nums ${
                           day.date === today ? "text-brand-text" : "text-ink"
@@ -194,14 +194,23 @@ export function LogView({
                         {heading.weekday}
                       </p>
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                       {chips.length > 0 ? (
-                        chips.map((chip, chipIndex) => (
+                        chips.map((chip) => (
                           <span
-                            key={`${chip}-${chipIndex}`}
-                            className="max-w-full truncate rounded-full bg-chip px-2.5 py-1 text-[11px] font-semibold text-ink"
+                            key={chip.id}
+                            className={
+                              chip.size === "sm"
+                                ? "max-w-full truncate rounded-full bg-chip/70 px-2 py-0.5 text-[10px] font-semibold text-ink"
+                                : "max-w-full truncate rounded-full bg-chip px-2.5 py-1 text-[11px] font-semibold text-ink"
+                            }
                           >
-                            {chip}
+                            {chip.label}
+                            {chip.detail ? (
+                              <span className="ml-1 font-mono tabular-nums text-muted">
+                                {chip.detail}
+                              </span>
+                            ) : null}
                           </span>
                         ))
                       ) : (
@@ -209,7 +218,7 @@ export function LogView({
                       )}
                     </div>
                     <ChevronDown
-                      className={`h-4 w-4 shrink-0 text-muted transition ${
+                      className={`mt-1 h-4 w-4 shrink-0 text-muted transition ${
                         open ? "rotate-180" : ""
                       }`}
                       aria-hidden="true"
@@ -430,16 +439,45 @@ export function LogView({
   );
 }
 
-function logChips(day: DayGroup, filter: Filter): string[] {
-  const chips: string[] = [];
+type LogChip = {
+  id: string;
+  label: string;
+  detail?: string;
+  size: "sm" | "md";
+};
+
+function logChips(day: DayGroup, filter: Filter): LogChip[] {
+  const chips: LogChip[] = [];
   if ((filter === "all" || filter === "gym") && day.gym) {
-    chips.push(`Gym · ${day.gym.hitCount}`);
+    const hits = [...day.gym.hits].sort(
+      (a, b) => b.intensity - a.intensity || a.muscleName.localeCompare(b.muscleName),
+    );
+    for (const hit of hits) {
+      chips.push({
+        id: hit.id,
+        label: hit.muscleName,
+        detail: String(hit.intensity),
+        size: "sm",
+      });
+    }
   }
   if (filter === "all" || filter === "sports") {
-    for (const session of day.sports) chips.push(sportLabel(session.type));
+    for (const session of day.sports) {
+      chips.push({
+        id: session.id,
+        label: sportLabel(session.type),
+        size: "md",
+      });
+    }
   }
   if (filter === "all" || filter === "supplements") {
-    for (const intake of day.supplements) chips.push(intake.name);
+    for (const intake of day.supplements) {
+      chips.push({
+        id: intake.id,
+        label: intake.name,
+        size: "md",
+      });
+    }
   }
   return chips;
 }
