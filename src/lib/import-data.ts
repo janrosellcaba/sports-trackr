@@ -11,6 +11,7 @@ import {
   type SportTypeId,
 } from "@/lib/sports";
 import { isDistanceUnit, isMassUnit, type DistanceUnit, type MassUnit } from "@/lib/units";
+import { parseBodyWeightKg } from "@/lib/weight";
 import type { TrackrExportPayload } from "@/lib/export-data";
 
 const MAX_MUSCLES = 80;
@@ -18,6 +19,7 @@ const MAX_SESSIONS = 4000;
 const MAX_HITS = 20000;
 const MAX_SPORTS = 4000;
 const MAX_SUPPLEMENTS = 8000;
+const MAX_BODY_WEIGHTS = 8000;
 const MAX_EXERCISES = 200;
 const MAX_SNAPSHOTS = 2000;
 
@@ -51,6 +53,7 @@ export type NormalizedImport = {
     notes: string | null;
   }>;
   supplements: Array<{ name: string; dose: string; date: string }>;
+  bodyWeights: Array<{ date: string; weightKg: number }>;
   exercises: Array<{
     name: string;
     muscleName: string | null;
@@ -233,6 +236,23 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
       throw new Error(`Too many supplements to import (max ${MAX_SUPPLEMENTS}).`);
     }
 
+    const bodyWeights = asArray(payload.bodyWeights).map((row, index) => {
+      const item = asRecord(row);
+      if (!item) throw new Error(`Weigh-in ${index + 1} is invalid.`);
+      const date = requireDate(item.date, `Weigh-in ${index + 1}`);
+      let weightKg: number;
+      try {
+        weightKg = parseBodyWeightKg(item.weightKg as number | string | null);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Invalid weight.";
+        throw new Error(`Weigh-in ${index + 1}: ${message}`);
+      }
+      return { date, weightKg };
+    });
+    if (bodyWeights.length > MAX_BODY_WEIGHTS) {
+      throw new Error(`Too many weigh-ins to import (max ${MAX_BODY_WEIGHTS}).`);
+    }
+
     const exercises = asArray(payload.customExercises).map((row, index) => {
       const item = asRecord(row);
       if (!item) throw new Error(`Exercise ${index + 1} is invalid.`);
@@ -287,6 +307,7 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
       gymSessions.length === 0 &&
       sports.length === 0 &&
       supplements.length === 0 &&
+      bodyWeights.length === 0 &&
       exercises.length === 0 &&
       massUnit == null &&
       distanceUnit == null;
@@ -300,6 +321,7 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
         gymSessions,
         sports,
         supplements,
+        bodyWeights,
         exercises,
       },
     };

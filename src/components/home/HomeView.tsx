@@ -8,9 +8,11 @@ import { GymBar } from "@/components/gym/GymBar";
 import { PrBar } from "@/components/gym/PrBar";
 import { SportsBar } from "@/components/sports/SportsBar";
 import { SupplementBar } from "@/components/supplements/SupplementBar";
+import { BodyWeightBar } from "@/components/weight/BodyWeightBar";
 import { DayPicker } from "@/components/ui/DayPicker";
 import { useLatestProps } from "@/lib/use-latest-props";
 import type {
+  BodyWeightPayload,
   CustomExercisePayload,
   GymSessionPayload,
   MusclePayload,
@@ -24,6 +26,7 @@ export function HomeView({
   date,
   gym,
   sports,
+  weight,
   supplements,
   recovery,
   muscles,
@@ -33,6 +36,7 @@ export function HomeView({
   date: string;
   gym: GymSessionPayload | null;
   sports: SportSessionPayload[];
+  weight: BodyWeightPayload | null;
   supplements: SupplementPayload[];
   recovery: MuscleRecoveryPayload[];
   muscles: MusclePayload[];
@@ -41,6 +45,7 @@ export function HomeView({
   const router = useRouter();
   const [dayGym, setDayGym] = useLatestProps(gym);
   const [daySports, setDaySports] = useLatestProps(sports);
+  const [dayWeight, setDayWeight] = useLatestProps(weight);
   const [daySupplements, setDaySupplements] = useLatestProps(supplements);
   const [exercises, setExercises] = useLatestProps(customExercises);
   const hits = dayGym?.hits ?? [];
@@ -105,6 +110,19 @@ export function HomeView({
         }}
         onRemoved={(id) => {
           setDaySports((current) => current.filter((item) => item.id !== id));
+          router.refresh();
+        }}
+      />
+
+      <BodyWeightBar
+        date={date}
+        entry={dayWeight}
+        onChange={(entry) => {
+          setDayWeight(entry);
+          router.refresh();
+        }}
+        onRemoved={() => {
+          setDayWeight(null);
           router.refresh();
         }}
       />

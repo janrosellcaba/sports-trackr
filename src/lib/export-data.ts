@@ -23,6 +23,10 @@ export type TrackrExportPayload = {
     effort: string | null;
     notes: string | null;
   }>;
+  bodyWeights?: Array<{
+    date: string;
+    weightKg: number;
+  }>;
   muscles?: Array<{
     name: string;
     sortOrder: number;
@@ -114,6 +118,12 @@ export function buildExportCsv(data: TrackrExportPayload): string {
         item.effort ?? "",
         item.notes ?? "",
       ]),
+    ),
+    "",
+    "# bodyWeights",
+    rowsToCsv(
+      ["date", "weightKg"],
+      (data.bodyWeights ?? []).map((item) => [item.date, item.weightKg]),
     ),
     "",
     "# muscles",

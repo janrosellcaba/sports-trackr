@@ -10,7 +10,7 @@ import { TopMuscles } from "@/components/analytics/TopMuscles";
 import { WeekGrid } from "@/components/analytics/WeekGrid";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { formatLift } from "@/lib/catalog";
-import { kmToDisplay, trimNumber, type DistanceUnit, type MassUnit } from "@/lib/units";
+import { kgToDisplay, kmToDisplay, trimNumber, type DistanceUnit, type MassUnit } from "@/lib/units";
 import {
   buildActivityWeeks,
   perWeekRate,
@@ -30,6 +30,11 @@ const ExerciseProgressionChart = dynamic(
       (mod) => mod.ExerciseProgressionChart,
     ),
   { ssr: false, loading: () => <ChartSkeleton label="Progression" /> },
+);
+
+const WeightChart = dynamic(
+  () => import("@/components/analytics/WeightChart").then((mod) => mod.WeightChart),
+  { ssr: false, loading: () => <ChartSkeleton label="Body weight" /> },
 );
 
 const PERIODS: { key: AnalyticsPeriod; label: string; href: string }[] = [
@@ -76,6 +81,7 @@ export function AnalyticsView({
           <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
           <TopMuscles items={summary.topMuscles} />
         </div>
+        <WeightChart points={summary.weights} />
         <div className="grid gap-5 lg:grid-cols-2">
           <BestLifts exercises={exercises} />
           <ExerciseProgressionChart exercises={exercises} />
@@ -181,6 +187,11 @@ function trainerPayload(
       days: summary.supplementDays,
       streak: summary.supplementStreak,
     },
+    bodyWeight: summary.weights.map((point) => ({
+      date: point.date,
+      kg: point.weightKg,
+      display: trimNumber(kgToDisplay(point.weightKg, massUnit)),
+    })),
     topMuscles: summary.topMuscles,
     personalRecords: exercises
       .filter((item) => item.prWeight != null)

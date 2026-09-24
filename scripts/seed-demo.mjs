@@ -339,6 +339,17 @@ async function main() {
     await prisma.supplementIntake.createMany({ data: supplements });
     await prisma.sportSession.createMany({ data: sports });
 
+    const bodyWeights = [];
+    for (let ago = 84; ago >= 0; ago -= 7) {
+      const week = Math.floor((84 - ago) / 7);
+      bodyWeights.push({
+        userId: user.id,
+        date: toISO(daysAgo(ago)),
+        weightKg: Number((84.2 - week * 0.15).toFixed(1)),
+      });
+    }
+    await prisma.bodyWeight.createMany({ data: bodyWeights });
+
     const today = toISO(new Date());
     const todayGym = await prisma.gymSession.findFirst({
       where: { userId: user.id, date: today },
@@ -380,10 +391,11 @@ async function main() {
       where: { username: { not: DEMO_USERNAME } },
       select: { username: true },
     });
-    const [gymCount, sportCount, suppCount] = await Promise.all([
+    const [gymCount, sportCount, suppCount, weightCount] = await Promise.all([
       prisma.gymSession.count({ where: { userId: user.id } }),
       prisma.sportSession.count({ where: { userId: user.id } }),
       prisma.supplementIntake.count({ where: { userId: user.id } }),
+      prisma.bodyWeight.count({ where: { userId: user.id } }),
     ]);
 
     console.log("Demo user ready.");
@@ -392,6 +404,7 @@ async function main() {
     console.log(`  gym days: ${gymCount}`);
     console.log(`  sports:   ${sportCount}`);
     console.log(`  supps:    ${suppCount}`);
+    console.log(`  weights:  ${weightCount}`);
     console.log("Other accounts still here:", leftover.map((row) => row.username).join(", ") || "(none)");
   } finally {
     await prisma.$disconnect();

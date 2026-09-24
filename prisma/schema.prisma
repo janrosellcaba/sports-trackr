@@ -21,6 +21,7 @@ model User {
   gymSessions       GymSession[]
   sports            SportSession[]
   supplements       SupplementIntake[]
+  bodyWeights       BodyWeight[]
   muscles           Muscle[]
   customExercises   CustomExercise[]
 }
@@ -87,6 +88,18 @@ model SupplementIntake {
   createdAt DateTime @default(now())
 
   @@index([userId, date])
+}
+
+model BodyWeight {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String
+  weightKg  Float
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@index([userId])
 }
 
 model SportSession {

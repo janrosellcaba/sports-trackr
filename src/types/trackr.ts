@@ -35,6 +35,12 @@ export type SupplementPayload = {
   date: string;
 };
 
+export type BodyWeightPayload = {
+  id: string;
+  date: string;
+  weightKg: number;
+};
+
 export type SportSessionPayload = {
   id: string;
   date: string;
@@ -70,6 +76,11 @@ export type NotebookExercise = {
   prReps: number | null;
   prDate: string | null;
   dualWeights: boolean;
+};
+
+export type WeightPoint = {
+  date: string;
+  weightKg: number;
 };
 
 export type DailyActivityPoint = {
@@ -119,6 +130,7 @@ export type AnalyticsSummary = {
   };
   daily: DailyActivityPoint[];
   topMuscles: TopMuscle[];
+  weights: WeightPoint[];
 };
 
 export type ProgressionPoint = {

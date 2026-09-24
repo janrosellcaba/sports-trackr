@@ -30,6 +30,7 @@ export type ImportSummary = {
   sportsSkipped: number;
   supplementsAdded: number;
   supplementsSkipped: number;
+  weightsUpserted: number;
   exercisesUpserted: number;
   snapshotsUpserted: number;
 };
@@ -72,6 +73,7 @@ async function applyImport(
     sportsSkipped: 0,
     supplementsAdded: 0,
     supplementsSkipped: 0,
+    weightsUpserted: 0,
     exercisesUpserted: 0,
     snapshotsUpserted: 0,
   };
@@ -168,6 +170,15 @@ async function applyImport(
     });
     supplementKeys.add(key);
     summary.supplementsAdded += 1;
+  }
+
+  for (const item of data.bodyWeights) {
+    await tx.bodyWeight.upsert({
+      where: { userId_date: { userId, date: item.date } },
+      create: { userId, date: item.date, weightKg: item.weightKg },
+      update: { weightKg: item.weightKg },
+    });
+    summary.weightsUpserted += 1;
   }
 
   const exercises = await tx.customExercise.findMany({ where: { userId } });

@@ -91,6 +91,21 @@ describe("parseTrackrImport", () => {
     if (!parsed.ok) return;
     expect(parsed.data.exercises[0]?.dualWeights).toBe(true);
   });
+
+  it("accepts weigh-ins and rejects an unrealistic weight", () => {
+    const parsed = parseTrackrImport({
+      bodyWeights: [{ date: "2026-09-01", weightKg: 82.4 }],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.bodyWeights).toEqual([{ date: "2026-09-01", weightKg: 82.4 }]);
+
+    expect(
+      parseTrackrImport({
+        bodyWeights: [{ date: "2026-09-01", weightKg: 5 }],
+      }).ok,
+    ).toBe(false);
+  });
 });
 
 describe("import identities", () => {

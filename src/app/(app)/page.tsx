@@ -21,6 +21,7 @@ export default async function HomePage({
       date={state.date}
       gym={state.gym}
       sports={state.sports}
+      weight={state.weight}
       supplements={state.supplements}
       recovery={state.recovery}
       muscles={state.muscles}

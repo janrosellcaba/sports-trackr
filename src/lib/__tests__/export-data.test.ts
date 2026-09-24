@@ -24,9 +24,12 @@ describe("buildExportCsv", () => {
           ],
         },
       ],
+      bodyWeights: [{ date: "2026-09-01", weightKg: 82.4 }],
     });
     expect(csv).toContain("# exerciseSnapshots");
     expect(csv).toContain("Bench Press,2026-08-01,72,6,80,3");
     expect(csv).toContain("dualWeights");
+    expect(csv).toContain("# bodyWeights");
+    expect(csv).toContain("2026-09-01,82.4");
   });
 });

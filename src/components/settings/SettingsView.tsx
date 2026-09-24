@@ -310,6 +310,7 @@ function ImportSection() {
       summary.hitsUpserted ? `${summary.hitsUpserted} muscle hits` : null,
       summary.sportsAdded ? `${summary.sportsAdded} sports` : null,
       summary.supplementsAdded ? `${summary.supplementsAdded} supplement logs` : null,
+      summary.weightsUpserted ? `${summary.weightsUpserted} weigh-ins` : null,
       summary.exercisesUpserted ? `${summary.exercisesUpserted} exercises` : null,
       summary.musclesCreated ? `${summary.musclesCreated} new muscles` : null,
     ].filter(Boolean);

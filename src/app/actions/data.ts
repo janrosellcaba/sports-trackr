@@ -21,8 +21,10 @@ import {
   serializeSport,
   serializeSupplement,
 } from "@/lib/db/activity";
+import { findBodyWeightForDate, serializeBodyWeight } from "@/lib/db/weight";
 import { daysBetween } from "@/lib/recovery";
 import type {
+  BodyWeightPayload,
   CustomExercisePayload,
   GymSessionPayload,
   MusclePayload,
@@ -36,6 +38,7 @@ export type HomeDayState = {
   date: string;
   gym: GymSessionPayload | null;
   sports: SportSessionPayload[];
+  weight: BodyWeightPayload | null;
   supplements: SupplementPayload[];
   recovery: MuscleRecoveryPayload[];
   muscles: MusclePayload[];
@@ -65,6 +68,7 @@ export async function getHomeDayState(
   const [
     gymRow,
     sportsRows,
+    weightRow,
     supplementRows,
     latestHits,
     muscles,
@@ -72,6 +76,7 @@ export async function getHomeDayState(
   ] = await Promise.all([
     findGymSessionByDate(user.id, date),
     listSportsForDate(user.id, date),
+    findBodyWeightForDate(user.id, date),
     listSupplementsForDate(user.id, date),
     listLatestHitsBeforeDate(user.id, date),
     listMusclesForUser(user.id),
@@ -83,6 +88,7 @@ export async function getHomeDayState(
     date,
     gym: gymRow ? serializeGymSession(gymRow) : null,
     sports: sportsRows.map(serializeSport),
+    weight: weightRow ? serializeBodyWeight(weightRow) : null,
     supplements: supplementRows.map(serializeSupplement),
     recovery: latestHits.map((hit) => ({
       ...hit,

@@ -23,6 +23,7 @@ import type {
   NotebookExercise,
   ProgressionPoint,
   TopMuscle,
+  WeightPoint,
 } from "@/types/trackr";
 
 function uniqueDates(dates: string[]): string[] {
@@ -70,6 +71,7 @@ export async function getAnalyticsSummary(
     allSupplementDates,
     allSportDates,
     topHits,
+    chartWeights,
   ] = await Promise.all([
     prisma.gymSession.findMany({
       where: { userId: user.id, date: { gte: rangeStart } },
@@ -145,6 +147,14 @@ export async function getAnalyticsSummary(
           _count: true,
         })
       : Promise.resolve(null),
+    prisma.bodyWeight.findMany({
+      where: {
+        userId: user.id,
+        ...(allTime ? {} : { date: { gte: rangeStart } }),
+      },
+      select: { date: true, weightKg: true },
+      orderBy: { date: "asc" },
+    }),
   ]);
 
   const dailyMap = new Map(
@@ -318,6 +328,9 @@ export async function getAnalyticsSummary(
         },
     daily: Array.from(dailyMap.values()),
     topMuscles,
+    weights: chartWeights.map(
+      (row): WeightPoint => ({ date: row.date, weightKg: row.weightKg }),
+    ),
   };
 }
 
@@ -414,7 +427,7 @@ export async function getExerciseProgression(
 export async function exportMyData() {
   const user = await requireUser();
 
-  const [sessions, supplements, sports, muscles, customExercises] =
+  const [sessions, supplements, sports, bodyWeights, muscles, customExercises] =
     await Promise.all([
       prisma.gymSession.findMany({
         where: { userId: user.id },
@@ -428,6 +441,10 @@ export async function exportMyData() {
       prisma.sportSession.findMany({
         where: { userId: user.id },
         orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+      }),
+      prisma.bodyWeight.findMany({
+        where: { userId: user.id },
+        orderBy: { date: "desc" },
       }),
       prisma.muscle.findMany({
         where: { userId: user.id },
@@ -466,6 +483,10 @@ export async function exportMyData() {
       pace: item.pace,
       effort: item.effort,
       notes: item.notes,
+    })),
+    bodyWeights: bodyWeights.map((item) => ({
+      date: item.date,
+      weightKg: item.weightKg,
     })),
     muscles: muscles.map((item) => ({
       name: item.name,
