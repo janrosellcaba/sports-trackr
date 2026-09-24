@@ -7,6 +7,8 @@ import {
   getTodayLocalDateISO,
   isDateKey,
   parseISODate,
+  shouldReloadForToday,
+  todayFromCookieString,
 } from "@/lib/calculations";
 
 describe("estimatedOneRm", () => {
@@ -61,5 +63,17 @@ describe("date keys", () => {
 
   it("formats chart dates with a stable month and day", () => {
     expect(formatChartDate("2026-09-16")).toBe("Sep 16");
+  });
+
+  it("reads the today cookie from a document cookie string", () => {
+    expect(todayFromCookieString("theme=dark; trackr_today=2026-09-16")).toBe("2026-09-16");
+    expect(todayFromCookieString("trackr_today=yesterday")).toBeNull();
+    expect(todayFromCookieString("")).toBeNull();
+  });
+
+  it("reloads when the rendered day is behind the device", () => {
+    expect(shouldReloadForToday("2026-09-23", "2026-09-24")).toBe(true);
+    expect(shouldReloadForToday("2026-09-24", "2026-09-24")).toBe(false);
+    expect(shouldReloadForToday("nope", "2026-09-24")).toBe(false);
   });
 });

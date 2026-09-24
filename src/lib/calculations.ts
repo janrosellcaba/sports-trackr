@@ -123,6 +123,33 @@ export function readTodayCookie(value: string | undefined | null): string | null
   return value;
 }
 
+export function todayFromCookieString(cookieHeader: string | undefined | null): string | null {
+  if (!cookieHeader) return null;
+  for (const part of cookieHeader.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator === -1) continue;
+    const name = part.slice(0, separator).trim();
+    if (name !== TODAY_COOKIE) continue;
+    const raw = part.slice(separator + 1).trim();
+    try {
+      return readTodayCookie(decodeURIComponent(raw));
+    } catch {
+      return readTodayCookie(raw);
+    }
+  }
+  return null;
+}
+
+export function shouldReloadForToday(serverToday: string, deviceToday: string): boolean {
+  return isDateKey(serverToday) && isDateKey(deviceToday) && serverToday !== deviceToday;
+}
+
+export function todayBootstrapScript(serverToday: string): string {
+  const cookieName = JSON.stringify(TODAY_COOKIE);
+  const server = JSON.stringify(isDateKey(serverToday) ? serverToday : "");
+  return `(function(){try{var now=new Date();var local=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");var name=${cookieName};var server=${server};var match=document.cookie.match(new RegExp("(?:^|; )"+name+"=([^;]*)"));var current=match?decodeURIComponent(match[1]):"";if(current!==local){document.cookie=name+"="+local+"; Path=/; Max-Age=172800; SameSite=Lax";}if(server&&server!==local){var guard="trackr_today_reload";if(sessionStorage.getItem(guard)!==local){sessionStorage.setItem(guard,local);location.replace(location.href);}}else{sessionStorage.removeItem("trackr_today_reload");}}catch(e){}})();`;
+}
+
 export function todayCookieHeader(today: string): string {
   return `${TODAY_COOKIE}=${today}; Path=/; Max-Age=172800; SameSite=Lax`;
 }

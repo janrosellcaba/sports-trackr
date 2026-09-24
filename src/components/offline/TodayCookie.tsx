@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { getTodayLocalDateISO, todayCookieHeader } from "@/lib/calculations";
+import {
+  getTodayLocalDateISO,
+  shouldReloadForToday,
+  todayCookieHeader,
+  todayFromCookieString,
+} from "@/lib/calculations";
+
+const RELOAD_GUARD = "trackr_today_reload";
 
 function msUntilNextLocalMidnight(): number {
   const now = new Date();
@@ -9,27 +16,49 @@ function msUntilNextLocalMidnight(): number {
   return next.getTime() - now.getTime() + 250;
 }
 
-export function TodayCookie() {
+function publishDeviceToday(): string {
+  const local = getTodayLocalDateISO();
+  if (todayFromCookieString(document.cookie) !== local) {
+    document.cookie = todayCookieHeader(local);
+  }
+  return local;
+}
+
+function reloadIfStale(serverToday: string, deviceToday: string) {
+  if (!shouldReloadForToday(serverToday, deviceToday)) {
+    sessionStorage.removeItem(RELOAD_GUARD);
+    return;
+  }
+  if (sessionStorage.getItem(RELOAD_GUARD) === deviceToday) return;
+  sessionStorage.setItem(RELOAD_GUARD, deviceToday);
+  window.location.replace(window.location.href);
+}
+
+export function TodayCookie({ serverToday }: { serverToday: string }) {
   useEffect(() => {
-    function write() {
-      document.cookie = todayCookieHeader(getTodayLocalDateISO());
+    function sync() {
+      reloadIfStale(serverToday, publishDeviceToday());
     }
-    write();
-    const onFocus = () => write();
+
+    sync();
+    const onFocus = () => sync();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") sync();
+    };
     window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("pageshow", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
     let midnightTimer = window.setTimeout(function onMidnight() {
-      const previous = getTodayLocalDateISO(new Date(Date.now() - 1000));
-      write();
-      const next = getTodayLocalDateISO();
-      if (next !== previous) window.location.reload();
+      sync();
       midnightTimer = window.setTimeout(onMidnight, msUntilNextLocalMidnight());
     }, msUntilNextLocalMidnight());
     return () => {
       window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("pageshow", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
       window.clearTimeout(midnightTimer);
     };
-  }, []);
+  }, [serverToday]);
+
   return null;
 }

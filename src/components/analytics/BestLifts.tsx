@@ -6,7 +6,13 @@ import { formatDisplayDate } from "@/lib/calculations";
 import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 import type { NotebookExercise } from "@/types/trackr";
 
-export function BestLifts({ exercises }: { exercises: NotebookExercise[] }) {
+export function BestLifts({
+  exercises,
+  className = "",
+}: {
+  exercises: NotebookExercise[];
+  className?: string;
+}) {
   const { massUnit } = useUnits();
   const records = [...exercises]
     .filter((item) => item.prWeight != null)
@@ -17,7 +23,7 @@ export function BestLifts({ exercises }: { exercises: NotebookExercise[] }) {
 
   if (records.length === 0) {
     return (
-      <section className={`${CARD_CLS} border-dashed px-4 py-10 text-center`}>
+      <section className={`${CARD_CLS} border-dashed px-4 py-10 text-center ${className}`}>
         <h2 className={`${LABEL_CLS} mb-2`}>PRs</h2>
         <p className="text-sm text-muted">None yet.</p>
       </section>
@@ -25,7 +31,7 @@ export function BestLifts({ exercises }: { exercises: NotebookExercise[] }) {
   }
 
   return (
-    <section className={`${CARD_CLS} p-4`}>
+    <section className={`${CARD_CLS} p-4 ${className}`}>
       <h2 className={`${LABEL_CLS} mb-4`}>PRs</h2>
       <ul className="space-y-1">
         {records.map((item) => (

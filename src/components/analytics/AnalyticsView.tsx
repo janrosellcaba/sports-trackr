@@ -21,7 +21,7 @@ import type { AnalyticsPeriod, AnalyticsSummary, NotebookExercise } from "@/type
 
 const ActivityChart = dynamic(
   () => import("@/components/analytics/ActivityChart").then((mod) => mod.ActivityChart),
-  { ssr: false, loading: () => <ChartSkeleton label="Load" /> },
+  { ssr: false, loading: () => <ChartSkeleton label="Load" className="h-44" /> },
 );
 
 const ExerciseProgressionChart = dynamic(
@@ -29,12 +29,12 @@ const ExerciseProgressionChart = dynamic(
     import("@/components/analytics/ExerciseProgressionChart").then(
       (mod) => mod.ExerciseProgressionChart,
     ),
-  { ssr: false, loading: () => <ChartSkeleton label="Progression" /> },
+  { ssr: false, loading: () => <ChartSkeleton label="Progression" className="h-40" /> },
 );
 
 const WeightChart = dynamic(
   () => import("@/components/analytics/WeightChart").then((mod) => mod.WeightChart),
-  { ssr: false, loading: () => <ChartSkeleton label="Body weight" /> },
+  { ssr: false, loading: () => <ChartSkeleton label="Body weight" className="h-36" /> },
 );
 
 const PERIODS: { key: AnalyticsPeriod; label: string; href: string }[] = [
@@ -77,19 +77,31 @@ export function AnalyticsView({
 
       <div className="space-y-5">
         <KpiGrid summary={summary} />
-        <div className="grid gap-5 lg:grid-cols-2">
-          <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
-          <TopMuscles items={summary.topMuscles} />
+        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:items-stretch">
+          <div className="contents lg:flex lg:h-full lg:flex-col lg:gap-5">
+            <div className="order-1 lg:order-none">
+              <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
+            </div>
+            <div className="order-3 lg:order-none lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+              <BestLifts exercises={exercises} className="h-full w-full" />
+            </div>
+          </div>
+          <div className="contents lg:flex lg:h-full lg:flex-col lg:gap-5">
+            <div className="order-2 lg:order-none">
+              <TopMuscles items={summary.topMuscles} />
+            </div>
+            <div className="order-4 lg:order-none lg:mt-auto">
+              <ExerciseProgressionChart exercises={exercises} />
+            </div>
+          </div>
         </div>
-        <WeightChart points={summary.weights} />
-        <div className="grid gap-5 lg:grid-cols-2">
-          <BestLifts exercises={exercises} />
-          <ExerciseProgressionChart exercises={exercises} />
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+          <WeightChart points={summary.weights} />
+          <WeekGrid
+            key={`${summary.days}-${summary.daily[0]?.date ?? "empty"}`}
+            data={summary.daily}
+          />
         </div>
-        <WeekGrid
-          key={`${summary.days}-${summary.daily[0]?.date ?? "empty"}`}
-          data={summary.daily}
-        />
       </div>
     </div>
   );
@@ -208,9 +220,15 @@ function trainerPayload(
   };
 }
 
-function ChartSkeleton({ label }: { label: string }) {
+function ChartSkeleton({
+  label,
+  className,
+}: {
+  label: string;
+  className: string;
+}) {
   return (
-    <section className="card-lux h-56 rounded-[1.35rem] p-4">
+    <section className={`card-lux ${className} rounded-[1.35rem] p-4`}>
       <p className="text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
         {label}
       </p>

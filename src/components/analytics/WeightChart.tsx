@@ -37,7 +37,7 @@ export function WeightChart({ points }: { points: WeightPoint[] }) {
     <section className={`${CARD_CLS} p-4`}>
       <h2 className={`${LABEL_CLS} mb-4`}>Body weight</h2>
 
-      <div className="h-56 w-full">
+      <div className="h-36 w-full">
         {displayPoints.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
             None in this range.

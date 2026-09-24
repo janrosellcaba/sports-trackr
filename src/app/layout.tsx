@@ -2,11 +2,13 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Outfit } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { TodayCookie } from "@/components/offline/TodayCookie";
+import { getRequestToday } from "@/lib/request-today";
 import {
   DARK_THEME_COLOR,
   LIGHT_THEME_COLOR,
   themeBootstrapScript,
 } from "@/lib/theme";
+import { todayBootstrapScript } from "@/lib/calculations";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -50,11 +52,12 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const today = await getRequestToday();
   return (
     <html lang="en" data-accent="volt" data-theme="dark" suppressHydrationWarning>
       <head>
@@ -63,10 +66,15 @@ export default function RootLayout({
             __html: themeBootstrapScript(),
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: todayBootstrapScript(today),
+          }}
+        />
       </head>
       <body className={`${geistSans.variable} ${outfit.variable} antialiased`}>
         <ThemeProvider>
-          <TodayCookie />
+          <TodayCookie serverToday={today} />
           {children}
         </ThemeProvider>
       </body>

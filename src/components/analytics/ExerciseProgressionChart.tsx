@@ -79,7 +79,7 @@ export function ExerciseProgressionChart({
         </label>
       </div>
 
-      <div className={`h-56 w-full ${isPending ? "opacity-60" : ""}`}>
+      <div className={`h-40 w-full ${isPending ? "opacity-60" : ""}`}>
         {points.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
             No PR for this lift.

@@ -52,7 +52,7 @@ export function ActivityChart({
         </p>
       </div>
 
-      <div className="h-56 w-full">
+      <div className="h-44 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
