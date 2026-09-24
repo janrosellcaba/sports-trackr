@@ -83,6 +83,11 @@ export type WeightPoint = {
   weightKg: number;
 };
 
+export type ShapePoint = {
+  date: string;
+  score: number;
+};
+
 export type DailyActivityPoint = {
   date: string;
   gymLoad: number;
@@ -131,6 +136,7 @@ export type AnalyticsSummary = {
   daily: DailyActivityPoint[];
   topMuscles: TopMuscle[];
   weights: WeightPoint[];
+  shape: ShapePoint[];
 };
 
 export type ProgressionPoint = {

@@ -32,6 +32,7 @@ const summary: AnalyticsSummary = {
   daily: [],
   topMuscles: [],
   weights: [],
+  shape: [],
 };
 
 describe("KpiGrid", () => {

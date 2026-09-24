@@ -16,6 +16,7 @@ import {
   perWeekRate,
   weekCounts,
 } from "@/lib/analytics";
+import { shapeReadout } from "@/lib/shape";
 import { PAGE_TITLE, SEGMENT_TRACK, segmentItemClass } from "@/lib/ui";
 import type { AnalyticsPeriod, AnalyticsSummary, NotebookExercise } from "@/types/trackr";
 
@@ -35,6 +36,11 @@ const ExerciseProgressionChart = dynamic(
 const WeightChart = dynamic(
   () => import("@/components/analytics/WeightChart").then((mod) => mod.WeightChart),
   { ssr: false, loading: () => <ChartSkeleton label="Body weight" className="h-36" /> },
+);
+
+const ShapeChart = dynamic(
+  () => import("@/components/analytics/ShapeChart").then((mod) => mod.ShapeChart),
+  { ssr: false, loading: () => <ChartSkeleton label="Shape" className="h-44" /> },
 );
 
 const PERIODS: { key: AnalyticsPeriod; label: string; href: string }[] = [
@@ -59,6 +65,7 @@ export function AnalyticsView({
         <h1 className={PAGE_TITLE}>Analytics</h1>
         <CopyTrainerJson summary={summary} exercises={exercises} />
       </div>
+      <ShapeChart points={summary.shape} />
       <div className={`${SEGMENT_TRACK} grid-cols-4 sm:w-72`}>
         {PERIODS.map((item) => {
           const active = period === item.key;
@@ -199,6 +206,7 @@ function trainerPayload(
       days: summary.supplementDays,
       streak: summary.supplementStreak,
     },
+    shape: shapePayload(summary.shape),
     bodyWeight: summary.weights.map((point) => ({
       date: point.date,
       kg: point.weightKg,
@@ -218,6 +226,12 @@ function trainerPayload(
       ...weekCounts(week),
     })),
   };
+}
+
+function shapePayload(points: AnalyticsSummary["shape"]) {
+  const readout = shapeReadout(points);
+  if (!readout) return null;
+  return { score: readout.score, weekChange: readout.weekChange };
 }
 
 function ChartSkeleton({

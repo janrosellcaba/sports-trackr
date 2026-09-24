@@ -16,6 +16,7 @@ import {
 } from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
 import { getRequestToday } from "@/lib/request-today";
+import { buildShapeSeries, PR_SHAPE_BONUS, sportShapePoints } from "@/lib/shape";
 import type {
   AnalyticsPeriod,
   AnalyticsSummary,
@@ -72,6 +73,10 @@ export async function getAnalyticsSummary(
     allSportDates,
     topHits,
     chartWeights,
+    shapeGym,
+    shapeSports,
+    shapeSnapshots,
+    shapePrs,
   ] = await Promise.all([
     prisma.gymSession.findMany({
       where: { userId: user.id, date: { gte: rangeStart } },
@@ -154,6 +159,36 @@ export async function getAnalyticsSummary(
       },
       select: { date: true, weightKg: true },
       orderBy: { date: "asc" },
+    }),
+    prisma.gymSession.findMany({
+      where: { userId: user.id, date: { lte: today } },
+      select: { date: true, hits: { select: { intensity: true } } },
+    }),
+    prisma.sportSession.findMany({
+      where: { userId: user.id, date: { lte: today } },
+      select: {
+        date: true,
+        durationMinutes: true,
+        distanceKm: true,
+        pace: true,
+        effort: true,
+      },
+    }),
+    prisma.exerciseSnapshot.findMany({
+      where: {
+        prWeight: { not: null },
+        date: { lte: today },
+        exercise: { userId: user.id },
+      },
+      select: { date: true },
+    }),
+    prisma.customExercise.findMany({
+      where: {
+        userId: user.id,
+        prWeight: { not: null },
+        prDate: { not: null, lte: today },
+      },
+      select: { prDate: true },
     }),
   ]);
 
@@ -331,7 +366,41 @@ export async function getAnalyticsSummary(
     weights: chartWeights.map(
       (row): WeightPoint => ({ date: row.date, weightKg: row.weightKg }),
     ),
+    shape: buildShapeSeries(shapeDoses(shapeGym, shapeSports, shapeSnapshots, shapePrs), today),
   };
+}
+
+function shapeDoses(
+  gym: { date: string; hits: { intensity: number }[] }[],
+  sports: {
+    date: string;
+    durationMinutes: number | null;
+    distanceKm: number | null;
+    pace: string | null;
+    effort: string | null;
+  }[],
+  snapshots: { date: string }[],
+  prs: { prDate: string | null }[],
+): Map<string, number> {
+  const doses = new Map<string, number>();
+  const add = (date: string, points: number) => {
+    if (points <= 0) return;
+    doses.set(date, (doses.get(date) ?? 0) + points);
+  };
+  for (const session of gym) {
+    add(
+      session.date,
+      session.hits.reduce((sum, hit) => sum + hit.intensity, 0),
+    );
+  }
+  for (const sport of sports) add(sport.date, sportShapePoints(sport));
+  const prDates = new Set<string>();
+  for (const snap of snapshots) prDates.add(snap.date);
+  for (const exercise of prs) {
+    if (exercise.prDate) prDates.add(exercise.prDate);
+  }
+  for (const date of prDates) add(date, PR_SHAPE_BONUS);
+  return doses;
 }
 
 export async function getNotebookExercises(): Promise<NotebookExercise[]> {
