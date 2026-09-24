@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -29,17 +29,6 @@ export function ActivityChart({
   const fillId = useId().replace(/:/g, "");
   const hatchId = `${fillId}-hatch`;
   const chartData = withColumns(data);
-  const lastActive =
-    [...data].reverse().find(
-      (point) => point.gymLoad > 0 || point.sports > 0 || point.supplements > 0,
-    ) ??
-    data[data.length - 1] ??
-    null;
-  const [selected, setSelected] = useState<DailyActivityPoint | null>(lastActive);
-
-  function pick(point: DailyActivityPoint | undefined) {
-    if (point) setSelected(point);
-  }
 
   return (
     <section className={`${CARD_CLS} p-4`}>
@@ -68,20 +57,6 @@ export function ActivityChart({
           <ComposedChart
             data={chartData}
             margin={{ top: 12, right: 4, left: -18, bottom: 0 }}
-            onMouseMove={(state) => {
-              pick(
-                (
-                  state as { activePayload?: Array<{ payload?: DailyActivityPoint }> }
-                ).activePayload?.[0]?.payload,
-              );
-            }}
-            onClick={(state) => {
-              pick(
-                (
-                  state as { activePayload?: Array<{ payload?: DailyActivityPoint }> }
-                ).activePayload?.[0]?.payload,
-              );
-            }}
           >
             <defs>
               <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
@@ -129,36 +104,28 @@ export function ActivityChart({
               dataKey="column"
               legendType="none"
               isAnimationActive={false}
-              shape={(props) => (
-                <ActivityColumn
-                  x={props.x}
-                  y={props.y}
-                  width={props.width}
-                  height={props.height}
-                  payload={chartPointFrom(props.payload)}
-                  fill={`url(#${fillId})`}
-                  hatch={`url(#${hatchId})`}
-                  stroke={brand}
-                  active={Boolean(
-                    (props as { isActive?: boolean }).isActive,
-                  )}
-                />
-              )}
+              shape={(props) => {
+                const background = rectangleFrom(props.background);
+                return (
+                  <ActivityColumn
+                    x={props.x}
+                    y={props.y}
+                    width={props.width}
+                    height={props.height}
+                    plotTop={background?.y}
+                    plotHeight={background?.height}
+                    payload={chartPointFrom(props.payload)}
+                    fill={`url(#${fillId})`}
+                    hatch={`url(#${hatchId})`}
+                    stroke={brand}
+                    active={Boolean((props as { isActive?: boolean }).isActive)}
+                  />
+                );
+              }}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-
-      {selected ? (
-        <div className="mt-4 grid grid-cols-4 gap-2 text-center" role="status">
-          <Readout label="Day" value={formatChartDate(selected.date)} />
-          <Readout label="Load" value={String(selected.gymLoad)} />
-          <Readout label="Gym" value={selected.workouts > 0 ? "Yes" : "—"} />
-          <Readout label="Sport" value={selected.sports > 0 ? "Yes" : "—"} />
-        </div>
-      ) : (
-        <p className="mt-4 text-sm text-muted">No days in this range.</p>
-      )}
 
       <table className="sr-only">
         <caption>Daily gym load and sport days</caption>
@@ -224,6 +191,8 @@ type ActivityColumnProps = {
   y?: number | string;
   width?: number | string;
   height?: number | string;
+  plotTop?: number;
+  plotHeight?: number;
   payload?: ChartPoint;
   fill: string;
   hatch: string;
@@ -236,6 +205,8 @@ function ActivityColumn({
   y,
   width,
   height,
+  plotTop,
+  plotHeight,
   payload,
   fill,
   hatch,
@@ -254,11 +225,9 @@ function ActivityColumn({
       ? (payload.gymLoad / Math.max(payload.column, 1)) * tall
       : 0;
   const hadSport = payload.sports > 0;
-  const sportHeight = hadSport
-    ? Math.max(gymHeight, Math.max(16, tall * 0.2))
-    : 0;
   const gymTop = top + tall - gymHeight;
-  const sportTop = top + tall - sportHeight;
+  const sportTop = plotTop ?? top;
+  const sportHeight = plotHeight ?? tall;
   const barPath = (barTop: number, barHeight: number) =>
     roundedTopBar(left, barTop, band, barHeight, 7);
 
@@ -267,13 +236,16 @@ function ActivityColumn({
       {active ? (
         <rect
           x={left}
-          y={top}
+          y={sportTop}
           width={band}
-          height={tall}
+          height={sportHeight}
           fill={stroke}
           fillOpacity={0.08}
           rx={6}
         />
+      ) : null}
+      {hadSport ? (
+        <path d={barPath(sportTop, sportHeight)} fill={stroke} fillOpacity={0.12} />
       ) : null}
       {gymHeight > 0 ? (
         <path
@@ -282,16 +254,18 @@ function ActivityColumn({
           opacity={active ? 1 : 0.92}
         />
       ) : null}
-      {hadSport ? (
-        <>
-          {gymHeight === 0 ? (
-            <path d={barPath(sportTop, sportHeight)} fill={stroke} fillOpacity={0.12} />
-          ) : null}
-          <path d={barPath(sportTop, sportHeight)} fill={hatch} />
-        </>
-      ) : null}
+      {hadSport ? <path d={barPath(sportTop, sportHeight)} fill={hatch} /> : null}
     </g>
   );
+}
+
+function rectangleFrom(value: unknown): { y?: number; height?: number } | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const row = value as { y?: unknown; height?: unknown };
+  const y = Number(row.y);
+  const height = Number(row.height);
+  if (!Number.isFinite(y) || !Number.isFinite(height) || height <= 0) return undefined;
+  return { y, height };
 }
 
 function chartPointFrom(value: unknown): ChartPoint | undefined {
@@ -328,17 +302,4 @@ function withColumns(data: DailyActivityPoint[]): ChartPoint[] {
     ...point,
     column: rail,
   }));
-}
-
-function Readout({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-xl bg-chip/70 px-1.5 py-2">
-      <p className="truncate font-display text-sm font-bold tabular-nums text-ink">
-        {value}
-      </p>
-      <p className="mt-0.5 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase">
-        {label}
-      </p>
-    </div>
-  );
 }
