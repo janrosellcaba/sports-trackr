@@ -16,7 +16,9 @@ model User {
   massUnit          String              @default("kg")
   distanceUnit      String              @default("km")
   createdAt         DateTime            @default(now())
-  catalogSeeded     Boolean             @default(false)
+  catalogSeeded       Boolean             @default(false)
+  locale              String              @default("en")
+  onboardingCompleted Boolean             @default(true)
   sessions          Session[]
   gymSessions       GymSession[]
   sports            SportSession[]

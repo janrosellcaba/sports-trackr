@@ -1,19 +1,21 @@
-import { EXERCISE_CATALOG } from "@/lib/exercises";
 import { isDateKey } from "@/lib/calculations";
 import { parseMuscleName, sameMuscleName } from "@/lib/muscles";
 import { parseOptionalDecimal } from "@/lib/numbers";
+import { starterExercises } from "@/lib/starter-catalog";
 import { formatMass, type MassUnit } from "@/lib/units";
 import type { CustomExercisePayload } from "@/types/trackr";
 
-export function defaultExerciseSeeds(): Array<{
+export function defaultExerciseSeeds(locale: unknown = "en"): Array<{
   name: string;
   muscle: string;
+  muscleKey: string;
   dualWeights: boolean;
 }> {
-  return EXERCISE_CATALOG.map((item) => ({
+  return starterExercises(locale).map((item) => ({
     name: item.name,
     muscle: item.muscle,
-    dualWeights: Boolean(item.dualWeights),
+    muscleKey: item.muscleKey,
+    dualWeights: item.dualWeights,
   }));
 }
 

@@ -42,6 +42,8 @@ export type AuthUser = {
   colorMode: string;
   massUnit: string;
   distanceUnit: string;
+  locale: string;
+  onboardingCompleted: boolean;
 };
 
 export type AuthActionResult = {

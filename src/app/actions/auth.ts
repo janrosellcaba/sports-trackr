@@ -15,7 +15,6 @@ import {
   type AuthActionResult,
   type AuthUser,
 } from "@/lib/auth";
-import { seedUserCatalog } from "@/lib/seed-catalog";
 import { isValidInviteCode, isValidUsername, normalizeUsername, validatePassword } from "@/lib/auth-logic";
 import { MAX_PASSWORD_LENGTH } from "@/lib/constants";
 import { isUniqueConstraintError } from "@/lib/prisma-errors";
@@ -82,6 +81,8 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
           colorMode: true,
           massUnit: true,
           distanceUnit: true,
+          locale: true,
+          onboardingCompleted: true,
         },
       },
     },
@@ -140,9 +141,10 @@ export async function register(
         username,
         passwordHash,
         role: "USER",
+        onboardingCompleted: false,
+        catalogSeeded: false,
       },
     });
-    await seedUserCatalog(user.id);
     await createSession(user.id);
     clearAuthFailures(key);
   } catch (error) {

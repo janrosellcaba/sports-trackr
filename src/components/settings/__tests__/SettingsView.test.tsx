@@ -11,6 +11,9 @@ vi.mock("@/app/actions/contact", () => ({ sendSupportMessage: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
 }));
+vi.mock("@/components/onboarding/TourProvider", () => ({
+  useTour: () => ({ openTour: vi.fn() }),
+}));
 
 const user: AuthUser = {
   id: "u1",
@@ -20,6 +23,8 @@ const user: AuthUser = {
   colorMode: "dark",
   massUnit: "kg",
   distanceUnit: "km",
+  locale: "en",
+  onboardingCompleted: true,
 };
 
 describe("SettingsView", () => {
@@ -37,6 +42,7 @@ describe("SettingsView", () => {
       "href",
       "/settings/support",
     );
+    expect(screen.getByRole("button", { name: /App tour/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Log out" })).toBeInTheDocument();
   });
 });

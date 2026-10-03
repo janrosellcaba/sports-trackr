@@ -11,6 +11,7 @@ import {
   Grid3x3,
   LifeBuoy,
   LogOut,
+  Map,
   Palette,
   User,
 } from "lucide-react";
@@ -30,6 +31,8 @@ import { confirmsUsername, isAdminUser } from "@/lib/auth-logic";
 import { buildExportCsv } from "@/lib/export-data";
 import type { SettingsSection } from "@/lib/settings";
 import { CARD_CLS, INPUT_CLS, LABEL_CLS, PAGE_TITLE, PRIMARY_BTN } from "@/lib/ui";
+import { onboardingCopy } from "@/lib/onboarding";
+import { useTour } from "@/components/onboarding/TourProvider";
 import type { AuthUser } from "@/lib/auth";
 import type {
   CustomExercisePayload,
@@ -182,8 +185,29 @@ export function SettingsView({
 
       {isAdminUser(user.username) ? <AdminPanel currentUserId={user.id} /> : null}
 
+      <TourReplay locale={user.locale} />
       <LogoutButton />
     </div>
+  );
+}
+
+function TourReplay({ locale }: { locale: string }) {
+  const { openTour } = useTour();
+  const copy = onboardingCopy(locale);
+  return (
+    <button
+      type="button"
+      onClick={openTour}
+      className={`${CARD_CLS} flex min-h-14 w-full items-center gap-3 px-4 py-4 text-left transition-colors duration-150 hover:bg-chip/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/20`}
+    >
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-chip text-ink">
+        <Map className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-base font-bold text-ink">{copy.replay}</span>
+        <span className="block text-xs text-muted">{copy.replayHint}</span>
+      </span>
+    </button>
   );
 }
 

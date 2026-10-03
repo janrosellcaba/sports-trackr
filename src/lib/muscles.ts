@@ -1,18 +1,4 @@
-export const DEFAULT_MUSCLES = [
-  "Chest",
-  "Back",
-  "Shoulders",
-  "Biceps",
-  "Triceps",
-  "Forearms",
-  "Abs",
-  "Quads",
-  "Hamstrings",
-  "Abductors",
-  "Glutes",
-  "Calves",
-  "Other",
-] as const;
+export { DEFAULT_MUSCLES } from "@/lib/starter-catalog";
 
 export const INTENSITY_LEVELS = [1, 2, 3, 4, 5] as const;
 export type IntensityLevel = (typeof INTENSITY_LEVELS)[number];

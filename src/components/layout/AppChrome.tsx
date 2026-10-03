@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { TourProvider } from "@/components/onboarding/TourProvider";
 import { Logo } from "@/components/ui/Logo";
 import { ServiceWorkerRegister } from "@/components/offline/ServiceWorkerRegister";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -24,7 +25,8 @@ export function AppChrome({
       initialTheme={user.accentTheme}
       initialColorMode={user.colorMode}
     >
-      <div className="app-shell fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col">
+      <TourProvider locale={user.locale} forced={!user.onboardingCompleted}>
+        <div className="app-shell fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col">
         <header className="relative shrink-0 bg-paper/70 px-5 py-3.5 backdrop-blur-xl [padding-top:max(0.9rem,env(safe-area-inset-top))] after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-[var(--color-line)] after:to-transparent">
           <div className="flex items-center justify-between gap-2">
             <Link
@@ -51,7 +53,8 @@ export function AppChrome({
 
         <BottomNav />
         <ServiceWorkerRegister />
-      </div>
+        </div>
+      </TourProvider>
     </ThemeProvider>
   );
 }

@@ -15,6 +15,8 @@ npx prisma generate
 node scripts/add-dual-weights-column.mjs
 # Additive create. Existing BodyWeight rows are left as-is.
 node scripts/add-body-weight-table.mjs
+# Additive columns. Existing users skip the first-run tour.
+node scripts/add-onboarding-columns.mjs
 # Only the unused custom-supplement catalog. Gym, sports, weight, and intake logs stay.
 node scripts/drop-custom-supplements.mjs
 # Schema sync. Adds missing tables/columns only.
