@@ -70,11 +70,11 @@ export function MuscleCatalogView({
       {muscles.length === 0 ? (
         <p className="text-sm text-muted">None yet.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-line">
           {muscles.map((item, index) => (
             <li
               key={item.id}
-              className="flex flex-col gap-2 rounded-xl bg-chip px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between"
             >
               <span className="min-w-0 truncate text-sm font-medium text-ink">
                 {item.name}
@@ -234,13 +234,13 @@ export function ExerciseCatalogView({
       {exercises.length === 0 ? (
         <p className="text-sm text-muted">None yet.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-line">
           {exercises.map((item) => {
             const pr = formatLift(item.prWeight, item.prReps, massUnit, item.dualWeights);
             return (
               <li
                 key={item.id}
-                className="flex flex-col gap-2 rounded-xl bg-chip px-3 py-2 sm:flex-row sm:items-start sm:justify-between"
+                className="flex flex-col gap-2 py-2 sm:flex-row sm:items-start sm:justify-between"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-ink">
@@ -426,7 +426,7 @@ function ExerciseSheet({
         role="switch"
         aria-checked={dualWeights}
         onClick={() => setDualWeights((current) => !current)}
-        className="mb-4 flex w-full items-start gap-3 rounded-xl bg-chip px-3 py-3 text-left transition-all duration-150 hover:bg-chip-hover motion-safe:hover:scale-[1.01] motion-safe:active:scale-[0.99]"
+        className="mb-4 flex w-full items-start gap-3 rounded-xl border border-line bg-chip px-3 py-3 text-left transition-colors duration-150 hover:bg-chip-hover"
       >
         <span
           className={`mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors duration-150 ${

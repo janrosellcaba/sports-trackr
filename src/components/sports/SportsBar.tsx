@@ -83,11 +83,11 @@ export function SportsBar({
       </div>
 
       {sessions.length > 0 ? (
-        <ul className="space-y-1.5 border-t border-line pt-3">
+        <ul className="divide-y divide-line border-t border-line">
           {sessions.map((session) => {
             const summary = formatSportSummary(session, distanceUnit);
             return (
-              <li key={session.id} className="flex items-start justify-between gap-3 text-sm">
+              <li key={session.id} className="flex items-start justify-between gap-3 py-2 text-sm">
                 <button
                   type="button"
                   className={`min-w-0 flex-1 text-left ${TAP_ROW}`}

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { addDaysISO, getTodayLocalDateISO, isDateKey } from "@/lib/calculations";
-import { INPUT_CLS, SEGMENT_TRACK, segmentItemClass } from "@/lib/ui";
+import { INPUT_CLS, SEGMENT_TRACK, blurOnPointerUp, segmentItemClass } from "@/lib/ui";
 
 export function DayPicker({
   today,
@@ -52,6 +52,7 @@ export function DayPicker({
         <button
           type="button"
           onClick={selectToday}
+          onPointerUp={blurOnPointerUp}
           aria-pressed={isToday && !pickingOther}
           className={segmentItemClass(isToday && !pickingOther)}
         >
@@ -60,6 +61,7 @@ export function DayPicker({
         <button
           type="button"
           onClick={selectYesterday}
+          onPointerUp={blurOnPointerUp}
           aria-pressed={isYesterday && !pickingOther}
           className={segmentItemClass(isYesterday && !pickingOther)}
         >
@@ -68,6 +70,7 @@ export function DayPicker({
         <button
           type="button"
           onClick={openOther}
+          onPointerUp={blurOnPointerUp}
           aria-pressed={isOther || pickingOther}
           className={segmentItemClass(isOther || pickingOther)}
         >

@@ -48,12 +48,12 @@ export function PrBar({
       <p className={LABEL_CLS}>PRs</p>
 
       {records.length > 0 ? (
-        <ul className="space-y-1.5 sm:max-h-64 sm:overflow-y-auto">
+        <ul className="divide-y divide-line sm:max-h-64 sm:overflow-y-auto">
           {records.map((item) => (
             <li key={item.id}>
               <button
                 type="button"
-                className={`flex w-full items-baseline justify-between gap-3 py-1.5 text-left ${TAP_ROW}`}
+                className={`flex w-full items-baseline justify-between gap-3 py-2 text-left ${TAP_ROW}`}
                 onClick={() => {
                   setEditing(item);
                   setOpen(true);

@@ -98,10 +98,10 @@ export function SettingsView({
 }) {
   if (section !== "menu") {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Link
           href="/settings"
-          className="inline-flex min-h-11 items-center gap-1 rounded-lg px-1 text-sm font-bold text-muted transition-all duration-150 hover:bg-chip hover:text-ink motion-safe:hover:scale-[1.03]"
+          className="inline-flex min-h-11 items-center gap-1 rounded-lg px-1 text-sm font-bold text-muted transition-colors duration-150 hover:bg-chip hover:text-ink"
         >
           <ChevronLeft className="h-4 w-4" />
           Settings
@@ -141,7 +141,7 @@ export function SettingsView({
         {section === "account" ? (
           <SectionIntro title="Account">
             <section className={`${CARD_CLS} p-4`}>
-              <p className="font-display text-lg font-extrabold text-ink">{user.username}</p>
+              <p className="font-display text-lg font-bold text-ink">{user.username}</p>
             </section>
             <AccountSecurity sessions={sessions} />
             <LogoutButton />
@@ -153,7 +153,7 @@ export function SettingsView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h1 className={PAGE_TITLE}>Settings</h1>
 
       <div className={`${CARD_CLS} overflow-hidden`}>
@@ -280,7 +280,7 @@ function ExportSection() {
         type="button"
         disabled={pending != null}
         onClick={() => handleExport("csv")}
-        className="w-full rounded-2xl border border-line bg-chip py-3 text-base font-bold text-ink transition-all duration-150 hover:bg-chip-hover motion-safe:hover:scale-[1.01] disabled:opacity-60"
+        className="w-full rounded-2xl border border-line bg-chip py-3 text-base font-bold text-ink transition-colors duration-150 hover:bg-chip-hover disabled:opacity-60"
       >
         {pending === "csv" ? "Exporting…" : "Export CSV"}
       </button>
@@ -407,7 +407,7 @@ function DangerZone({ user }: { user: AuthUser }) {
             if (result?.error) setDangerError(result.error);
           });
         }}
-        className="w-full rounded-2xl border-2 border-danger/30 bg-danger-soft py-3 text-base font-bold text-danger transition-all duration-150 hover:brightness-110 disabled:opacity-50"
+        className="w-full rounded-2xl border border-danger/30 bg-danger-soft py-3 text-base font-bold text-danger transition-colors duration-150 hover:brightness-110 disabled:opacity-50"
       >
         {isPending ? "Deleting…" : "Delete account"}
       </button>

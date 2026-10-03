@@ -10,7 +10,7 @@ export default function RegisterPage() {
         <div className="mb-3 flex justify-center">
           <Logo />
         </div>
-        <h1 className="mb-6 text-center font-display text-2xl font-extrabold tracking-tight text-ink">
+        <h1 className="mb-6 text-center font-display text-2xl font-bold tracking-tight text-ink">
           Create account
         </h1>
         <RegisterForm />

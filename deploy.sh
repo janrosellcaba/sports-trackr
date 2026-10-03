@@ -13,10 +13,12 @@ node scripts/backup-sqlite.mjs
 npx prisma generate
 # Explicit additive column. This cannot drop tables or existing rows.
 node scripts/add-dual-weights-column.mjs
-# Only the unused custom-supplement catalog. Gym, sports, and intake logs stay.
+# Additive create. Existing BodyWeight rows are left as-is.
+node scripts/add-body-weight-table.mjs
+# Only the unused custom-supplement catalog. Gym, sports, weight, and intake logs stay.
 node scripts/drop-custom-supplements.mjs
-# Schema sync. CustomSupplement is already gone, so this should not prompt.
-# Do not pass --force-reset or --accept-data-loss.
+# Schema sync. Adds missing tables/columns only.
+# Do not pass --force-reset or --accept-data-loss — those would wipe live logs.
 npx prisma db push
 
 echo "🔨 [4/5] Compilant Next.js..."

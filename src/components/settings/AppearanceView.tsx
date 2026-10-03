@@ -12,67 +12,69 @@ export function AppearanceView() {
   const { theme, setTheme, colorMode, setColorMode, saveError } = useAccentTheme();
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       {saveError ? (
         <p role="alert" className="text-sm font-medium text-danger">
           {saveError}
         </p>
       ) : null}
 
-      <section className={`${CARD_CLS} space-y-3 p-4`}>
-        <p className={LABEL_CLS}>Mode</p>
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Color mode">
-          {(["dark", "light"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              aria-pressed={colorMode === mode}
-              onClick={() => setColorMode(mode)}
-              className={`${chipClass(colorMode === mode)} w-full py-3`}
-            >
-              {mode === "dark" ? "Dark" : "Light"}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className={`${CARD_CLS} space-y-3 p-4`}>
-        <p className={LABEL_CLS}>Accent</p>
-        <div className="grid grid-cols-1 gap-2" role="listbox" aria-label="Accent">
-          {ACCENT_THEME_IDS.map((id) => {
-            const preset = ACCENT_THEMES[id];
-            const active = theme.id === id;
-            return (
+      <section className={`${CARD_CLS} overflow-hidden`}>
+        <div className="space-y-3 p-4">
+          <p className={LABEL_CLS}>Mode</p>
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label="Color mode">
+            {(["dark", "light"] as const).map((mode) => (
               <button
-                key={id}
+                key={mode}
                 type="button"
-                role="option"
-                aria-selected={active}
-                onClick={() => setTheme(id as AccentThemeId)}
-                className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-150 ${
-                  active
-                    ? "border-brand bg-brand/10"
-                    : "border-line bg-cream/40 hover:border-brand/40 hover:bg-chip/40 motion-safe:hover:scale-[1.01]"
-                }`}
+                aria-pressed={colorMode === mode}
+                onClick={() => setColorMode(mode)}
+                className={`${chipClass(colorMode === mode)} w-full py-3`}
               >
-                <span
-                  className="h-8 w-8 rounded-full border border-line"
-                  style={{
-                    background: preset.primary,
-                    boxShadow: `0 0 16px ${preset.glow}`,
-                  }}
-                />
-                <span>
-                  <span className="block text-sm font-bold text-ink">
-                    {preset.name}
-                  </span>
-                  <span className="font-mono text-[11px] text-muted">
-                    {preset.primary}
-                  </span>
-                </span>
+                {mode === "dark" ? "Dark" : "Light"}
               </button>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t border-line p-4">
+          <p className={LABEL_CLS}>Accent</p>
+          <div className="grid grid-cols-1 gap-2" role="listbox" aria-label="Accent">
+            {ACCENT_THEME_IDS.map((id) => {
+              const preset = ACCENT_THEMES[id];
+              const active = theme.id === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => setTheme(id as AccentThemeId)}
+                  className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-colors duration-150 ${
+                    active
+                      ? "border-brand bg-brand/10"
+                      : "border-line bg-cream/40 hover:border-brand/40 hover:bg-chip/40"
+                  }`}
+                >
+                  <span
+                    className="h-8 w-8 rounded-full border border-line"
+                    style={{
+                      background: preset.primary,
+                      boxShadow: `0 0 16px ${preset.glow}`,
+                    }}
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-ink">
+                      {preset.name}
+                    </span>
+                    <span className="font-mono text-[11px] text-muted">
+                      {preset.primary}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
     </div>

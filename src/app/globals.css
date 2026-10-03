@@ -9,7 +9,7 @@
   --color-paper: #18181b;
   --color-ink: #f4f4f5;
   --color-muted: #a1a1aa;
-  --color-line: rgba(255, 255, 255, 0.09);
+  --color-line: rgba(255, 255, 255, 0.14);
 
   --color-danger: #f87171;
   --color-danger-dark: #ef4444;
@@ -29,13 +29,11 @@
   --color-brand-soft: var(--accent-soft);
   --color-brand-text: var(--accent-primary);
 
-  --card-sheen: rgba(255, 255, 255, 0.05);
-  --shadow-card:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 10px 28px rgba(0, 0, 0, 0.32);
+  --card-sheen: rgba(255, 255, 255, 0.045);
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   --shadow-float:
-    inset 0 1px 0 rgba(255, 255, 255, 0.09),
-    0 28px 70px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 36px rgba(0, 0, 0, 0.28);
   --shadow-segment: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
@@ -48,7 +46,7 @@ html[data-theme="light"] {
   --color-paper: #fffcf7;
   --color-ink: #18181b;
   --color-muted: #5c5c66;
-  --color-line: rgba(24, 24, 27, 0.1);
+  --color-line: rgba(24, 24, 27, 0.14);
 
   --color-danger: #dc2626;
   --color-danger-dark: #b91c1c;
@@ -57,13 +55,11 @@ html[data-theme="light"] {
   --color-chip: #ebe4d6;
   --color-chip-hover: #ddd4c3;
 
-  --card-sheen: rgba(255, 255, 255, 0.78);
-  --shadow-card:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    0 10px 28px rgba(24, 24, 27, 0.06);
+  --card-sheen: rgba(255, 255, 255, 0.62);
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.88);
   --shadow-float:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 28px 60px rgba(24, 24, 27, 0.14);
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 12px 32px rgba(24, 24, 27, 0.08);
   --shadow-segment: 0 1px 2px rgba(24, 24, 27, 0.06);
 }
 
@@ -234,9 +230,12 @@ textarea {
 
 input[type="checkbox"],
 input[type="radio"] {
+  appearance: auto;
   accent-color: var(--accent-primary);
   width: 1.15rem;
   height: 1.15rem;
+  background-color: var(--color-chip);
+  border: 1px solid var(--color-line);
 }
 
 select {
@@ -294,9 +293,41 @@ select:-webkit-autofill {
   animation: sheet-up 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 220ms ease-out;
+}
+
+.toast-leave {
+  animation: toast-out 160ms ease-in forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .confetti-label,
-  .sheet-enter {
+  .sheet-enter,
+  .toast-enter,
+  .toast-leave {
     animation: none;
   }
 

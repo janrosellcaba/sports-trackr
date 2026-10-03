@@ -99,7 +99,7 @@ export function BottomSheet({
         </div>
         {title ? (
           <div className="mb-4 flex items-center justify-between">
-            <h2 id={titleId} className="font-display text-xl font-extrabold tracking-tight text-ink">
+            <h2 id={titleId} className="font-display text-xl font-bold tracking-tight text-ink">
               {title}
             </h2>
             <button
@@ -107,7 +107,7 @@ export function BottomSheet({
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-all duration-150 hover:bg-chip hover:text-ink motion-safe:hover:scale-[1.06]"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-chip hover:text-ink"
             >
               <X className="h-5 w-5" />
             </button>

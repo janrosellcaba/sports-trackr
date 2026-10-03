@@ -52,7 +52,7 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
             {sportPerWeek != null ? ` · ${trimNumber(sportPerWeek)} sport/wk` : ""}
           </p>
         </div>
-        <p className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase">
+        <p className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.18em] text-muted uppercase">
           <span className="flex items-center gap-1.5">
             <span className="h-1.5 w-2 rounded-[2px] bg-brand" />
             Gym
@@ -75,7 +75,7 @@ export function WeekGrid({ data }: { data: DailyActivityPoint[] }) {
         {WEEKDAYS.map((day, index) => (
           <span
             key={`${day}-${index}`}
-            className="text-center text-[9px] font-semibold tracking-[0.14em] text-muted uppercase"
+            className="text-center text-[9px] font-semibold tracking-[0.18em] text-muted uppercase"
           >
             {day}
           </span>

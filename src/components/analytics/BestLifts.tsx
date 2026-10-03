@@ -31,13 +31,13 @@ export function BestLifts({
   }
 
   return (
-    <section className={`${CARD_CLS} p-4 ${className}`}>
-      <h2 className={`${LABEL_CLS} mb-4`}>PRs</h2>
-      <ul className="space-y-1">
+    <section className={`${CARD_CLS} flex min-h-0 flex-col p-4 ${className}`}>
+      <h2 className={`${LABEL_CLS} mb-3`}>PRs</h2>
+      <ul className="min-h-0 max-h-64 divide-y divide-line overflow-y-auto overscroll-contain lg:max-h-72">
         {records.map((item) => (
           <li
             key={item.id}
-            className="flex items-baseline justify-between gap-3 rounded-xl px-1 py-2"
+            className="flex items-baseline justify-between gap-3 py-2"
           >
             <span className="min-w-0">
               <span className="block truncate text-sm font-medium text-ink">

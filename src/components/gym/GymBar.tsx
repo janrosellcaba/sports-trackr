@@ -72,10 +72,10 @@ export function GymBar({
                 type="button"
                 aria-label={recoveryAriaLabel(muscle.name, hit, last)}
                 onClick={() => setEditing(muscle)}
-                className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition-all duration-150 motion-safe:hover:scale-[1.03] motion-safe:active:scale-[0.98] ${
+                className={`flex min-h-12 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition-colors duration-150 ${
                   hit
-                    ? "bg-brand text-[color:var(--accent-fg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]"
-                    : "bg-chip text-ink hover:bg-chip-hover"
+                    ? "border border-transparent bg-brand text-[color:var(--accent-fg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]"
+                    : "border border-line bg-chip text-ink hover:bg-chip-hover"
                 }`}
               >
                 <span className="truncate text-xs font-bold leading-tight">
@@ -103,9 +103,9 @@ export function GymBar({
       ) : null}
 
       {hits.length > 0 ? (
-        <ul className="space-y-1.5 border-t border-line pt-3">
+        <ul className="divide-y divide-line border-t border-line">
           {hits.map((hit) => (
-            <li key={hit.id} className="flex items-center justify-between gap-3 text-sm">
+            <li key={hit.id} className="flex items-center justify-between gap-3 py-1.5 text-sm">
               <button
                 type="button"
                 className={`min-h-11 min-w-0 flex-1 text-left font-medium text-ink ${TAP_ROW}`}

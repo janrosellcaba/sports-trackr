@@ -156,13 +156,13 @@ function DayStat({
   return (
     <div className="min-w-0 bg-paper/90 px-3 py-3.5 text-center">
       <p
-        className={`truncate font-display text-xl font-extrabold tabular-nums ${
+        className={`truncate font-display text-xl font-bold tabular-nums ${
           accent ? "text-brand-text" : "text-ink"
         }`}
       >
         {value}
       </p>
-      <p className="mt-0.5 text-[10px] font-semibold tracking-[0.14em] text-muted uppercase">
+      <p className="mt-0.5 text-[10px] font-semibold tracking-[0.18em] text-muted uppercase">
         {label}
       </p>
     </div>

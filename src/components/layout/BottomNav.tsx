@@ -32,14 +32,14 @@ export function BottomNav() {
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`group relative flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-bold transition-all duration-150 select-none ${
-                active ? "text-brand-text" : "text-muted hover:text-ink motion-safe:hover:scale-[1.04]"
+              className={`group relative flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-bold transition-colors duration-150 select-none ${
+                active ? "text-brand-text" : "text-muted hover:text-ink"
               }`}
             >
               <span
-                className={`flex h-8 w-12 items-center justify-center rounded-full transition-all duration-200 ${
+                className={`flex h-8 w-12 items-center justify-center rounded-full transition-colors duration-150 ${
                   active
-                    ? "bg-brand text-[color:var(--accent-fg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_8px_18px_var(--accent-glow)]"
+                    ? "bg-brand text-[color:var(--accent-fg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_0_16px_var(--accent-glow)]"
                     : "group-hover:bg-chip/70"
                 }`}
               >

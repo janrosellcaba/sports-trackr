@@ -134,14 +134,14 @@ export function useAccentColor(): string {
 const LIGHT_SURFACE = {
   ink: "#18181b",
   muted: "#5c5c66",
-  line: "rgba(24, 24, 27, 0.1)",
+  line: "rgba(24, 24, 27, 0.14)",
   paper: "#fffcf7",
 };
 
 const DARK_SURFACE = {
   ink: "#f4f4f5",
   muted: "#a1a1aa",
-  line: "rgba(255, 255, 255, 0.08)",
+  line: "rgba(255, 255, 255, 0.14)",
   paper: "#18181b",
 };
 

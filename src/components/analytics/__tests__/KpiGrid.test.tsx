@@ -20,7 +20,7 @@ const summary: AnalyticsSummary = {
   supplementStreak: 2,
   gymStreak: 1,
   sportStreak: 0,
-  chartLabel: "Load",
+  chartLabel: "Activity",
   previous: { activityDays: 4, gymLoad: 20 },
   trends: {
     activity: 10,

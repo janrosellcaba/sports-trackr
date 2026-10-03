@@ -50,10 +50,7 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
   return (
     <section className="grid grid-cols-2 gap-3">
       {cards.map((card) => (
-        <article
-          key={card.label}
-          className={`${CARD_CLS} p-4 transition-all duration-150 hover:ring-1 hover:ring-brand/25`}
-        >
+        <article key={card.label} className={`${CARD_CLS} p-4`}>
           <div className="mb-4 flex items-start justify-between gap-2">
             <card.icon className="h-4 w-4 text-brand-text" />
             {allTime ? (
@@ -68,10 +65,10 @@ export function KpiGrid({ summary }: { summary: AnalyticsSummary }) {
               />
             )}
           </div>
-          <p className="font-display text-3xl leading-none font-extrabold tabular-nums tracking-tight text-ink">
+          <p className="font-display text-3xl leading-none font-bold tabular-nums tracking-tight text-ink">
             {card.value}
           </p>
-          <p className="mt-2 text-[11px] font-semibold tracking-[0.16em] text-muted uppercase">
+          <p className="mt-2 text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
             {card.label}
           </p>
           <p className="mt-1 text-[11px] text-muted">{card.hint}</p>

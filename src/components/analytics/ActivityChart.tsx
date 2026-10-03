@@ -19,7 +19,7 @@ type ChartPoint = DailyActivityPoint & { column: number };
 
 export function ActivityChart({
   data,
-  chartLabel = "Load",
+  chartLabel = "Activity",
 }: {
   data: DailyActivityPoint[];
   chartLabel?: string;
@@ -28,13 +28,14 @@ export function ActivityChart({
   const { ink, muted, line, paper } = useSurfaceColors();
   const fillId = useId().replace(/:/g, "");
   const hatchId = `${fillId}-hatch`;
-  const chartData = withColumns(data);
+  const yMax = chartYMax(data);
+  const chartData = data.map((point) => ({ ...point, column: yMax }));
 
   return (
     <section className={`${CARD_CLS} p-4`}>
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <h2 className={LABEL_CLS}>{chartLabel}</h2>
-        <p className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.12em] text-muted uppercase">
+        <p className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.18em] text-muted uppercase">
           <span className="flex items-center gap-1.5">
             <span className="h-2 w-2.5 rounded-sm bg-brand" />
             Gym
@@ -52,12 +53,9 @@ export function ActivityChart({
         </p>
       </div>
 
-      <div className="h-44 w-full">
+      <div className="h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={chartData}
-            margin={{ top: 12, right: 4, left: -18, bottom: 0 }}
-          >
+          <ComposedChart data={chartData} margin={{ top: 12, right: 4, left: -18, bottom: 0 }}>
             <defs>
               <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={brand} stopOpacity={1} />
@@ -91,6 +89,8 @@ export function ActivityChart({
               minTickGap={28}
             />
             <YAxis
+              domain={[0, yMax]}
+              ticks={yTicks(yMax)}
               tick={{ fill: muted, fontSize: 11 }}
               axisLine={false}
               tickLine={false}
@@ -104,16 +104,19 @@ export function ActivityChart({
               dataKey="column"
               legendType="none"
               isAnimationActive={false}
+              background={{ fill: "transparent" }}
               shape={(props) => {
-                const background = rectangleFrom(props.background);
+                const bg = (
+                  props as { background?: { y?: number; height?: number } }
+                ).background;
                 return (
                   <ActivityColumn
                     x={props.x}
                     y={props.y}
                     width={props.width}
                     height={props.height}
-                    plotTop={background?.y}
-                    plotHeight={background?.height}
+                    plotY={bg?.y}
+                    plotHeight={bg?.height}
                     payload={chartPointFrom(props.payload)}
                     fill={`url(#${fillId})`}
                     hatch={`url(#${hatchId})`}
@@ -126,6 +129,10 @@ export function ActivityChart({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+
+      {data.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">No days in this range.</p>
+      ) : null}
 
       <table className="sr-only">
         <caption>Daily gym load and sport days</caption>
@@ -191,7 +198,7 @@ type ActivityColumnProps = {
   y?: number | string;
   width?: number | string;
   height?: number | string;
-  plotTop?: number;
+  plotY?: number;
   plotHeight?: number;
   payload?: ChartPoint;
   fill: string;
@@ -205,7 +212,7 @@ function ActivityColumn({
   y,
   width,
   height,
-  plotTop,
+  plotY,
   plotHeight,
   payload,
   fill,
@@ -215,57 +222,45 @@ function ActivityColumn({
 }: ActivityColumnProps) {
   if (!payload) return null;
   const left = Number(x);
-  const top = Number(y);
   const band = Number(width);
-  const tall = Number(height);
-  if (![left, top, band, tall].every(Number.isFinite) || tall <= 0) return null;
+  const plotTop = Number.isFinite(Number(plotY)) ? Number(plotY) : Number(y);
+  const plotTall =
+    Number.isFinite(Number(plotHeight)) && Number(plotHeight) > 0
+      ? Number(plotHeight)
+      : Number(height);
+  if (![left, plotTop, band, plotTall].every(Number.isFinite) || plotTall <= 0) {
+    return null;
+  }
 
   const gymHeight =
     payload.gymLoad > 0
-      ? (payload.gymLoad / Math.max(payload.column, 1)) * tall
+      ? (payload.gymLoad / Math.max(payload.column, 1)) * plotTall
       : 0;
   const hadSport = payload.sports > 0;
-  const gymTop = top + tall - gymHeight;
-  const sportTop = plotTop ?? top;
-  const sportHeight = plotHeight ?? tall;
-  const barPath = (barTop: number, barHeight: number) =>
-    roundedTopBar(left, barTop, band, barHeight, 7);
+  const gymTop = plotTop + plotTall - gymHeight;
+  const gymPath = roundedTopBar(left, gymTop, band, gymHeight, 7);
+  const sportPath = squareBar(left, plotTop, band, plotTall);
 
   return (
     <g>
       {active ? (
         <rect
           x={left}
-          y={sportTop}
+          y={plotTop}
           width={band}
-          height={sportHeight}
+          height={plotTall}
           fill={stroke}
           fillOpacity={0.08}
-          rx={6}
+          rx={hadSport ? 0 : 6}
         />
       ) : null}
-      {hadSport ? (
-        <path d={barPath(sportTop, sportHeight)} fill={stroke} fillOpacity={0.12} />
-      ) : null}
+      {hadSport ? <path d={sportPath} fill={stroke} fillOpacity={0.14} /> : null}
       {gymHeight > 0 ? (
-        <path
-          d={barPath(gymTop, gymHeight)}
-          fill={fill}
-          opacity={active ? 1 : 0.92}
-        />
+        <path d={gymPath} fill={fill} opacity={active ? 1 : 0.92} />
       ) : null}
-      {hadSport ? <path d={barPath(sportTop, sportHeight)} fill={hatch} /> : null}
+      {hadSport ? <path d={sportPath} fill={hatch} /> : null}
     </g>
   );
-}
-
-function rectangleFrom(value: unknown): { y?: number; height?: number } | undefined {
-  if (!value || typeof value !== "object") return undefined;
-  const row = value as { y?: unknown; height?: unknown };
-  const y = Number(row.y);
-  const height = Number(row.height);
-  if (!Number.isFinite(y) || !Number.isFinite(height) || height <= 0) return undefined;
-  return { y, height };
 }
 
 function chartPointFrom(value: unknown): ChartPoint | undefined {
@@ -274,6 +269,16 @@ function chartPointFrom(value: unknown): ChartPoint | undefined {
   if (typeof row.date === "string") return row;
   if (row.payload && typeof row.payload.date === "string") return row.payload;
   return undefined;
+}
+
+function squareBar(x: number, y: number, width: number, height: number): string {
+  return [
+    `M ${x} ${y + height}`,
+    `L ${x} ${y}`,
+    `L ${x + width} ${y}`,
+    `L ${x + width} ${y + height}`,
+    "Z",
+  ].join(" ");
 }
 
 function roundedTopBar(
@@ -295,11 +300,16 @@ function roundedTopBar(
   ].join(" ");
 }
 
-function withColumns(data: DailyActivityPoint[]): ChartPoint[] {
+function chartYMax(data: DailyActivityPoint[]): number {
   const maxLoad = Math.max(0, ...data.map((point) => point.gymLoad));
-  const rail = Math.max(1, maxLoad);
-  return data.map((point) => ({
-    ...point,
-    column: rail,
-  }));
+  const n = Math.max(4, maxLoad);
+  if (n <= 8) return Math.ceil(n / 2) * 2;
+  if (n <= 20) return Math.ceil(n / 4) * 4;
+  if (n <= 40) return Math.ceil(n / 6) * 6;
+  return Math.ceil(n / 10) * 10;
+}
+
+function yTicks(max: number): number[] {
+  const step = max / 4;
+  return [0, step, step * 2, step * 3, max];
 }

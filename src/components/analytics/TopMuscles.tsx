@@ -16,9 +16,9 @@ export function TopMuscles({ items }: { items: TopMuscle[] }) {
   const max = items[0]?.load || 1;
 
   return (
-    <section className={`${CARD_CLS} p-4`}>
-      <h2 className={`${LABEL_CLS} mb-4`}>Muscles</h2>
-      <ul className="space-y-3.5">
+    <section className={`${CARD_CLS} flex min-h-0 flex-col p-4`}>
+      <h2 className={`${LABEL_CLS} mb-3`}>Muscles</h2>
+      <ul className="min-h-0 max-h-64 space-y-3.5 overflow-y-auto overscroll-contain lg:max-h-72">
         {items.map((item, index) => (
           <li key={item.name} className="flex items-center gap-3">
             <span className="w-5 shrink-0 font-display text-sm font-bold tabular-nums text-muted">

@@ -105,14 +105,14 @@ function SessionsCard({ sessions }: { sessions: AccountSession[] }) {
   return (
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <p className={LABEL_CLS}>Signed-in devices</p>
-      <ul className="space-y-2">
+      <ul className="divide-y divide-line">
         {rows.length === 0 ? (
-          <li className="text-sm text-muted">No active sessions.</li>
+          <li className="py-2 text-sm text-muted">No active sessions.</li>
         ) : (
           rows.map((session) => (
             <li
               key={session.id}
-              className="flex items-center justify-between gap-3 rounded-xl bg-chip px-3 py-2"
+              className="flex items-center justify-between gap-3 py-2"
             >
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-ink">
@@ -128,7 +128,7 @@ function SessionsCard({ sessions }: { sessions: AccountSession[] }) {
                 <button
                   type="button"
                   disabled={pending}
-                  className="min-h-11 rounded-xl px-3 text-sm font-bold text-danger transition-all duration-150 hover:bg-danger-soft disabled:opacity-50"
+                  className="min-h-11 rounded-xl px-3 text-sm font-bold text-danger transition-colors duration-150 hover:bg-danger-soft disabled:opacity-50"
                   onClick={() => {
                     setError(null);
                     startTransition(async () => {
@@ -149,7 +149,7 @@ function SessionsCard({ sessions }: { sessions: AccountSession[] }) {
         <button
           type="button"
           disabled={pending}
-          className="w-full rounded-2xl border border-line bg-chip py-3 text-base font-bold text-ink transition-all duration-150 hover:bg-chip-hover motion-safe:hover:scale-[1.01] disabled:opacity-60"
+          className="w-full rounded-2xl border border-line bg-chip py-3 text-base font-bold text-ink transition-colors duration-150 hover:bg-chip-hover disabled:opacity-60"
           onClick={() => {
             setError(null);
             startTransition(async () => {

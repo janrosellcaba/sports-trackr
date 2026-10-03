@@ -76,14 +76,14 @@ export function SupplementBar({
       ) : null}
 
       {intakes.length > 0 ? (
-        <ul className="space-y-1.5 border-t border-line pt-3">
+        <ul className="divide-y divide-line border-t border-line">
           {intakes.map((intake) => {
             const kind = supplementFromName(intake.name);
             const label = `${intake.name}${intake.dose ? ` · ${intake.dose}` : ""}`;
             return (
               <li
                 key={intake.id}
-                className="flex items-center justify-between gap-3 text-sm"
+                className="flex items-center justify-between gap-3 py-2 text-sm"
               >
                 {kind ? (
                   <button

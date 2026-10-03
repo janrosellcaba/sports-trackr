@@ -23,6 +23,7 @@ import {
   LABEL_CLS,
   PAGE_TITLE,
   SEGMENT_TRACK,
+  blurOnPointerUp,
   segmentItemClass,
 } from "@/lib/ui";
 import type {
@@ -103,10 +104,16 @@ export function LogView({
     return true;
   });
 
-  const multiMonth = useMemo(
-    () => new Set(visible.map((day) => day.date.slice(0, 7))).size > 1,
-    [visible],
-  );
+  const monthGroups = useMemo(() => {
+    const groups: { month: string; days: DayGroup[] }[] = [];
+    for (const day of visible) {
+      const month = day.date.slice(0, 7);
+      const last = groups[groups.length - 1];
+      if (last && last.month === month) last.days.push(day);
+      else groups.push({ month, days: [day] });
+    }
+    return groups;
+  }, [visible]);
 
   const editingSportDef = editingSport ? sportDefinition(editingSport.type) : null;
   const editingSupplementKind = editingSupplement
@@ -134,7 +141,7 @@ export function LogView({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <h1 className={PAGE_TITLE}>Log</h1>
 
       <div className={`${SEGMENT_TRACK} grid-cols-4`} role="group" aria-label="Filter">
@@ -144,6 +151,7 @@ export function LogView({
             type="button"
             aria-pressed={filter === item.key}
             onClick={() => setFilter(item.key)}
+            onPointerUp={blurOnPointerUp}
             className={`${segmentItemClass(filter === item.key)} text-[11px] sm:text-sm`}
           >
             {item.label}
@@ -162,164 +170,224 @@ export function LogView({
           <p className="text-sm text-muted">Nothing logged.</p>
         </section>
       ) : (
-        <section className="space-y-2.5">
-          {visible.map((day, index) => {
-            const open = openDate === day.date;
-            const heading = dateHeadingParts(day.date);
-            const prevMonth = index > 0 ? visible[index - 1].date.slice(0, 7) : null;
-            const showMonth = multiMonth && day.date.slice(0, 7) !== prevMonth;
-            const chips = logChips(day, filter, distanceUnit);
-            return (
-              <div key={day.date}>
-                {showMonth ? (
-                  <p className={`${LABEL_CLS} px-1 pt-3 pb-2 first:pt-0`}>
-                    {formatMonthYear(day.date)}
-                  </p>
-                ) : null}
-                <article className={`${CARD_CLS} overflow-hidden`}>
-                  <button
-                    type="button"
-                    aria-expanded={open}
-                    onClick={() => setOpenDate(open ? null : day.date)}
-                    className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-chip/35"
-                  >
-                    <div className="w-11 shrink-0 pt-0.5 text-center">
-                      <p
-                        className={`font-display text-2xl leading-none font-extrabold tabular-nums ${
-                          day.date === today ? "text-brand-text" : "text-ink"
-                        }`}
+        <div className="space-y-6">
+          {monthGroups.map((group) => (
+            <div key={group.month}>
+              {monthGroups.length > 1 ? (
+                <p className={`${LABEL_CLS} mb-3`}>{formatMonthYear(group.days[0].date)}</p>
+              ) : null}
+              <section className={`${CARD_CLS} divide-y divide-line overflow-hidden`}>
+                {group.days.map((day) => {
+                  const open = openDate === day.date;
+                  const heading = dateHeadingParts(day.date);
+                  const chips = logChips(day, filter, distanceUnit);
+                  return (
+                    <article key={day.date}>
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        onClick={() => setOpenDate(open ? null : day.date)}
+                        className="flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-chip/35"
                       >
-                        {heading.day}
-                      </p>
-                      <p className="mt-1 text-[10px] font-semibold tracking-[0.16em] text-muted uppercase">
-                        {heading.weekday}
-                      </p>
-                    </div>
-                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                      {chips.length > 0 ? (
-                        chips.map((chip) => (
-                          <span
-                            key={chip.id}
-                            className={
-                              chip.size === "sm"
-                                ? "max-w-full truncate rounded-full bg-chip/70 px-2 py-0.5 text-[10px] font-semibold text-ink"
-                                : "max-w-full truncate rounded-full bg-chip px-2.5 py-1 text-[11px] font-semibold text-ink"
-                            }
+                        <div className="w-11 shrink-0 pt-0.5 text-center">
+                          <p
+                            className={`font-display text-2xl leading-none font-bold tabular-nums ${
+                              day.date === today ? "text-brand-text" : "text-ink"
+                            }`}
                           >
-                            {chip.label}
-                            {chip.detail ? (
-                              <span className="ml-1 font-mono tabular-nums text-muted">
-                                {chip.detail}
+                            {heading.day}
+                          </p>
+                          <p className="mt-1 text-[10px] font-semibold tracking-[0.18em] text-muted uppercase">
+                            {heading.weekday}
+                          </p>
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                          {chips.length > 0 ? (
+                            chips.map((chip) => (
+                              <span
+                                key={chip.id}
+                                className={
+                                  chip.size === "sm"
+                                    ? "max-w-full truncate rounded-full border border-line bg-chip/70 px-2 py-0.5 text-[10px] font-semibold text-ink"
+                                    : "max-w-full truncate rounded-full border border-line bg-chip px-2.5 py-1 text-[11px] font-semibold text-ink"
+                                }
+                              >
+                                {chip.label}
+                                {chip.detail ? (
+                                  <span className="ml-1 font-mono tabular-nums text-muted">
+                                    {chip.detail}
+                                  </span>
+                                ) : null}
                               </span>
-                            ) : null}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted">—</span>
-                      )}
-                    </div>
-                    <ChevronDown
-                      className={`mt-1 h-4 w-4 shrink-0 text-muted transition ${
-                        open ? "rotate-180" : ""
-                      }`}
-                      aria-hidden="true"
-                    />
-                  </button>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted">—</span>
+                          )}
+                        </div>
+                        <ChevronDown
+                          className={`mt-1 h-4 w-4 shrink-0 text-muted transition ${
+                            open ? "rotate-180" : ""
+                          }`}
+                          aria-hidden="true"
+                        />
+                      </button>
 
-                  {open ? (
-                    <div className="space-y-5 border-t border-line px-4 py-4">
-                      {(filter === "all" || filter === "gym") && (
-                        <section className="space-y-2">
-                          <p className={LABEL_CLS}>Gym</p>
-                          <GymBar
-                            date={day.date}
-                            session={day.gym}
-                            muscles={muscles}
-                            showHeading={false}
-                            onChange={(next) => {
-                              setGym((current) => {
-                                const without = current.filter(
-                                  (item) => item.date !== day.date,
-                                );
-                                return next
-                                  ? [next, ...without].sort((a, b) =>
-                                      b.date.localeCompare(a.date),
-                                    )
-                                  : without;
-                              });
-                              refresh();
-                            }}
-                          />
-                          {day.gym ? (
-                            <button
-                              type="button"
-                              disabled={pendingId != null}
-                              onClick={() =>
-                                setConfirm({
-                                  title: "Delete gym session?",
-                                  body: "Removes every muscle hit on this day.",
-                                  run: async () => {
-                                    await deleteGymSession(day.gym!.id);
-                                    setGym((current) =>
-                                      current.filter((item) => item.id !== day.gym!.id),
+                      {open ? (
+                        <div className="space-y-6 border-t border-line px-4 py-4">
+                          {(filter === "all" || filter === "gym") && (
+                            <section className="space-y-2">
+                              <p className={LABEL_CLS}>Gym</p>
+                              <GymBar
+                                date={day.date}
+                                session={day.gym}
+                                muscles={muscles}
+                                showHeading={false}
+                                onChange={(next) => {
+                                  setGym((current) => {
+                                    const without = current.filter(
+                                      (item) => item.date !== day.date,
                                     );
-                                  },
-                                })
-                              }
-                              className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-sm font-bold text-danger transition-all duration-150 hover:brightness-110 disabled:opacity-50"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Delete gym
-                            </button>
-                          ) : null}
-                        </section>
-                      )}
-
-                      {(filter === "all" || filter === "sports") &&
-                      day.sports.length > 0 ? (
-                        <section className="space-y-2">
-                          <p className={LABEL_CLS}>Sports</p>
-                          <ul className="space-y-2">
-                            {day.sports.map((session) => {
-                              const summary = formatSportSummary(session, distanceUnit);
-                              return (
-                                <li
-                                  key={session.id}
-                                  className="rounded-xl bg-chip px-3 py-2.5"
+                                    return next
+                                      ? [next, ...without].sort((a, b) =>
+                                          b.date.localeCompare(a.date),
+                                        )
+                                      : without;
+                                  });
+                                  refresh();
+                                }}
+                              />
+                              {day.gym ? (
+                                <button
+                                  type="button"
+                                  disabled={pendingId != null}
+                                  onClick={() =>
+                                    setConfirm({
+                                      title: "Delete gym session?",
+                                      body: "Removes every muscle hit on this day.",
+                                      run: async () => {
+                                        await deleteGymSession(day.gym!.id);
+                                        setGym((current) =>
+                                          current.filter((item) => item.id !== day.gym!.id),
+                                        );
+                                      },
+                                    })
+                                  }
+                                  className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-danger-soft px-3 text-sm font-bold text-danger transition-colors duration-150 hover:brightness-110 disabled:opacity-50"
                                 >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                      <p className="text-sm font-bold text-ink">
-                                        {sportLabel(session.type)}
-                                      </p>
-                                      {summary || session.notes ? (
-                                        <p className="mt-0.5 text-xs text-muted">
-                                          {[summary, session.notes]
-                                            .filter(Boolean)
-                                            .join(" · ")}
-                                        </p>
-                                      ) : null}
-                                    </div>
-                                    <span className="flex shrink-0 gap-1">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  Delete gym
+                                </button>
+                              ) : null}
+                            </section>
+                          )}
+
+                          {(filter === "all" || filter === "sports") &&
+                          day.sports.length > 0 ? (
+                            <section className="space-y-2">
+                              <p className={LABEL_CLS}>Sports</p>
+                              <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line">
+                                {day.sports.map((session) => {
+                                  const summary = formatSportSummary(session, distanceUnit);
+                                  return (
+                                    <li key={session.id} className="px-3 py-2.5">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <button
+                                          type="button"
+                                          className="min-w-0 flex-1 text-left"
+                                          onClick={() => setEditingSport(session)}
+                                        >
+                                          <p className="text-sm font-bold text-ink">
+                                            {sportLabel(session.type)}
+                                          </p>
+                                          {summary || session.notes ? (
+                                            <p className="mt-0.5 text-xs text-muted">
+                                              {[summary, session.notes]
+                                                .filter(Boolean)
+                                                .join(" · ")}
+                                            </p>
+                                          ) : null}
+                                        </button>
+                                        <span className="flex shrink-0 gap-1">
+                                          <button
+                                            type="button"
+                                            className={GHOST_BTN}
+                                            onClick={() => setEditingSport(session)}
+                                          >
+                                            Edit
+                                          </button>
+                                          <button
+                                            type="button"
+                                            disabled={pendingId != null}
+                                            className={DANGER_BTN}
+                                            onClick={() =>
+                                              setConfirm({
+                                                title: "Delete sport?",
+                                                body: `Remove this ${sportLabel(session.type).toLowerCase()} session?`,
+                                                run: async () => {
+                                                  await deleteSport(session.id);
+                                                  setSportRows((current) =>
+                                                    current.filter((item) => item.id !== session.id),
+                                                  );
+                                                },
+                                              })
+                                            }
+                                          >
+                                            Delete
+                                          </button>
+                                        </span>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </section>
+                          ) : null}
+
+                          {(filter === "all" || filter === "supplements") &&
+                          day.supplements.length > 0 ? (
+                            <section className="space-y-2">
+                              <p className={LABEL_CLS}>Supplements</p>
+                              <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line">
+                                {day.supplements.map((intake) => (
+                                  <li
+                                    key={intake.id}
+                                    className="flex items-center justify-between gap-2 px-3 py-2.5"
+                                  >
+                                    {supplementFromName(intake.name) ? (
                                       <button
                                         type="button"
-                                        className={GHOST_BTN}
-                                        onClick={() => setEditingSport(session)}
+                                        className="min-w-0 flex-1 truncate text-left text-sm font-bold text-ink"
+                                        onClick={() => setEditingSupplement(intake)}
                                       >
-                                        Edit
+                                        {intake.name} · {intake.dose}
                                       </button>
+                                    ) : (
+                                      <p className="min-w-0 truncate text-sm font-bold text-ink">
+                                        {intake.name} · {intake.dose}
+                                      </p>
+                                    )}
+                                    <span className="flex shrink-0 gap-1">
+                                      {supplementFromName(intake.name) ? (
+                                        <button
+                                          type="button"
+                                          className={GHOST_BTN}
+                                          onClick={() => setEditingSupplement(intake)}
+                                        >
+                                          Edit
+                                        </button>
+                                      ) : null}
                                       <button
                                         type="button"
                                         disabled={pendingId != null}
                                         className={DANGER_BTN}
                                         onClick={() =>
                                           setConfirm({
-                                            title: "Delete sport?",
-                                            body: `Remove this ${sportLabel(session.type).toLowerCase()} session?`,
+                                            title: "Delete supplement?",
+                                            body: `Remove ${intake.name}?`,
                                             run: async () => {
-                                              await deleteSport(session.id);
-                                              setSportRows((current) =>
-                                                current.filter((item) => item.id !== session.id),
+                                              await deleteSupplement(intake.id);
+                                              setSuppRows((current) =>
+                                                current.filter((item) => item.id !== intake.id),
                                               );
                                             },
                                           })
@@ -328,69 +396,20 @@ export function LogView({
                                         Delete
                                       </button>
                                     </span>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </section>
+                                  </li>
+                                ))}
+                              </ul>
+                            </section>
+                          ) : null}
+                        </div>
                       ) : null}
-
-                      {(filter === "all" || filter === "supplements") &&
-                      day.supplements.length > 0 ? (
-                        <section className="space-y-2">
-                          <p className={LABEL_CLS}>Supplements</p>
-                          <ul className="space-y-2">
-                            {day.supplements.map((intake) => (
-                              <li
-                                key={intake.id}
-                                className="flex items-center justify-between gap-2 rounded-xl bg-chip px-3 py-2.5"
-                              >
-                                <p className="min-w-0 truncate text-sm font-bold text-ink">
-                                  {intake.name} · {intake.dose}
-                                </p>
-                                <span className="flex shrink-0 gap-1">
-                                  {supplementFromName(intake.name) ? (
-                                    <button
-                                      type="button"
-                                      className={GHOST_BTN}
-                                      onClick={() => setEditingSupplement(intake)}
-                                    >
-                                      Edit
-                                    </button>
-                                  ) : null}
-                                  <button
-                                    type="button"
-                                    disabled={pendingId != null}
-                                    className={DANGER_BTN}
-                                    onClick={() =>
-                                      setConfirm({
-                                        title: "Delete supplement?",
-                                        body: `Remove ${intake.name}?`,
-                                        run: async () => {
-                                          await deleteSupplement(intake.id);
-                                          setSuppRows((current) =>
-                                            current.filter((item) => item.id !== intake.id),
-                                          );
-                                        },
-                                      })
-                                    }
-                                  >
-                                    Delete
-                                  </button>
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </section>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </article>
-              </div>
-            );
-          })}
-        </section>
+                    </article>
+                  );
+                })}
+              </section>
+            </div>
+          ))}
+        </div>
       )}
 
       {editingSport && editingSportDef ? (

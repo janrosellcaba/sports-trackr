@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/admin";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { formatDisplayDate, formatDisplayDateTime } from "@/lib/calculations";
-import { CARD_CLS, DANGER_BTN, LABEL_CLS } from "@/lib/ui";
+import { DANGER_BTN, LABEL_CLS } from "@/lib/ui";
 
 function formatDay(value: string | null): string {
   return value ? formatDisplayDate(value) : "—";
@@ -41,7 +41,7 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
           setOpen(true);
           load();
         }}
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-muted transition-all duration-150 hover:bg-chip hover:text-ink motion-safe:hover:scale-[1.04]"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-muted transition-colors duration-150 hover:bg-chip hover:text-ink"
       >
         <Shield className="h-4 w-4" aria-hidden="true" />
         Admin
@@ -111,9 +111,9 @@ export function AdminPanel({ currentUserId }: { currentUserId: string }) {
                   {error}
                 </p>
               ) : null}
-              <ul className="space-y-3">
+              <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
                 {rows.map((row) => (
-                  <li key={row.id} className={`${CARD_CLS} p-3`}>
+                  <li key={row.id} className="p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-base font-bold text-ink">

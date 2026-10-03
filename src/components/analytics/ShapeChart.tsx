@@ -25,7 +25,7 @@ export function ShapeChart({ points }: { points: ShapePoint[] }) {
 
   return (
     <section className={`${CARD_CLS} p-4`}>
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h2 className={LABEL_CLS}>Shape</h2>
           <p className="mt-1 text-[11px] text-muted">All time</p>

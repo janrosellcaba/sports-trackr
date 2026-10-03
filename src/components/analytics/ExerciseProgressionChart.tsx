@@ -61,7 +61,7 @@ export function ExerciseProgressionChart({
 
   return (
     <section className={`${CARD_CLS} p-4`} aria-busy={isPending}>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <h2 className={LABEL_CLS}>Progression</h2>
         <label className="block w-full sm:w-56">
           <span className="sr-only">Exercise</span>

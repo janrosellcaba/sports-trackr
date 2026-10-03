@@ -32,7 +32,7 @@ export function PasswordField({
       <button
         type="button"
         onClick={() => setShow((current) => !current)}
-        className="absolute top-1/2 right-2 min-h-11 min-w-11 -translate-y-1/2 rounded-xl text-sm font-bold text-muted transition-all duration-150 hover:bg-chip hover:text-ink motion-safe:hover:scale-[1.04]"
+        className="absolute top-1/2 right-2 min-h-11 min-w-11 -translate-y-1/2 rounded-xl text-sm font-bold text-muted transition-colors duration-150 hover:bg-chip hover:text-ink"
       >
         {show ? "Hide" : "Show"}
       </button>
