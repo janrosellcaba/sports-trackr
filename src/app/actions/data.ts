@@ -21,7 +21,11 @@ import {
   serializeSport,
   serializeSupplement,
 } from "@/lib/db/activity";
-import { findBodyWeightForDate, serializeBodyWeight } from "@/lib/db/weight";
+import {
+  findBodyWeightForDate,
+  listBodyWeightsForUser,
+  serializeBodyWeight,
+} from "@/lib/db/weight";
 import { daysBetween } from "@/lib/recovery";
 import type {
   BodyWeightPayload,
@@ -50,6 +54,7 @@ export type LogState = {
   gymSessions: GymSessionPayload[];
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
+  bodyWeights: BodyWeightPayload[];
   muscles: MusclePayload[];
 };
 
@@ -103,10 +108,11 @@ export async function getLogState(): Promise<LogState> {
   const user = await requireUser();
   await seedUserCatalog(user.id);
   const today = await getRequestToday();
-  const [gymRows, sportsRows, supplementRows, muscles] = await Promise.all([
+  const [gymRows, sportsRows, supplementRows, weightRows, muscles] = await Promise.all([
     listGymSessionsForUser(user.id),
     listSportsForUser(user.id),
     listSupplementsForUser(user.id),
+    listBodyWeightsForUser(user.id),
     listMusclesForUser(user.id),
   ]);
   return {
@@ -114,6 +120,7 @@ export async function getLogState(): Promise<LogState> {
     gymSessions: gymRows.map(serializeGymSession),
     sports: sportsRows.map(serializeSport),
     supplements: supplementRows.map(serializeSupplement),
+    bodyWeights: weightRows.map(serializeBodyWeight),
     muscles,
   };
 }

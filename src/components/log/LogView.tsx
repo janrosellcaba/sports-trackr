@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Copy, Trash2 } from "lucide-react";
 import { deleteGymSession } from "@/app/actions/gym";
 import { deleteSport } from "@/app/actions/sports";
 import { deleteSupplement } from "@/app/actions/supplements";
@@ -15,6 +15,8 @@ import { useLatestProps } from "@/lib/use-latest-props";
 import { formatSportGlance, formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
 import { supplementFromName } from "@/lib/supplements";
 import { useUnits } from "@/components/units/UnitsProvider";
+import { copyText } from "@/lib/clipboard";
+import { buildTrainerLog, type TrainerLogRange } from "@/lib/trainer-log";
 import type { DistanceUnit } from "@/lib/units";
 import {
   CARD_CLS,
@@ -27,6 +29,7 @@ import {
   segmentItemClass,
 } from "@/lib/ui";
 import type {
+  BodyWeightPayload,
   GymSessionPayload,
   MusclePayload,
   SportSessionPayload,
@@ -49,22 +52,34 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "supplements", label: "Supps" },
 ];
 
+const COPY_RANGES: { key: TrainerLogRange; label: string }[] = [
+  { key: "sessions-30", label: "30 sessions" },
+  { key: "days-30", label: "30 days" },
+  { key: "days-60", label: "60 days" },
+];
+
 export function LogView({
   today,
   gymSessions,
   sports,
   supplements,
+  bodyWeights,
   muscles,
 }: {
   today: string;
   gymSessions: GymSessionPayload[];
   sports: SportSessionPayload[];
   supplements: SupplementPayload[];
+  bodyWeights: BodyWeightPayload[];
   muscles: MusclePayload[];
 }) {
   const router = useRouter();
   const { distanceUnit } = useUnits();
   const [filter, setFilter] = useState<Filter>("all");
+  const [copyRange, setCopyRange] = useState<TrainerLogRange>("sessions-30");
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const copyTimer = useRef(0);
   const [openDate, setOpenDate] = useState<string | null>(null);
   const [editingSport, setEditingSport] = useState<SportSessionPayload | null>(null);
   const [editingSupplement, setEditingSupplement] = useState<SupplementPayload | null>(
@@ -81,6 +96,26 @@ export function LogView({
   const [gym, setGym] = useLatestProps(gymSessions);
   const [sportRows, setSportRows] = useLatestProps(sports);
   const [suppRows, setSuppRows] = useLatestProps(supplements);
+
+  useEffect(() => {
+    return () => window.clearTimeout(copyTimer.current);
+  }, []);
+
+  const trainerLog = useMemo(
+    () =>
+      buildTrainerLog(
+        {
+          today,
+          gymSessions: gym,
+          sports: sportRows,
+          supplements: suppRows,
+          bodyWeights,
+        },
+        copyRange,
+      ),
+    [today, gym, sportRows, suppRows, bodyWeights, copyRange],
+  );
+  const canCopy = trainerLog.days.length > 0 || trainerLog.latestWeight != null;
 
   const days = useMemo(() => {
     const map = new Map<string, DayGroup>();
@@ -140,9 +175,69 @@ export function LogView({
     });
   }
 
+  async function copyTrainerJson() {
+    setCopyError(null);
+    try {
+      await copyText(JSON.stringify(trainerLog, null, 2));
+      setCopied(true);
+      window.clearTimeout(copyTimer.current);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+      setCopyError("Could not copy.");
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <h1 className={PAGE_TITLE}>Log</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className={PAGE_TITLE}>Log</h1>
+        <button
+          type="button"
+          disabled={!canCopy}
+          onClick={() => void copyTrainerJson()}
+          onPointerUp={blurOnPointerUp}
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-chip/70 px-3.5 text-sm font-bold text-muted ring-1 ring-line/70 transition-all duration-150 hover:bg-chip hover:text-ink hover:ring-brand/35 motion-safe:hover:scale-[1.03] motion-safe:active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50"
+          aria-label={copied ? "Copied trainer JSON" : `Copy JSON for the ${trainerLog.range}`}
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-brand-text" aria-hidden="true" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+          )}
+          <span className="pr-0.5 text-xs font-bold">
+            {copied ? "Copied" : "Copy JSON"}
+          </span>
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <p className={LABEL_CLS}>Copy range</p>
+        <div className={`${SEGMENT_TRACK} grid-cols-3`} role="group" aria-label="Copy range">
+          {COPY_RANGES.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              aria-pressed={copyRange === item.key}
+              onClick={() => {
+                setCopyRange(item.key);
+                setCopied(false);
+                setCopyError(null);
+              }}
+              onPointerUp={blurOnPointerUp}
+              className={`${segmentItemClass(copyRange === item.key)} text-[11px] sm:text-sm`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {copyError ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {copyError}
+        </p>
+      ) : null}
 
       <div className={`${SEGMENT_TRACK} grid-cols-4`} role="group" aria-label="Filter">
         {FILTERS.map((item) => (

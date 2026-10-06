@@ -18,3 +18,10 @@ export function findBodyWeightForDate(userId: string, date: string) {
     where: { userId_date: { userId, date } },
   });
 }
+
+export function listBodyWeightsForUser(userId: string) {
+  return prisma.bodyWeight.findMany({
+    where: { userId },
+    orderBy: { date: "desc" },
+  });
+}

@@ -12,6 +12,7 @@ export default async function LogPage() {
       gymSessions={state.gymSessions}
       sports={state.sports}
       supplements={state.supplements}
+      bodyWeights={state.bodyWeights}
       muscles={state.muscles}
     />
   );
