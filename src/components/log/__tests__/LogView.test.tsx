@@ -67,7 +67,9 @@ describe("LogView trainer copy", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Copy JSON for the last 30 sessions" }));
+    expect(screen.queryByRole("menu", { name: "Copy range" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Copy JSON" }));
+    await user.click(screen.getByRole("menuitem", { name: "30 sessions" }));
     const sessions = JSON.parse(writeText.mock.calls[0][0] as string) as {
       days: Array<{ date: string }>;
     };
@@ -77,8 +79,8 @@ describe("LogView trainer copy", () => {
     expect(writeText.mock.calls[0][0]).toContain('"name": "Creatine"');
     expect(writeText.mock.calls[0][0]).toContain('"weightKg": 82.5');
 
-    await user.click(screen.getByRole("button", { name: "30 days" }));
-    await user.click(screen.getByRole("button", { name: "Copy JSON for the last 30 days" }));
+    await user.click(screen.getByRole("button", { name: "Copy JSON" }));
+    await user.click(screen.getByRole("menuitem", { name: "30 days" }));
     const month = JSON.parse(writeText.mock.calls[1][0] as string) as {
       days: Array<{ date: string }>;
     };
