@@ -8,13 +8,17 @@ import type {
   SupplementPayload,
 } from "@/types/trackr";
 
-export const TRAINER_LOG_RANGES = ["sessions-30", "days-30", "days-60"] as const;
+export const TRAINER_LOG_RANGES = ["days-30", "days-90"] as const;
 export type TrainerLogRange = (typeof TRAINER_LOG_RANGES)[number];
 
+const RANGE_DAYS: Record<TrainerLogRange, number> = {
+  "days-30": 30,
+  "days-90": 90,
+};
+
 const RANGE_LABEL: Record<TrainerLogRange, string> = {
-  "sessions-30": "last 30 sessions",
   "days-30": "last 30 days",
-  "days-60": "last 60 days",
+  "days-90": "last 90 days",
 };
 
 const INTENSITY_KEY = "1 Light, 2 Steady, 3 Solid, 4 Hard, 5 Wrecked";
@@ -78,7 +82,7 @@ function hasContent(day: DayAcc): boolean {
   );
 }
 
-function dayPayload(day: DayAcc): TrainerLogDay {
+function dayPayload(day: DayAcc, sportNames?: Record<string, string>): TrainerLogDay {
   const payload: TrainerLogDay = { date: day.date };
   if (day.weightKg != null) payload.weightKg = day.weightKg;
   if (day.gym) {
@@ -105,7 +109,7 @@ function dayPayload(day: DayAcc): TrainerLogDay {
       const effort = effortLabel(session.effort);
       const notes = session.notes?.trim();
       return {
-        sport: sportLabel(session.type),
+        sport: sportNames?.[session.type] ?? sportLabel(session.type),
         ...(session.durationMinutes != null
           ? { durationMinutes: session.durationMinutes }
           : {}),
@@ -136,6 +140,7 @@ export function buildTrainerLog(
     bodyWeights: BodyWeightPayload[];
   },
   range: TrainerLogRange,
+  sportNames?: Record<string, string>,
 ): TrainerLog {
   const today = isDateKey(input.today) ? input.today : "";
   const days = new Map<string, DayAcc>();
@@ -174,18 +179,7 @@ export function buildTrainerLog(
     .filter((entry) => isDateKey(entry.date) && (!today || entry.date <= today))
     .sort((a, b) => b.date.localeCompare(a.date))[0];
 
-  const trainingDates = [...days.values()]
-    .filter(isTrainingDay)
-    .map((day) => day.date)
-    .sort((a, b) => b.localeCompare(a));
-
-  let from: string | null = null;
-  if (range === "sessions-30") {
-    const selected = trainingDates.slice(0, 30);
-    from = selected[selected.length - 1] ?? null;
-  } else if (today) {
-    from = addDaysISO(today, range === "days-30" ? -29 : -59);
-  }
+  const from = today ? addDaysISO(today, 1 - RANGE_DAYS[range]) : null;
 
   const included = [...days.values()]
     .filter((day) => from != null && day.date >= from && day.date <= today && hasContent(day))
@@ -199,6 +193,6 @@ export function buildTrainerLog(
     intensity: INTENSITY_KEY,
     about: ABOUT,
     ...(latest ? { latestWeight: { date: latest.date, weightKg: latest.weightKg } } : {}),
-    days: included.map(dayPayload),
+    days: included.map((day) => dayPayload(day, sportNames)),
   };
 }

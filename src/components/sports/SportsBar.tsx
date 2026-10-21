@@ -6,13 +6,11 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { DateField } from "@/components/ui/DayPicker";
 import {
   EFFORT_LEVELS,
-  SPORTS,
   effortLabel,
   formatSportSummary,
-  sportDefinition,
+  resolveSport,
   sportLabel,
   type SportDefinition,
-  type SportTypeId,
 } from "@/lib/sports";
 import { CARD_CLS, GHOST_BTN, INPUT_CLS, LABEL_CLS, PRIMARY_BTN, SECONDARY_BTN, TAP_ROW, chipClass } from "@/lib/ui";
 import { useUnits } from "@/components/units/UnitsProvider";
@@ -31,12 +29,14 @@ import type { SportSessionPayload } from "@/types/trackr";
 export function SportsBar({
   date,
   sessions,
+  catalog,
   lockDate = false,
   onLogged,
   onRemoved,
 }: {
   date: string;
   sessions: SportSessionPayload[];
+  catalog: SportDefinition[];
   lockDate?: boolean;
   onLogged: (session: SportSessionPayload) => void;
   onRemoved: (id: string) => void;
@@ -47,7 +47,7 @@ export function SportsBar({
   const [, startTransition] = useTransition();
   const [creating, setCreating] = useState<SportDefinition | null>(null);
   const [editing, setEditing] = useState<SportSessionPayload | null>(null);
-  const editingSport = editing ? sportDefinition(editing.type) : null;
+  const editingSport = editing ? resolveSport(editing.type, catalog) : null;
 
   function handleUndo(id: string) {
     setError(null);
@@ -68,19 +68,23 @@ export function SportsBar({
     <section className={`${CARD_CLS} space-y-3 p-4`}>
       <p className={LABEL_CLS}>Sports</p>
 
-      <div className="grid grid-cols-2 gap-2">
-        {SPORTS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            disabled={pendingId != null}
-            onClick={() => setCreating(item)}
-            className={SECONDARY_BTN}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {catalog.length === 0 ? (
+        <p className="text-sm text-muted">Add sports in Settings.</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {catalog.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              disabled={pendingId != null}
+              onClick={() => setCreating(item)}
+              className={SECONDARY_BTN}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {sessions.length > 0 ? (
         <ul className="divide-y divide-line border-t border-line">
@@ -94,7 +98,7 @@ export function SportsBar({
                   onClick={() => setEditing(session)}
                 >
                   <span className="font-medium text-ink">
-                    {sportLabel(session.type)}
+                    {resolveSport(session.type, catalog)?.label ?? sportLabel(session.type)}
                     {summary ? ` · ${summary}` : ""}
                   </span>
                   {session.notes ? (
@@ -230,7 +234,7 @@ export function SportFormSheet({
       {fields.has("pace") ? (
         <label className="mb-3 block">
           <span className="mb-1 block text-sm font-semibold text-ink">
-            Pace (min/{distanceUnit})
+            Rhythm (min/{distanceUnit})
           </span>
           <input
             value={pace}
@@ -301,7 +305,7 @@ export function SportFormSheet({
           startTransition(async () => {
             try {
               const payload = {
-                type: sport.id as SportTypeId,
+                type: sport.id,
                 date: logDate,
                 distanceKm: fields.has("distanceKm")
                   ? distanceKm.trim()

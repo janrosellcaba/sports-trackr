@@ -12,9 +12,15 @@ import { SportFormSheet } from "@/components/sports/SportsBar";
 import { SupplementFormSheet } from "@/components/supplements/SupplementBar";
 import { ConfirmSheet } from "@/components/ui/ConfirmSheet";
 import { NoticeToast, type Notice } from "@/components/ui/NoticeToast";
-import { dateHeadingParts, formatMonthYear } from "@/lib/calculations";
+import { dateHeadingParts, formatDisplayDate, formatMonthYear } from "@/lib/calculations";
 import { useLatestProps } from "@/lib/use-latest-props";
-import { formatSportGlance, formatSportSummary, sportDefinition, sportLabel } from "@/lib/sports";
+import {
+  formatSportGlance,
+  formatSportSummary,
+  resolveSport,
+  sportLabel,
+  type SportDefinition,
+} from "@/lib/sports";
 import { supplementFromName } from "@/lib/supplements";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { copyText } from "@/lib/clipboard";
@@ -24,6 +30,7 @@ import {
   CARD_CLS,
   DANGER_BTN,
   GHOST_BTN,
+  INPUT_CLS,
   LABEL_CLS,
   PAGE_TITLE,
   SEGMENT_TRACK,
@@ -34,6 +41,7 @@ import type {
   BodyWeightPayload,
   GymSessionPayload,
   MusclePayload,
+  SportCatalogPayload,
   SportSessionPayload,
   SupplementPayload,
 } from "@/types/trackr";
@@ -61,6 +69,7 @@ export function LogView({
   supplements,
   bodyWeights,
   muscles,
+  sportCatalog = [],
 }: {
   today: string;
   gymSessions: GymSessionPayload[];
@@ -68,10 +77,12 @@ export function LogView({
   supplements: SupplementPayload[];
   bodyWeights: BodyWeightPayload[];
   muscles: MusclePayload[];
+  sportCatalog?: SportCatalogPayload[];
 }) {
   const router = useRouter();
   const { distanceUnit } = useUnits();
   const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const dismissNotice = useCallback(() => setNotice(null), []);
   const [openDate, setOpenDate] = useState<string | null>(null);
@@ -112,11 +123,25 @@ export function LogView({
     return Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
   }, [gym, sportRows, suppRows]);
 
+  const catalog = useMemo(
+    (): SportDefinition[] =>
+      sportCatalog.map((item) => ({
+        id: item.nameKey,
+        label: item.name,
+        fields: item.fields,
+      })),
+    [sportCatalog],
+  );
+  const sportNames = useMemo(
+    () => Object.fromEntries(catalog.map((item) => [item.id, item.label])),
+    [catalog],
+  );
+
   const visible = days.filter((day) => {
-    if (filter === "gym") return day.gym != null;
-    if (filter === "sports") return day.sports.length > 0;
-    if (filter === "supplements") return day.supplements.length > 0;
-    return true;
+    if (filter === "gym" && day.gym == null) return false;
+    if (filter === "sports" && day.sports.length === 0) return false;
+    if (filter === "supplements" && day.supplements.length === 0) return false;
+    return dayMatches(day, query, catalog);
   });
 
   const monthGroups = useMemo(() => {
@@ -130,7 +155,7 @@ export function LogView({
     return groups;
   }, [visible]);
 
-  const editingSportDef = editingSport ? sportDefinition(editingSport.type) : null;
+  const editingSportDef = editingSport ? resolveSport(editingSport.type, catalog) : null;
   const editingSupplementKind = editingSupplement
     ? supplementFromName(editingSupplement.name)
     : null;
@@ -165,6 +190,7 @@ export function LogView({
         bodyWeights,
       },
       range,
+      sportNames,
     );
     try {
       await copyText(JSON.stringify(trainerLog, null, 2));
@@ -180,6 +206,15 @@ export function LogView({
         <h1 className={PAGE_TITLE}>Log</h1>
         <LogCopyMenu disabled={!canCopy} onCopy={copyTrainerJson} />
       </div>
+
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search"
+        aria-label="Search log"
+        className={INPUT_CLS}
+      />
 
       <div className={`${SEGMENT_TRACK} grid-cols-4`} role="group" aria-label="Filter">
         {FILTERS.map((item) => (
@@ -204,7 +239,9 @@ export function LogView({
 
       {visible.length === 0 ? (
         <section className={`${CARD_CLS} border-dashed px-4 py-12 text-center`}>
-          <p className="text-sm text-muted">Nothing logged.</p>
+          <p className="text-sm text-muted">
+            {query.trim() ? "Nothing matches." : "Nothing logged."}
+          </p>
         </section>
       ) : (
         <div className="space-y-6">
@@ -217,7 +254,7 @@ export function LogView({
                 {group.days.map((day) => {
                   const open = openDate === day.date;
                   const heading = dateHeadingParts(day.date);
-                  const chips = logChips(day, filter, distanceUnit);
+                  const chips = logChips(day, filter, distanceUnit, sportNames);
                   return (
                     <article key={day.date}>
                       <button
@@ -334,7 +371,8 @@ export function LogView({
                                           onClick={() => setEditingSport(session)}
                                         >
                                           <p className="text-sm font-bold text-ink">
-                                            {sportLabel(session.type)}
+                                            {resolveSport(session.type, catalog)?.label ??
+                                              sportLabel(session.type)}
                                           </p>
                                           {summary || session.notes ? (
                                             <p className="mt-0.5 text-xs text-muted">
@@ -359,7 +397,7 @@ export function LogView({
                                             onClick={() =>
                                               setConfirm({
                                                 title: "Delete sport?",
-                                                body: `Remove this ${sportLabel(session.type).toLowerCase()} session?`,
+                                                body: `Remove this ${(resolveSport(session.type, catalog)?.label ?? sportLabel(session.type)).toLowerCase()} session?`,
                                                 run: async () => {
                                                   await deleteSport(session.id);
                                                   setSportRows((current) =>
@@ -505,10 +543,30 @@ type LogChip = {
   size: "sm" | "md";
 };
 
+function dayMatches(day: DayGroup, query: string, catalog: SportDefinition[]): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  const parts = [
+    day.date,
+    formatDisplayDate(day.date),
+    formatMonthYear(day.date),
+    day.gym?.notes ?? "",
+    ...(day.gym?.hits ?? []).map((hit) => `${hit.muscleName} ${hit.intensity}`),
+    ...day.sports.flatMap((session) => [
+      resolveSport(session.type, catalog)?.label ?? sportLabel(session.type),
+      formatSportSummary(session),
+      session.notes ?? "",
+    ]),
+    ...day.supplements.flatMap((item) => [item.name, item.dose]),
+  ];
+  return parts.join("\n").toLowerCase().includes(needle);
+}
+
 function logChips(
   day: DayGroup,
   filter: Filter,
   distanceUnit: DistanceUnit,
+  sportNames: Record<string, string>,
 ): LogChip[] {
   const chips: LogChip[] = [];
   if ((filter === "all" || filter === "gym") && day.gym) {
@@ -529,7 +587,7 @@ function logChips(
       const glance = formatSportGlance(session, distanceUnit);
       chips.push({
         id: session.id,
-        label: sportLabel(session.type),
+        label: sportNames[session.type] ?? sportLabel(session.type),
         detail: glance || undefined,
         size: "sm",
       });

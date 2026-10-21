@@ -24,8 +24,10 @@ model User {
   sports            SportSession[]
   supplements       SupplementIntake[]
   bodyWeights       BodyWeight[]
+  sportsSeeded      Boolean             @default(false)
   muscles           Muscle[]
   customExercises   CustomExercise[]
+  sportCatalog      Sport[]
 }
 
 model Session {
@@ -101,6 +103,20 @@ model BodyWeight {
   createdAt DateTime @default(now())
 
   @@unique([userId, date])
+  @@index([userId])
+}
+
+model Sport {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  nameKey   String
+  fields    String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, nameKey])
   @@index([userId])
 }
 

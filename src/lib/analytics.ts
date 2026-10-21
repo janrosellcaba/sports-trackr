@@ -67,6 +67,34 @@ export function compareCounts(current: number, previous: number): string | null 
   return `${current} vs ${previous}`;
 }
 
+export function weekStrip(
+  date: string,
+  today: string,
+  gymDates: Iterable<string>,
+  sportDates: Iterable<string>,
+): WeekDayCell[] {
+  const gym = new Set(gymDates);
+  const sport = new Set(sportDates);
+  const start = mondayOnOrBefore(date);
+  const days: WeekDayCell[] = [];
+  for (let index = 0; index < 7; index += 1) {
+    const day = addDaysISO(start, index);
+    if (day > today) {
+      days.push({ date: day, kind: "out" });
+      continue;
+    }
+    days.push({
+      date: day,
+      kind: activityKind({
+        date: day,
+        workouts: gym.has(day) ? 1 : 0,
+        sports: sport.has(day) ? 1 : 0,
+      }),
+    });
+  }
+  return days;
+}
+
 export function mondayOnOrBefore(iso: string): string {
   const day = parseISODate(iso).getDay();
   const offset = day === 0 ? 6 : day - 1;

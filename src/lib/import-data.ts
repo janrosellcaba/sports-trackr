@@ -7,8 +7,10 @@ import {
   EFFORT_LEVELS,
   isSportTypeId,
   parsePace,
+  parseSportFields,
+  parseSportName,
   type EffortLevel,
-  type SportTypeId,
+  type SportField,
 } from "@/lib/sports";
 import { isDistanceUnit, isMassUnit, type DistanceUnit, type MassUnit } from "@/lib/units";
 import { parseBodyWeightKg } from "@/lib/weight";
@@ -37,6 +39,12 @@ export type NormalizedImport = {
     distanceUnit: DistanceUnit | null;
   };
   muscles: Array<{ name: string; sortOrder: number }>;
+  sportCatalog: Array<{
+    name: string;
+    nameKey: string;
+    fields: SportField[];
+    sortOrder: number;
+  }>;
   gymSessions: Array<{
     date: string;
     notes: string | null;
@@ -44,7 +52,7 @@ export type NormalizedImport = {
   }>;
   sports: Array<{
     date: string;
-    type: SportTypeId;
+    type: string;
     durationMinutes: number | null;
     distanceKm: number | null;
     distanceMeters: number | null;
@@ -189,11 +197,33 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
       throw new Error(`Too many muscle hits to import (max ${MAX_HITS}).`);
     }
 
+    const sportCatalog = asArray(payload.sportCatalog).map((row, index) => {
+      const item = asRecord(row);
+      if (!item) throw new Error(`Sport ${index + 1} in the catalog is invalid.`);
+      const name = parseSportName(String(item.name ?? ""));
+      const nameKey = String(item.nameKey ?? "").trim();
+      if (!nameKey || nameKey.length > 80) {
+        throw new Error(`Sport ${index + 1} in the catalog has an invalid key.`);
+      }
+      return {
+        name,
+        nameKey,
+        fields: parseSportFields(item.fields),
+        sortOrder: optionalInt(item.sortOrder) ?? index,
+      };
+    });
+    if (sportCatalog.length > MAX_SPORTS) {
+      throw new Error(`Too many sports to import (max ${MAX_SPORTS}).`);
+    }
+    const catalogKeys = new Set(sportCatalog.map((item) => item.nameKey));
+
     const sports = asArray(payload.sports).map((row, index) => {
       const item = asRecord(row);
       if (!item) throw new Error(`Sport ${index + 1} is invalid.`);
-      const type = String(item.type ?? "");
-      if (!isSportTypeId(type)) throw new Error(`Sport ${index + 1} has an unknown type.`);
+      const type = String(item.type ?? "").trim();
+      if (!isSportTypeId(type) && !catalogKeys.has(type)) {
+        throw new Error(`Sport ${index + 1} has an unknown type.`);
+      }
       const date = requireDate(item.date, `Sport ${index + 1}`);
       const notes = optionalString(item.notes);
       if (notes && notes.length > 280) {
@@ -304,6 +334,7 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
 
     const empty =
       muscles.length === 0 &&
+      sportCatalog.length === 0 &&
       gymSessions.length === 0 &&
       sports.length === 0 &&
       supplements.length === 0 &&
@@ -318,6 +349,7 @@ export function parseTrackrImport(raw: unknown): ImportParseResult {
       data: {
         preferences: { massUnit, distanceUnit },
         muscles,
+        sportCatalog,
         gymSessions,
         sports,
         supplements,

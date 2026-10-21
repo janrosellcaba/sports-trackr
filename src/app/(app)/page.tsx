@@ -26,6 +26,9 @@ export default async function HomePage({
       recovery={state.recovery}
       muscles={state.muscles}
       customExercises={state.customExercises}
+      sportCatalog={state.sportCatalog}
+      shape={state.shape}
+      week={state.week}
     />
   );
 }

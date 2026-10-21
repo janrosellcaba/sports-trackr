@@ -1,3 +1,5 @@
+import type { SportField } from "@/lib/sports";
+
 export type MusclePayload = {
   id: string;
   name: string;
@@ -39,6 +41,14 @@ export type BodyWeightPayload = {
   id: string;
   date: string;
   weightKg: number;
+};
+
+export type SportCatalogPayload = {
+  id: string;
+  name: string;
+  nameKey: string;
+  fields: SportField[];
+  sortOrder: number;
 };
 
 export type SportSessionPayload = {

@@ -8,6 +8,7 @@ import { SETTINGS_SECTIONS, type SettingsSection } from "@/lib/settings";
 
 const TITLES: Record<Exclude<SettingsSection, "menu">, string> = {
   muscles: "Muscles",
+  sports: "Sports",
   exercises: "Exercises",
   appearance: "Appearance",
   data: "Data",
@@ -44,6 +45,7 @@ export default async function SettingsSectionPage({
       section={section as SettingsSection}
       muscles={catalog.muscles}
       customExercises={catalog.customExercises}
+      sportCatalog={catalog.sportCatalog}
       sessions={sessions}
     />
   );

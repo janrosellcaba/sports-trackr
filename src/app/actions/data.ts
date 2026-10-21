@@ -5,7 +5,8 @@ import {
   listCustomExercisesForUser,
   listMusclesForUser,
 } from "@/app/actions/catalog";
-import { seedUserCatalog } from "@/lib/seed-catalog";
+import { loadHomeGlance } from "@/lib/db/home-glance";
+import { ensureSportsCatalog, seedUserCatalog } from "@/lib/seed-catalog";
 import { getRequestToday, resolveRequestedDate } from "@/lib/request-today";
 import {
   findGymSessionByDate,
@@ -14,6 +15,7 @@ import {
   serializeGymSession,
 } from "@/lib/db/gym";
 import {
+  listSportCatalog,
   listSportsForDate,
   listSportsForUser,
   listSupplementsForDate,
@@ -27,12 +29,14 @@ import {
   serializeBodyWeight,
 } from "@/lib/db/weight";
 import { daysBetween } from "@/lib/recovery";
+import type { WeekDayCell } from "@/lib/analytics";
 import type {
   BodyWeightPayload,
   CustomExercisePayload,
   GymSessionPayload,
   MusclePayload,
   MuscleRecoveryPayload,
+  SportCatalogPayload,
   SportSessionPayload,
   SupplementPayload,
 } from "@/types/trackr";
@@ -47,6 +51,9 @@ export type HomeDayState = {
   recovery: MuscleRecoveryPayload[];
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
+  sportCatalog: SportCatalogPayload[];
+  shape: { score: number; weekChange: number | null } | null;
+  week: WeekDayCell[];
 };
 
 export type LogState = {
@@ -56,11 +63,13 @@ export type LogState = {
   supplements: SupplementPayload[];
   bodyWeights: BodyWeightPayload[];
   muscles: MusclePayload[];
+  sportCatalog: SportCatalogPayload[];
 };
 
 export type CatalogState = {
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
+  sportCatalog: SportCatalogPayload[];
 };
 
 export async function getHomeDayState(
@@ -68,6 +77,7 @@ export async function getHomeDayState(
 ): Promise<HomeDayState> {
   const user = await requireUser();
   await seedUserCatalog(user.id);
+  await ensureSportsCatalog(user.id);
   const today = await getRequestToday();
   const date = resolveRequestedDate(dateParam, today);
   const [
@@ -78,6 +88,8 @@ export async function getHomeDayState(
     latestHits,
     muscles,
     customExercises,
+    sportCatalog,
+    glance,
   ] = await Promise.all([
     findGymSessionByDate(user.id, date),
     listSportsForDate(user.id, date),
@@ -86,6 +98,8 @@ export async function getHomeDayState(
     listLatestHitsBeforeDate(user.id, date),
     listMusclesForUser(user.id),
     listCustomExercisesForUser(user.id),
+    listSportCatalog(user.id),
+    loadHomeGlance(user.id, date, today),
   ]);
 
   return {
@@ -101,20 +115,26 @@ export async function getHomeDayState(
     })),
     muscles,
     customExercises,
+    sportCatalog,
+    shape: glance.shape,
+    week: glance.week,
   };
 }
 
 export async function getLogState(): Promise<LogState> {
   const user = await requireUser();
   await seedUserCatalog(user.id);
+  await ensureSportsCatalog(user.id);
   const today = await getRequestToday();
-  const [gymRows, sportsRows, supplementRows, weightRows, muscles] = await Promise.all([
-    listGymSessionsForUser(user.id),
-    listSportsForUser(user.id),
-    listSupplementsForUser(user.id),
-    listBodyWeightsForUser(user.id),
-    listMusclesForUser(user.id),
-  ]);
+  const [gymRows, sportsRows, supplementRows, weightRows, muscles, sportCatalog] =
+    await Promise.all([
+      listGymSessionsForUser(user.id),
+      listSportsForUser(user.id),
+      listSupplementsForUser(user.id),
+      listBodyWeightsForUser(user.id),
+      listMusclesForUser(user.id),
+      listSportCatalog(user.id),
+    ]);
   return {
     today,
     gymSessions: gymRows.map(serializeGymSession),
@@ -122,15 +142,18 @@ export async function getLogState(): Promise<LogState> {
     supplements: supplementRows.map(serializeSupplement),
     bodyWeights: weightRows.map(serializeBodyWeight),
     muscles,
+    sportCatalog,
   };
 }
 
 export async function getCatalogState(): Promise<CatalogState> {
   const user = await requireUser();
   await seedUserCatalog(user.id);
-  const [muscles, customExercises] = await Promise.all([
+  await ensureSportsCatalog(user.id);
+  const [muscles, customExercises, sportCatalog] = await Promise.all([
     listMusclesForUser(user.id),
     listCustomExercisesForUser(user.id),
+    listSportCatalog(user.id),
   ]);
-  return { muscles, customExercises };
+  return { muscles, customExercises, sportCatalog };
 }

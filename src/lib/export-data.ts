@@ -31,6 +31,12 @@ export type TrackrExportPayload = {
     name: string;
     sortOrder: number;
   }>;
+  sportCatalog?: Array<{
+    name: string;
+    nameKey: string;
+    fields: string[];
+    sortOrder: number;
+  }>;
   customExercises?: Array<{
     name: string;
     muscleName: string | null;

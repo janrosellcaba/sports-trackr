@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import type { SportSessionPayload, SupplementPayload } from "@/types/trackr";
+import { decodeSportFields } from "@/lib/sports";
+import type {
+  SportCatalogPayload,
+  SportSessionPayload,
+  SupplementPayload,
+} from "@/types/trackr";
 
 export function serializeSport(row: {
   id: string;
@@ -37,6 +42,20 @@ export function serializeSupplement(row: {
     dose: row.dose,
     date: row.date,
   };
+}
+
+export async function listSportCatalog(userId: string): Promise<SportCatalogPayload[]> {
+  const rows = await prisma.sport.findMany({
+    where: { userId },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    nameKey: row.nameKey,
+    fields: decodeSportFields(row.fields),
+    sortOrder: row.sortOrder,
+  }));
 }
 
 export function listSportsForUser(userId: string, take?: number) {

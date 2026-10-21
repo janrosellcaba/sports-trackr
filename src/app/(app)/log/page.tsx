@@ -14,6 +14,7 @@ export default async function LogPage() {
       supplements={state.supplements}
       bodyWeights={state.bodyWeights}
       muscles={state.muscles}
+      sportCatalog={state.sportCatalog}
     />
   );
 }

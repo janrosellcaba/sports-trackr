@@ -11,6 +11,7 @@ import {
   uniqueCount,
   unionCount,
   weekCounts,
+  weekStrip,
 } from "@/lib/analytics";
 
 describe("parseAnalyticsPeriod", () => {
@@ -81,5 +82,24 @@ describe("activity weeks", () => {
       rest: 1,
       activity: 2,
     });
+  });
+});
+
+describe("weekStrip", () => {
+  it("fills the week through today and leaves later days empty", () => {
+    expect(
+      weekStrip("2026-10-06", "2026-10-06", ["2026-10-05"], ["2026-10-06"]).map(
+        (day) => day.kind,
+      ),
+    ).toEqual(["gym", "sport", "out", "out", "out", "out", "out"]);
+    expect(weekStrip("2026-10-05", "2026-10-07", [], []).map((day) => day.kind)).toEqual([
+      "rest",
+      "rest",
+      "rest",
+      "out",
+      "out",
+      "out",
+      "out",
+    ]);
   });
 });

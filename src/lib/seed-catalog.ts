@@ -2,6 +2,7 @@ import { defaultExerciseSeeds } from "@/lib/catalog";
 import { parseAppLocale } from "@/lib/locale";
 import { nameKey } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
+import { SPORTS, encodeSportFields } from "@/lib/sports";
 import { starterMuscles } from "@/lib/starter-catalog";
 
 export async function ensureDefaultMuscles(
@@ -35,6 +36,36 @@ export async function ensureDefaultMuscles(
     where: { userId },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     select: { id: true, name: true, nameKey: true, sortOrder: true },
+  });
+}
+
+export async function ensureSportsCatalog(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { sportsSeeded: true },
+  });
+  if (!user || user.sportsSeeded) return;
+
+  const existing = await prisma.sport.findMany({
+    where: { userId },
+    select: { nameKey: true },
+  });
+  const keys = new Set(existing.map((item) => item.nameKey));
+  const missing = SPORTS.filter((item) => !keys.has(item.id));
+  if (missing.length > 0) {
+    await prisma.sport.createMany({
+      data: missing.map((item) => ({
+        userId,
+        name: item.label,
+        nameKey: item.id,
+        fields: encodeSportFields(item.fields),
+        sortOrder: SPORTS.findIndex((sport) => sport.id === item.id),
+      })),
+    });
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { sportsSeeded: true },
   });
 }
 

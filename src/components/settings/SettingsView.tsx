@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Bike,
   Dumbbell,
   Grid3x3,
   LifeBuoy,
@@ -26,6 +27,7 @@ import {
   ExerciseCatalogView,
   MuscleCatalogView,
 } from "@/components/settings/CatalogViews";
+import { SportCatalogView } from "@/components/settings/SportCatalogView";
 import { SupportView } from "@/components/settings/SupportView";
 import { confirmsUsername, isAdminUser } from "@/lib/auth-logic";
 import { buildExportCsv } from "@/lib/export-data";
@@ -37,6 +39,7 @@ import type { AuthUser } from "@/lib/auth";
 import type {
   CustomExercisePayload,
   MusclePayload,
+  SportCatalogPayload,
 } from "@/types/trackr";
 
 export type { SettingsSection } from "@/lib/settings";
@@ -53,6 +56,12 @@ const PAGES: {
     label: "Muscles",
     hint: "Gym tiles",
     icon: Grid3x3,
+  },
+  {
+    id: "sports",
+    label: "Sports",
+    hint: "Distance, rhythm, effort",
+    icon: Bike,
   },
   {
     id: "exercises",
@@ -91,12 +100,14 @@ export function SettingsView({
   section,
   muscles,
   customExercises,
+  sportCatalog = [],
   sessions = [],
 }: {
   user: AuthUser;
   section: SettingsSection;
   muscles: MusclePayload[];
   customExercises: CustomExercisePayload[];
+  sportCatalog?: SportCatalogPayload[];
   sessions?: AccountSession[];
 }) {
   if (section !== "menu") {
@@ -113,6 +124,12 @@ export function SettingsView({
         {section === "muscles" ? (
           <SectionIntro title="Muscles">
             <MuscleCatalogView initial={muscles} />
+          </SectionIntro>
+        ) : null}
+
+        {section === "sports" ? (
+          <SectionIntro title="Sports">
+            <SportCatalogView initial={sportCatalog} />
           </SectionIntro>
         ) : null}
 

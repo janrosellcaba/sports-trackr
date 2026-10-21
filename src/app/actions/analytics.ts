@@ -16,7 +16,7 @@ import {
 } from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
 import { getRequestToday } from "@/lib/request-today";
-import { buildShapeSeries, PR_SHAPE_BONUS, sportShapePoints } from "@/lib/shape";
+import { buildShapeSeries, shapeDoses } from "@/lib/shape";
 import type {
   AnalyticsPeriod,
   AnalyticsSummary,
@@ -370,39 +370,6 @@ export async function getAnalyticsSummary(
   };
 }
 
-function shapeDoses(
-  gym: { date: string; hits: { intensity: number }[] }[],
-  sports: {
-    date: string;
-    durationMinutes: number | null;
-    distanceKm: number | null;
-    pace: string | null;
-    effort: string | null;
-  }[],
-  snapshots: { date: string }[],
-  prs: { prDate: string | null }[],
-): Map<string, number> {
-  const doses = new Map<string, number>();
-  const add = (date: string, points: number) => {
-    if (points <= 0) return;
-    doses.set(date, (doses.get(date) ?? 0) + points);
-  };
-  for (const session of gym) {
-    add(
-      session.date,
-      session.hits.reduce((sum, hit) => sum + hit.intensity, 0),
-    );
-  }
-  for (const sport of sports) add(sport.date, sportShapePoints(sport));
-  const prDates = new Set<string>();
-  for (const snap of snapshots) prDates.add(snap.date);
-  for (const exercise of prs) {
-    if (exercise.prDate) prDates.add(exercise.prDate);
-  }
-  for (const date of prDates) add(date, PR_SHAPE_BONUS);
-  return doses;
-}
-
 export async function getNotebookExercises(): Promise<NotebookExercise[]> {
   const user = await requireUser();
   const rows = await prisma.customExercise.findMany({
@@ -496,7 +463,7 @@ export async function getExerciseProgression(
 export async function exportMyData() {
   const user = await requireUser();
 
-  const [sessions, supplements, sports, bodyWeights, muscles, customExercises] =
+  const [sessions, supplements, sports, bodyWeights, muscles, customExercises, sportCatalog] =
     await Promise.all([
       prisma.gymSession.findMany({
         where: { userId: user.id },
@@ -523,6 +490,10 @@ export async function exportMyData() {
         where: { userId: user.id },
         orderBy: { name: "asc" },
         include: { muscle: { select: { name: true } }, snapshots: true },
+      }),
+      prisma.sport.findMany({
+        where: { userId: user.id },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       }),
     ]);
 
@@ -559,6 +530,12 @@ export async function exportMyData() {
     })),
     muscles: muscles.map((item) => ({
       name: item.name,
+      sortOrder: item.sortOrder,
+    })),
+    sportCatalog: sportCatalog.map((item) => ({
+      name: item.name,
+      nameKey: item.nameKey,
+      fields: item.fields.split(",").filter(Boolean),
       sortOrder: item.sortOrder,
     })),
     customExercises: customExercises.map((item) => ({

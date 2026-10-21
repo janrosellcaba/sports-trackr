@@ -57,7 +57,7 @@ function weight(date: string, weightKg: number): BodyWeightPayload {
 }
 
 describe("buildTrainerLog", () => {
-  it("keeps the last 30 training days and the supplements and weigh-ins between them", () => {
+  it("keeps the last 30 days and the supplements and weigh-ins inside them", () => {
     const gymSessions = Array.from({ length: 40 }, (_, index) =>
       gym(addDaysISO(today, -(39 - index)), [
         { muscleName: "Back", intensity: 2 },
@@ -78,10 +78,10 @@ describe("buildTrainerLog", () => {
         ],
         bodyWeights: [weight(inside, 81.4), weight("2026-01-01", 79)],
       },
-      "sessions-30",
+      "days-30",
     );
 
-    expect(log.range).toBe("last 30 sessions");
+    expect(log.range).toBe("last 30 days");
     expect(log.from).toBe(addDaysISO(today, -29));
     expect(log.to).toBe(today);
     expect(log.trainingDays).toBe(30);
@@ -108,40 +108,44 @@ describe("buildTrainerLog", () => {
     ]);
   });
 
-  it("includes rest-day supplements and weigh-ins inside a shorter session span", () => {
-    const log = buildTrainerLog(
-      {
-        today,
-        gymSessions: [gym("2026-09-01", [{ muscleName: "Quads", intensity: 3 }], "  ")],
-        sports: [sport(today, { type: "PADEL", durationMinutes: 90, effort: "MODERATE" })],
-        supplements: [supplement("2026-09-15", "Vitamin D", "1 pill")],
-        bodyWeights: [weight("2026-09-20", 82)],
-      },
-      "sessions-30",
-    );
+  it("includes rest-day supplements and weigh-ins inside the window", () => {
+    const input = {
+      today,
+      gymSessions: [gym("2026-09-01", [{ muscleName: "Quads", intensity: 3 }], "  ")],
+      sports: [sport(today, { type: "PADEL", durationMinutes: 90, effort: "MODERATE" })],
+      supplements: [supplement("2026-09-15", "Vitamin D", "1 pill")],
+      bodyWeights: [weight("2026-09-20", 82)],
+    };
 
-    expect(log.from).toBe("2026-09-01");
-    expect(log.trainingDays).toBe(2);
-    expect(log.days.map((day) => day.date)).toEqual([
+    const month = buildTrainerLog(input, "days-30");
+    expect(month.from).toBe("2026-09-07");
+    expect(month.trainingDays).toBe(1);
+    expect(month.days.map((day) => day.date)).toEqual(["2026-09-15", "2026-09-20", today]);
+    expect(month.days.at(-1)?.sports?.[0]).toEqual({
+      sport: "Padel",
+      durationMinutes: 90,
+      effort: "Moderate",
+    });
+
+    const quarter = buildTrainerLog(input, "days-90");
+    expect(quarter.from).toBe(addDaysISO(today, -89));
+    expect(quarter.trainingDays).toBe(2);
+    expect(quarter.days.map((day) => day.date)).toEqual([
       "2026-09-01",
       "2026-09-15",
       "2026-09-20",
       today,
     ]);
-    expect(log.days[0]?.gym).toEqual({
+    expect(quarter.days[0]?.gym).toEqual({
       muscles: [{ name: "Quads", intensity: 3, level: "Solid" }],
-    });
-    expect(log.days.at(-1)?.sports?.[0]).toEqual({
-      sport: "Padel",
-      durationMinutes: 90,
-      effort: "Moderate",
     });
   });
 
-  it("limits calendar ranges to the last 30 or 60 days", () => {
+  it("limits ranges to the last 30 or 90 days", () => {
     const input = {
       today,
       gymSessions: [
+        gym("2026-06-01", [{ muscleName: "Chest", intensity: 1 }]),
         gym("2026-08-08", [{ muscleName: "Chest", intensity: 1 }]),
         gym("2026-08-07", [{ muscleName: "Chest", intensity: 1 }]),
         gym("2026-09-07", [{ muscleName: "Chest", intensity: 5 }]),
@@ -153,14 +157,17 @@ describe("buildTrainerLog", () => {
     };
 
     const month = buildTrainerLog(input, "days-30");
+    expect(month.range).toBe("last 30 days");
     expect(month.from).toBe("2026-09-07");
     expect(month.days.map((day) => day.date)).toEqual(["2026-09-07"]);
     expect(month.latestWeight).toEqual({ date: "2025-12-01", weightKg: 77.2 });
     expect(month.days[0]?.weightKg).toBeUndefined();
 
-    const twoMonths = buildTrainerLog(input, "days-60");
-    expect(twoMonths.from).toBe("2026-08-08");
-    expect(twoMonths.days.map((day) => day.date)).toEqual([
+    const quarter = buildTrainerLog(input, "days-90");
+    expect(quarter.range).toBe("last 90 days");
+    expect(quarter.from).toBe(addDaysISO(today, -89));
+    expect(quarter.days.map((day) => day.date)).toEqual([
+      "2026-08-07",
       "2026-08-08",
       "2026-09-06",
       "2026-09-07",
@@ -176,10 +183,10 @@ describe("buildTrainerLog", () => {
         supplements: [supplement("2026-09-01", "Creatine", "5 g")],
         bodyWeights: [],
       },
-      "sessions-30",
+      "days-30",
     );
 
-    expect(log.from).toBeNull();
+    expect(log.from).toBe("2026-09-07");
     expect(log.trainingDays).toBe(0);
     expect(log.days).toEqual([]);
     expect(log.latestWeight).toBeUndefined();

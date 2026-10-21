@@ -11,6 +11,7 @@ import {
 } from "@/lib/import-data";
 import { nameKey } from "@/lib/names";
 import { prisma } from "@/lib/prisma";
+import { encodeSportFields } from "@/lib/sports";
 import { revalidateApp } from "@/lib/revalidate";
 
 type DbClient = Omit<
@@ -125,6 +126,30 @@ async function applyImport(
       });
       summary.hitsUpserted += 1;
     }
+  }
+
+  for (const sport of data.sportCatalog) {
+    await tx.sport.upsert({
+      where: { userId_nameKey: { userId, nameKey: sport.nameKey } },
+      create: {
+        userId,
+        name: sport.name,
+        nameKey: sport.nameKey,
+        fields: encodeSportFields(sport.fields),
+        sortOrder: sport.sortOrder,
+      },
+      update: {
+        name: sport.name,
+        fields: encodeSportFields(sport.fields),
+        sortOrder: sport.sortOrder,
+      },
+    });
+  }
+  if (data.sportCatalog.length > 0) {
+    await tx.user.update({
+      where: { id: userId },
+      data: { sportsSeeded: true },
+    });
   }
 
   const existingSports = await tx.sportSession.findMany({

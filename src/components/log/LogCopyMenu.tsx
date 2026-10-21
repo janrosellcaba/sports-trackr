@@ -5,9 +5,8 @@ import { Copy } from "lucide-react";
 import type { TrainerLogRange } from "@/lib/trainer-log";
 
 const COPY_RANGES: { key: TrainerLogRange; label: string }[] = [
-  { key: "sessions-30", label: "30 sessions" },
   { key: "days-30", label: "30 days" },
-  { key: "days-60", label: "60 days" },
+  { key: "days-90", label: "90 days" },
 ];
 
 export function LogCopyMenu({

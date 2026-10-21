@@ -60,6 +60,40 @@ export function shapeReadout(points: ShapePoint[]): {
   return { score, weekChange: score - Math.round(then.score) };
 }
 
+export function shapeWeekLabel(change: number | null): string {
+  if (change == null) return "This week";
+  if (change > 0) return `+${change} this week`;
+  if (change < 0) return `−${Math.abs(change)} this week`;
+  return "0 this week";
+}
+
+export function shapeDoses(
+  gym: { date: string; hits: { intensity: number }[] }[],
+  sports: Array<ShapeSportInput & { date: string }>,
+  snapshots: { date: string }[],
+  prs: { prDate: string | null }[],
+): Map<string, number> {
+  const doses = new Map<string, number>();
+  const add = (date: string, points: number) => {
+    if (points <= 0) return;
+    doses.set(date, (doses.get(date) ?? 0) + points);
+  };
+  for (const session of gym) {
+    add(
+      session.date,
+      session.hits.reduce((sum, hit) => sum + hit.intensity, 0),
+    );
+  }
+  for (const sport of sports) add(sport.date, sportShapePoints(sport));
+  const prDates = new Set<string>();
+  for (const snap of snapshots) prDates.add(snap.date);
+  for (const exercise of prs) {
+    if (exercise.prDate) prDates.add(exercise.prDate);
+  }
+  for (const date of prDates) add(date, PR_SHAPE_BONUS);
+  return doses;
+}
+
 function sportMinutes(sport: ShapeSportInput): number {
   if (sport.durationMinutes != null && sport.durationMinutes > 0) {
     return sport.durationMinutes;

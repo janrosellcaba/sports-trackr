@@ -72,6 +72,50 @@ describe("parseTrackrImport", () => {
     ).toBe(false);
   });
 
+  it("accepts a custom sport listed in the catalog", () => {
+    const parsed = parseTrackrImport({
+      sportCatalog: [
+        {
+          name: "Climbing",
+          nameKey: "climbing",
+          fields: ["durationMinutes", "effort"],
+          sortOrder: 8,
+        },
+      ],
+      sports: [
+        {
+          date: "2026-09-16",
+          type: "climbing",
+          durationMinutes: 40,
+          distanceKm: null,
+          distanceMeters: null,
+          pace: null,
+          effort: "HARD",
+          notes: null,
+        },
+      ],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.sportCatalog[0]?.fields).toEqual(["durationMinutes", "effort"]);
+    expect(parsed.data.sports[0]?.type).toBe("climbing");
+  });
+
+  it("rejects a sport that is not in the catalog", () => {
+    expect(
+      parseTrackrImport({
+        sports: [
+          {
+            date: "2026-09-16",
+            type: "climbing",
+            durationMinutes: 40,
+            effort: "HARD",
+          },
+        ],
+      }).ok,
+    ).toBe(false);
+  });
+
   it("rejects empty payloads", () => {
     expect(parseTrackrImport({}).ok).toBe(false);
     expect(parseTrackrImport("nope").ok).toBe(false);

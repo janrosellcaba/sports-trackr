@@ -56,6 +56,24 @@ describe("parseSportSessionInput", () => {
     });
   });
 
+  it("uses the inputs chosen for a custom sport", () => {
+    expect(
+      parseSportSessionInput(
+        {
+          type: "ignored",
+          date: "2026-09-15",
+          effort: "hard",
+          distanceKm: 12,
+        },
+        { id: "climbing", label: "Climbing", fields: ["effort"] },
+      ),
+    ).toMatchObject({
+      type: "climbing",
+      effort: "HARD",
+      distanceKm: null,
+    });
+  });
+
   it("stores swimming distance in meters", () => {
     expect(
       parseSportSessionInput({

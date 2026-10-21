@@ -24,15 +24,26 @@ export const SPORT_TYPE_IDS = [
 ] as const;
 
 export type SportTypeId = (typeof SPORT_TYPE_IDS)[number];
-export type SportField =
-  | "distanceKm"
-  | "distanceM"
-  | "durationMinutes"
-  | "pace"
-  | "effort";
+export const SPORT_FIELDS = [
+  "distanceKm",
+  "distanceM",
+  "durationMinutes",
+  "pace",
+  "effort",
+] as const;
+
+export type SportField = (typeof SPORT_FIELDS)[number];
+
+export const SPORT_FIELD_OPTIONS: { key: SportField; label: string }[] = [
+  { key: "distanceKm", label: "Distance" },
+  { key: "distanceM", label: "Meters" },
+  { key: "durationMinutes", label: "Time" },
+  { key: "pace", label: "Rhythm" },
+  { key: "effort", label: "Effort" },
+];
 
 export type SportDefinition = {
-  id: SportTypeId;
+  id: string;
   label: string;
   fields: SportField[];
 };
@@ -63,6 +74,50 @@ export function sportLabel(id: string): string {
   return sportDefinition(id)?.label ?? id;
 }
 
+export function sportFieldLabel(field: SportField): string {
+  return SPORT_FIELD_OPTIONS.find((item) => item.key === field)?.label ?? field;
+}
+
+export function decodeSportFields(raw: string): SportField[] {
+  const picked = new Set(raw.split(",").map((item) => item.trim()));
+  return SPORT_FIELDS.filter((field) => picked.has(field));
+}
+
+export function encodeSportFields(fields: readonly SportField[]): string {
+  const picked = new Set(fields);
+  return SPORT_FIELDS.filter((field) => picked.has(field)).join(",");
+}
+
+export function parseSportName(name: string): string {
+  const trimmed = name.trim().replace(/\s+/g, " ");
+  if (trimmed.length < 2) throw new Error("Name must be at least 2 characters.");
+  if (trimmed.length > 40) throw new Error("Name must be 40 characters or fewer.");
+  return trimmed;
+}
+
+export function parseSportFields(fields: unknown): SportField[] {
+  const raw = Array.isArray(fields)
+    ? fields
+    : typeof fields === "string"
+      ? fields.split(",")
+      : [];
+  const picked = new Set(raw.map((item) => String(item).trim()));
+  const parsed = SPORT_FIELDS.filter((field) => picked.has(field));
+  if (parsed.length === 0) throw new Error("Pick at least one input.");
+  return parsed;
+}
+
+export function sameSportName(left: string, right: string): boolean {
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
+}
+
+export function resolveSport(
+  type: string,
+  catalog?: SportDefinition[],
+): SportDefinition | null {
+  return catalog?.find((item) => item.id === type) ?? sportDefinition(type);
+}
+
 export function effortLabel(effort: string | null | undefined): string {
   if (effort === "EASY") return "Easy";
   if (effort === "MODERATE") return "Moderate";
@@ -84,7 +139,7 @@ export function parsePace(raw: string): string | null {
 }
 
 export type ParsedSportSession = {
-  type: SportTypeId;
+  type: string;
   date: string;
   durationMinutes: number | null;
   distanceKm: number | null;
@@ -110,24 +165,24 @@ function parsePositiveInt(value: unknown, label: string): number {
   return number;
 }
 
-export function parseSportSessionInput(input: {
-  type: string;
-  date: string;
-  durationMinutes?: number | null;
-  distanceKm?: number | null;
-  distanceMeters?: number | null;
-  pace?: string | null;
-  effort?: string | null;
-  notes?: string | null;
-}): ParsedSportSession {
-  if (!isSportTypeId(input.type)) throw new Error("Unknown sport.");
+export function parseSportSessionInput(
+  input: {
+    type: string;
+    date: string;
+    durationMinutes?: number | null;
+    distanceKm?: number | null;
+    distanceMeters?: number | null;
+    pace?: string | null;
+    effort?: string | null;
+    notes?: string | null;
+  },
+  definition: SportDefinition | null = sportDefinition(input.type),
+): ParsedSportSession {
+  if (!definition) throw new Error("Unknown sport.");
   if (!isDateKey(input.date)) throw new Error("Invalid date.");
 
-  const definition = sportDefinition(input.type);
-  if (!definition) throw new Error("Unknown sport.");
-
   const parsed: ParsedSportSession = {
-    type: input.type,
+    type: definition.id,
     date: input.date,
     durationMinutes: null,
     distanceKm: null,
@@ -159,7 +214,7 @@ export function parseSportSessionInput(input: {
     }
     if (field === "pace") {
       const pace = parsePace(String(input.pace ?? ""));
-      if (!pace) throw new Error("Pace is required (for example 5:30).");
+      if (!pace) throw new Error("Rhythm is required (for example 5:30).");
       parsed.pace = pace;
     }
     if (field === "effort") {

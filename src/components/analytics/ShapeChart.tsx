@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { useAccentColor, useSurfaceColors } from "@/components/theme/ThemeProvider";
 import { formatChartDate } from "@/lib/calculations";
-import { shapeReadout, type ShapePoint } from "@/lib/shape";
+import { shapeReadout, shapeWeekLabel, type ShapePoint } from "@/lib/shape";
 import { CARD_CLS, LABEL_CLS } from "@/lib/ui";
 
 export function ShapeChart({ points }: { points: ShapePoint[] }) {
@@ -36,7 +36,7 @@ export function ShapeChart({ points }: { points: ShapePoint[] }) {
               {readout.score}
             </span>
             <span className="mt-1 block text-[11px] font-semibold text-muted">
-              {weekChangeLabel(readout.weekChange)}
+              {shapeWeekLabel(readout.weekChange)}
             </span>
           </p>
         ) : null}
@@ -118,9 +118,3 @@ export function ShapeChart({ points }: { points: ShapePoint[] }) {
   );
 }
 
-function weekChangeLabel(change: number | null): string {
-  if (change == null) return "This week";
-  if (change > 0) return `+${change} this week`;
-  if (change < 0) return `−${Math.abs(change)} this week`;
-  return "0 this week";
-}
