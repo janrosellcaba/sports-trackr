@@ -1,0 +1,17 @@
+services:
+  sport:
+    image: ghcr.io/janrosellcaba/sports-trackr:latest
+    container_name: sport
+    restart: unless-stopped
+    volumes:
+      - sport_data:/app/data
+    networks:
+      - vps_network
+
+networks:
+  vps_network:
+    external: true
+    name: ion_network
+
+volumes:
+  sport_data:
