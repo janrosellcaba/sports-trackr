@@ -36,16 +36,22 @@ const summary: AnalyticsSummary = {
 };
 
 describe("KpiGrid", () => {
-  it("keeps activity and load, with rest and vs counts", () => {
+  it("shows active days and weekly load against the previous period", () => {
     render(<KpiGrid summary={summary} />);
 
-    expect(screen.getByText("Activity")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
-    expect(screen.getByText("5 on · 2 off")).toBeInTheDocument();
-    expect(screen.getByText("5 vs 4")).toBeInTheDocument();
-    expect(screen.getByText("Load")).toBeInTheDocument();
-    expect(screen.getByText("28 vs 20")).toBeInTheDocument();
+    expect(screen.getByText("Active days")).toBeInTheDocument();
+    expect(screen.getByText("of 7 days")).toBeInTheDocument();
+    expect(screen.getByText("+1 vs prev")).toBeInTheDocument();
+    expect(screen.getByText("Load per week")).toBeInTheDocument();
+    expect(screen.getByText("28")).toBeInTheDocument();
+    expect(screen.getByText("28 in total")).toBeInTheDocument();
+    expect(screen.getByText("Spike +40%")).toBeInTheDocument();
     expect(screen.queryByText("Sports")).not.toBeInTheDocument();
-    expect(screen.queryByText("4 gym · 3 sport · 5/wk")).not.toBeInTheDocument();
+  });
+
+  it("scales load to a week for longer periods", () => {
+    render(<KpiGrid summary={{ ...summary, days: 30, totalGymLoad: 60, previous: { activityDays: 5, gymLoad: 60 } }} />);
+    expect(screen.getByText("14")).toBeInTheDocument();
+    expect(screen.getByText("0%")).toBeInTheDocument();
   });
 });

@@ -22,7 +22,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main"
-      className="relative shrink-0 bg-paper/80 backdrop-blur-xl before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-[var(--color-line)] before:to-transparent [padding-bottom:env(safe-area-inset-bottom)]"
+      className="relative shrink-0 bg-cream/90 backdrop-blur-xl border-t border-line [padding-bottom:env(safe-area-inset-bottom)]"
     >
       <div className="mx-auto flex max-w-md px-1">
         {ITEMS.map(({ href, label, icon: Icon }) => {
@@ -39,7 +39,7 @@ export function BottomNav() {
               <span
                 className={`flex h-8 w-12 items-center justify-center rounded-full transition-colors duration-150 ${
                   active
-                    ? "bg-brand text-[color:var(--accent-fg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_0_16px_var(--accent-glow)]"
+                    ? "bg-brand text-[color:var(--accent-fg)]"
                     : "group-hover:bg-chip/70"
                 }`}
               >

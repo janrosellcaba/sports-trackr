@@ -27,7 +27,7 @@ export function AppChrome({
     >
       <TourProvider locale={user.locale} forced={!user.onboardingCompleted}>
         <div className="app-shell fixed inset-0 flex h-[100dvh] max-h-[100dvh] flex-col">
-        <header className="relative shrink-0 bg-paper/70 px-5 py-3.5 backdrop-blur-xl [padding-top:max(0.9rem,env(safe-area-inset-top))] after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-[var(--color-line)] after:to-transparent">
+        <header className="relative shrink-0 bg-cream/90 px-5 py-3.5 backdrop-blur-xl border-b border-line [padding-top:max(0.9rem,env(safe-area-inset-top))]">
           <div className="flex items-center justify-between gap-2">
             <Link
               href="/"

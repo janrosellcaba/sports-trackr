@@ -33,7 +33,7 @@ export function TopMuscles({ items }: { items: TopMuscle[] }) {
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-chip">
                 <div
-                  className="h-full rounded-full bg-brand shadow-[0_0_12px_var(--accent-glow)]"
+                  className="h-full rounded-full bg-brand"
                   style={{ width: `${Math.max(2, (item.load / max) * 100)}%` }}
                 />
               </div>

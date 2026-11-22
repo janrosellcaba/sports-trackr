@@ -40,3 +40,29 @@ describe("recovery copy", () => {
     expect(recoveryAriaLabel("Abs", null, undefined)).toBe("Abs, not logged yet");
   });
 });
+
+import { recoveryRows, restDaysFor } from "@/lib/recovery";
+
+describe("recoveryRows", () => {
+  const muscles = [
+    { id: "a", name: "Chest" },
+    { id: "b", name: "Back" },
+    { id: "c", name: "Legs" },
+    { id: "d", name: "Calves" },
+  ];
+  it("classifies recovering, ready and neglected muscles", () => {
+    expect(restDaysFor(5)).toBe(4);
+    expect(restDaysFor(2)).toBe(1);
+    const rows = recoveryRows(muscles, [
+      { muscleId: "a", lastDate: "x", lastIntensity: 4, daysAgo: 1 },
+      { muscleId: "b", lastDate: "x", lastIntensity: 3, daysAgo: 5 },
+      { muscleId: "c", lastDate: "x", lastIntensity: 3, daysAgo: 12 },
+    ]);
+    expect(rows.map((r) => [r.name, r.status, r.daysLeft])).toEqual([
+      ["Chest", "recovering", 2],
+      ["Back", "ready", 0],
+      ["Legs", "neglected", 0],
+      ["Calves", "neglected", 0],
+    ]);
+  });
+});

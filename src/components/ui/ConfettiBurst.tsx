@@ -19,7 +19,7 @@ type Particle = {
 
 function palette(): string[] {
   const styles = getComputedStyle(document.documentElement);
-  const brand = styles.getPropertyValue("--accent-primary").trim() || "#84cc16";
+  const brand = styles.getPropertyValue("--accent-primary").trim() || "#a3e635";
   const hover = styles.getPropertyValue("--accent-hover").trim() || "#eab308";
   const ink = styles.getPropertyValue("--color-ink").trim() || "#f4f4f5";
   return [brand, hover, ink, "#ffffff", "#fbbf24", "#fb7185"];

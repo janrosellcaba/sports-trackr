@@ -6,7 +6,9 @@ import dynamic from "next/dynamic";
 import { AnalyticsCopyMenu } from "@/components/analytics/AnalyticsCopyMenu";
 import { BestLifts } from "@/components/analytics/BestLifts";
 import { KpiGrid } from "@/components/analytics/KpiGrid";
+import { RecoveryOverview } from "@/components/analytics/RecoveryOverview";
 import { TopMuscles } from "@/components/analytics/TopMuscles";
+import { WeekdayPattern } from "@/components/analytics/WeekdayPattern";
 import { WeekGrid } from "@/components/analytics/WeekGrid";
 import { NoticeToast, type Notice } from "@/components/ui/NoticeToast";
 import { useUnits } from "@/components/units/UnitsProvider";
@@ -14,6 +16,7 @@ import { buildAnalyticsAiBrief } from "@/lib/analyticsAiBrief";
 import { copyText } from "@/lib/clipboard";
 import { trainerPayload } from "@/lib/trainerPayload";
 import { PAGE_TITLE, SEGMENT_TRACK, blurOnPointerUp, segmentItemClass } from "@/lib/ui";
+import type { MuscleRecoveryRow } from "@/lib/recovery";
 import type { AnalyticsPeriod, AnalyticsSummary, NotebookExercise } from "@/types/trackr";
 
 const ActivityChart = dynamic(
@@ -49,10 +52,12 @@ const PERIODS: { key: AnalyticsPeriod; label: string; href: string }[] = [
 export function AnalyticsView({
   summary,
   exercises,
+  recovery,
   period,
 }: {
   summary: AnalyticsSummary;
   exercises: NotebookExercise[];
+  recovery: MuscleRecoveryRow[];
   period: AnalyticsPeriod;
 }) {
   const { massUnit, distanceUnit } = useUnits();
@@ -88,7 +93,6 @@ export function AnalyticsView({
         <h1 className={PAGE_TITLE}>Analytics</h1>
         <AnalyticsCopyMenu onCopyJson={handleCopyJson} onCopyAi={handleCopyAi} />
       </div>
-      <ShapeChart points={summary.shape} />
       <div className={`${SEGMENT_TRACK} grid-cols-4 sm:w-72`}>
         {PERIODS.map((item) => {
           const active = period === item.key;
@@ -107,6 +111,7 @@ export function AnalyticsView({
       </div>
 
       <div className="space-y-6">
+        <RecoveryOverview rows={recovery} />
         <KpiGrid summary={summary} />
         <div className="grid gap-6 lg:grid-cols-2">
           <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
@@ -123,6 +128,8 @@ export function AnalyticsView({
             data={summary.daily}
           />
         </div>
+        <WeekdayPattern data={summary.daily} />
+        <ShapeChart points={summary.shape} />
       </div>
       <NoticeToast notice={notice} onDismissed={dismissNotice} />
     </div>

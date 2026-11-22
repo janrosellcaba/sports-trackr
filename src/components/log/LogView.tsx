@@ -25,6 +25,11 @@ import { supplementFromName } from "@/lib/supplements";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { copyText } from "@/lib/clipboard";
 import { buildTrainerLog, type TrainerLogRange } from "@/lib/trainer-log";
+import {
+  TRAINER_PROMPT_GOAL_LABEL,
+  buildTrainerPrompt,
+  type TrainerPromptGoal,
+} from "@/lib/trainer-prompt";
 import type { DistanceUnit } from "@/lib/units";
 import {
   CARD_CLS,
@@ -180,8 +185,8 @@ export function LogView({
     });
   }
 
-  async function copyTrainerJson(range: TrainerLogRange) {
-    const trainerLog = buildTrainerLog(
+  function trainerLogFor(range: TrainerLogRange) {
+    return buildTrainerLog(
       {
         today,
         gymSessions: gym,
@@ -192,9 +197,26 @@ export function LogView({
       range,
       sportNames,
     );
+  }
+
+  async function copyTrainerJson(range: TrainerLogRange) {
+    const trainerLog = trainerLogFor(range);
     try {
       await copyText(JSON.stringify(trainerLog, null, 2));
       setNotice({ id: Date.now(), text: `Copied ${trainerLog.range}.` });
+    } catch {
+      setNotice({ id: Date.now(), text: "Could not copy." });
+    }
+  }
+
+  async function copyTrainerPrompt(range: TrainerLogRange, goal: TrainerPromptGoal) {
+    const trainerLog = trainerLogFor(range);
+    try {
+      await copyText(buildTrainerPrompt(trainerLog, goal));
+      setNotice({
+        id: Date.now(),
+        text: `${TRAINER_PROMPT_GOAL_LABEL[goal]} prompt copied (${trainerLog.range}).`,
+      });
     } catch {
       setNotice({ id: Date.now(), text: "Could not copy." });
     }
@@ -204,7 +226,11 @@ export function LogView({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className={PAGE_TITLE}>Log</h1>
-        <LogCopyMenu disabled={!canCopy} onCopy={copyTrainerJson} />
+        <LogCopyMenu
+          disabled={!canCopy}
+          onCopyJson={copyTrainerJson}
+          onCopyPrompt={copyTrainerPrompt}
+        />
       </div>
 
       <input

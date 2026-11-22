@@ -94,4 +94,40 @@ describe("LogView trainer copy", () => {
     expect(month.range).toBe("last 30 days");
     expect(month.days.map((day) => day.date)).toEqual(["2026-10-06"]);
   });
+
+  it("copies a coach prompt with the JSON embedded", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(navigator.clipboard, "writeText").mockImplementation(writeText);
+
+    render(
+      <LogView
+        today="2026-10-06"
+        gymSessions={[gym("2026-10-06"), gym("2026-08-01")]}
+        sports={[]}
+        supplements={[]}
+        bodyWeights={[]}
+        muscles={[]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Copy AI prompt" }));
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "Train today",
+      "Analyze",
+    ]);
+    await user.click(screen.getByRole("menuitem", { name: "Train today" }));
+    const today = writeText.mock.calls[0][0] as string;
+    expect(today).toContain("DECIDE WHAT I SHOULD DO TODAY");
+    expect(today).toContain('"range": "last 90 days"');
+    expect(today).toContain("2026-08-01");
+
+    await user.click(screen.getByRole("button", { name: "Copy AI prompt" }));
+    await user.click(screen.getByRole("button", { name: "30 days" }));
+    await user.click(screen.getByRole("menuitem", { name: "Analyze" }));
+    const analyze = writeText.mock.calls[1][0] as string;
+    expect(analyze).toContain("FULL TRAINING ANALYSIS");
+    expect(analyze).toContain('"range": "last 30 days"');
+    expect(analyze).not.toContain("2026-08-01");
+  });
 });

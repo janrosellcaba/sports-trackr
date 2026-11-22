@@ -3,7 +3,6 @@
 import {
   Area,
   AreaChart,
-  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -42,7 +41,7 @@ export function ShapeChart({ points }: { points: ShapePoint[] }) {
         ) : null}
       </div>
 
-      <div className="h-44 w-full">
+      <div className="h-24 w-full">
         {displayPoints.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
             Log gym or sport to see your shape.
@@ -53,7 +52,6 @@ export function ShapeChart({ points }: { points: ShapePoint[] }) {
               data={displayPoints}
               margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
             >
-              <CartesianGrid stroke={line} strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={formatChartDate}
@@ -62,14 +60,7 @@ export function ShapeChart({ points }: { points: ShapePoint[] }) {
                 tickLine={false}
                 minTickGap={28}
               />
-              <YAxis
-                width={40}
-                domain={[0, "dataMax"]}
-                tick={{ fill: muted, fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                allowDecimals={false}
-              />
+              <YAxis hide domain={[0, "dataMax"]} />
               <Tooltip
                 contentStyle={{
                   background: paper,
@@ -85,9 +76,9 @@ export function ShapeChart({ points }: { points: ShapePoint[] }) {
                 type="monotone"
                 dataKey="score"
                 stroke={brand}
-                strokeWidth={2.4}
+                strokeWidth={2}
                 fill={brand}
-                fillOpacity={0.18}
+                fillOpacity={0.12}
                 isAnimationActive={false}
                 dot={false}
                 activeDot={{ r: 4 }}

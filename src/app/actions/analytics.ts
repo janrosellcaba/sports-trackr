@@ -15,6 +15,9 @@ import {
   unionCount,
 } from "@/lib/analytics";
 import { prisma } from "@/lib/prisma";
+import { listLatestHitsBeforeDate } from "@/lib/db/gym";
+import { listMusclesForUser } from "@/app/actions/catalog";
+import { daysBetween, recoveryRows, type MuscleRecoveryRow } from "@/lib/recovery";
 import { getRequestToday } from "@/lib/request-today";
 import { buildShapeSeries, shapeDoses } from "@/lib/shape";
 import type {
@@ -560,4 +563,17 @@ export async function exportMyData() {
       distanceUnit: "km",
     },
   };
+}
+
+export async function getMuscleRecovery(): Promise<MuscleRecoveryRow[]> {
+  const user = await requireUser();
+  const today = await getRequestToday();
+  const [latest, muscles] = await Promise.all([
+    listLatestHitsBeforeDate(user.id, addDaysISO(today, 1)),
+    listMusclesForUser(user.id),
+  ]);
+  return recoveryRows(
+    muscles,
+    latest.map((hit) => ({ ...hit, daysAgo: daysBetween(hit.lastDate, today) })),
+  );
 }

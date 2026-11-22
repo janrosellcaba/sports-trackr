@@ -19,13 +19,13 @@ describe("resolveAccentTheme", () => {
   it("returns Volt Nitro as the default fallback", () => {
     expect(resolveAccentTheme(undefined).id).toBe(DEFAULT_ACCENT_THEME);
     expect(resolveAccentTheme("not-a-theme").id).toBe("volt");
-    expect(resolveAccentTheme(null).primary).toBe("#84cc16");
+    expect(resolveAccentTheme(null).primary).toBe("#a3e635");
     expect(resolveAccentTheme("volt").name).toBe("Volt Nitro");
   });
 
   it("resolves every curated fitness preset without emojis", () => {
     expect(resolveAccentTheme("crimson").primary).toBe("#ef4444");
-    expect(resolveAccentTheme("volt").hover).toBe("#eab308");
+    expect(resolveAccentTheme("volt").hover).toBe("#bef264");
     expect(resolveAccentTheme("ice").primary).toBe("#06b6d4");
     expect(resolveAccentTheme("royal").primary).toBe("#8b5cf6");
     expect(ACCENT_THEME_IDS).toEqual([
@@ -48,7 +48,7 @@ describe("resolveColorMode", () => {
     expect(resolveColorMode("nope")).toBe("dark");
     expect(resolveColorMode("light")).toBe("light");
     expect(themeColorForMode("light")).toBe("#f3efe6");
-    expect(themeColorForMode("dark")).toBe("#09090b");
+    expect(themeColorForMode("dark")).toBe("#000000");
   });
 });
 
@@ -65,7 +65,7 @@ describe("accentCssVars", () => {
     const root = document.createElement("html");
     applyAccentToDocument(resolveAccentTheme("garbage"), root);
     expect(root.dataset.accent).toBe("volt");
-    expect(root.style.getPropertyValue("--accent-primary")).toBe("#84cc16");
+    expect(root.style.getPropertyValue("--accent-primary")).toBe("#a3e635");
     expect(ACCENT_STORAGE_KEY).toBe("trackr-accent");
   });
 

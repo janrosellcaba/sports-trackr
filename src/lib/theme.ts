@@ -17,7 +17,7 @@ export type ColorMode = (typeof COLOR_MODES)[number];
 export const DEFAULT_COLOR_MODE: ColorMode = "dark";
 export const COLOR_MODE_STORAGE_KEY = "trackr-color-mode";
 
-export const DARK_THEME_COLOR = "#09090b";
+export const DARK_THEME_COLOR = "#000000";
 export const LIGHT_THEME_COLOR = "#f3efe6";
 
 export type AccentTheme = {
@@ -34,11 +34,11 @@ export const ACCENT_THEMES: Record<AccentThemeId, AccentTheme> = {
   volt: {
     id: "volt",
     name: "Volt Nitro",
-    primary: "#84cc16",
-    hover: "#eab308",
-    glow: "rgba(132, 204, 22, 0.38)",
-    soft: "rgba(132, 204, 22, 0.16)",
-    fg: "#09090b",
+    primary: "#a3e635",
+    hover: "#bef264",
+    glow: "rgba(163, 230, 53, 0.22)",
+    soft: "rgba(163, 230, 53, 0.12)",
+    fg: "#0a0a0a",
   },
   amber: {
     id: "amber",
