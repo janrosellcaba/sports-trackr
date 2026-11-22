@@ -108,26 +108,31 @@ describe("LogView trainer copy", () => {
         supplements={[]}
         bodyWeights={[]}
         muscles={[]}
+        profile={{
+          heightCm: 180,
+          sex: "male",
+          birthYear: 1990,
+          goal: "strength",
+          experience: null,
+          profileNotes: "Left knee",
+        }}
       />,
     );
 
     await user.click(screen.getByRole("button", { name: "Copy AI prompt" }));
-    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
-      "Train today",
-      "Analyze",
-    ]);
-    await user.click(screen.getByRole("menuitem", { name: "Train today" }));
+    expect(screen.getAllByRole("menuitem")).toHaveLength(2);
+    await user.click(screen.getByRole("menuitem", { name: /Train today/ }));
     const today = writeText.mock.calls[0][0] as string;
     expect(today).toContain("DECIDE WHAT I SHOULD DO TODAY");
     expect(today).toContain('"range": "last 90 days"');
     expect(today).toContain("2026-08-01");
+    expect(today).toContain("- Height: 180 cm");
+    expect(today).toContain("Left knee");
 
     await user.click(screen.getByRole("button", { name: "Copy AI prompt" }));
-    await user.click(screen.getByRole("button", { name: "30 days" }));
-    await user.click(screen.getByRole("menuitem", { name: "Analyze" }));
+    await user.click(screen.getByRole("menuitem", { name: /Analyze/ }));
     const analyze = writeText.mock.calls[1][0] as string;
     expect(analyze).toContain("FULL TRAINING ANALYSIS");
-    expect(analyze).toContain('"range": "last 30 days"');
-    expect(analyze).not.toContain("2026-08-01");
+    expect(analyze).toContain("- Main goal: Strength");
   });
 });

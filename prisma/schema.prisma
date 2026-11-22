@@ -19,6 +19,12 @@ model User {
   catalogSeeded       Boolean             @default(false)
   locale              String              @default("en")
   onboardingCompleted Boolean             @default(true)
+  heightCm            Int?
+  sex                 String?
+  birthYear           Int?
+  goal                String?
+  experience          String?
+  profileNotes        String?
   sessions          Session[]
   gymSessions       GymSession[]
   sports            SportSession[]

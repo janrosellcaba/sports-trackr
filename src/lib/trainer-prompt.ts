@@ -1,4 +1,14 @@
-import type { TrainerLog } from "@/lib/trainer-log";
+import type { TrainerLog, TrainerLogRange } from "@/lib/trainer-log";
+import { profilePromptLines, type Profile } from "@/lib/profile";
+
+/**
+ * The prompt always carries the last 90 days, on purpose and for good:
+ * 12 weeks cover a full training block plus a deload, give a solid chronic-load
+ * baseline against the last 7-28 days, and stay small enough (a few thousand
+ * tokens) for any chat. Counting days instead of "last N logs" keeps gaps
+ * (injury, holidays) visible to the coach.
+ */
+export const TRAINER_PROMPT_RANGE: TrainerLogRange = "days-90";
 
 export const TRAINER_PROMPT_GOALS = ["today", "analyze"] as const;
 export type TrainerPromptGoal = (typeof TRAINER_PROMPT_GOALS)[number];
@@ -124,13 +134,23 @@ OUTPUT FORMAT
 export function buildTrainerPrompt(
   log: TrainerLog,
   goal: TrainerPromptGoal,
+  profile?: Profile | null,
 ): string {
   const task = goal === "today" ? todayInstructions(log) : analyzeInstructions(log);
   const context = [
     `CONTEXT`,
     `- Today is ${weekdayOf(log.to)} ${log.to}.`,
     `- The data covers the ${log.range} (${log.from ?? "?"} to ${log.to}), ${log.trainingDays} training days logged.`,
-    `- My goal is general fitness and long-term progress unless the notes say otherwise. If you need my goal to answer well, state the assumption you are making.`,
+  ].join("\n");
+  const profileLines = profilePromptLines(profile, log.to, log.latestWeight?.weightKg);
+  const athlete = [
+    "ATHLETE PROFILE (optional, only what I chose to share)",
+    ...(profileLines.length > 0
+      ? profileLines
+      : ["- Nothing shared. Do not assume sex, age, height or goal; state any assumption you make."]),
+    ...(profile?.goal
+      ? []
+      : ["- No goal given: assume general fitness and long-term progress, and say so."]),
   ].join("\n");
 
   return [
@@ -139,6 +159,8 @@ export function buildTrainerPrompt(
     "I am sending you my training log as JSON. Read all of it before answering.",
     "",
     context,
+    "",
+    athlete,
     "",
     DATA_GUIDE,
     "",

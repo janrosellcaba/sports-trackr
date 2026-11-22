@@ -10,6 +10,7 @@ const TITLES: Record<Exclude<SettingsSection, "menu">, string> = {
   muscles: "Muscles",
   sports: "Sports",
   exercises: "Exercises",
+  profile: "Profile",
   appearance: "Appearance",
   data: "Data",
   account: "Account",

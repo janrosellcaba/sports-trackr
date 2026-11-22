@@ -44,6 +44,12 @@ export type AuthUser = {
   distanceUnit: string;
   locale: string;
   onboardingCompleted: boolean;
+  heightCm: number | null;
+  sex: string | null;
+  birthYear: number | null;
+  goal: string | null;
+  experience: string | null;
+  profileNotes: string | null;
 };
 
 export type AuthActionResult = {

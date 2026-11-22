@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth";
 import { validatePassword, confirmsUsername } from "@/lib/auth-logic";
 import { MAX_PASSWORD_LENGTH } from "@/lib/constants";
+import { parseProfileInput, type ProfileInput } from "@/lib/profile";
 import { resolveAccentTheme, resolveColorMode } from "@/lib/theme";
 import { revalidateApp } from "@/lib/revalidate";
 import {
@@ -51,6 +52,17 @@ export async function updateColorMode(mode: string): Promise<void> {
     data: { colorMode: resolveColorMode(mode) },
   });
   revalidateApp();
+}
+
+export async function updateProfile(
+  input: ProfileInput,
+): Promise<{ error: string } | { error: null }> {
+  const user = await requireUser();
+  const parsed = parseProfileInput(input);
+  if (!parsed.ok) return { error: parsed.error };
+  await prisma.user.update({ where: { id: user.id }, data: parsed.value });
+  revalidateApp();
+  return { error: null };
 }
 
 export async function listActiveSessions(): Promise<AccountSession[]> {

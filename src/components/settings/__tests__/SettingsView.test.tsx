@@ -25,6 +25,12 @@ const user: AuthUser = {
   distanceUnit: "km",
   locale: "en",
   onboardingCompleted: true,
+  heightCm: null,
+  sex: null,
+  birthYear: null,
+  goal: null,
+  experience: null,
+  profileNotes: null,
 };
 
 describe("SettingsView", () => {

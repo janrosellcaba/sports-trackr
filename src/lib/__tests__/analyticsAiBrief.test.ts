@@ -24,6 +24,7 @@ const summary: AnalyticsSummary = {
   gymStreak: 1,
   sportStreak: 0,
   chartLabel: "Activity",
+  firstActivityDate: null,
   previous: { activityDays: 4, gymLoad: 20 },
   trends: {
     activity: 10,

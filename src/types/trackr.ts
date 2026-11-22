@@ -132,6 +132,8 @@ export type AnalyticsSummary = {
   sportStreak: number;
   restDays: number;
   chartLabel: string;
+  /** Date of the first gym or sport log, to bound the month picker. */
+  firstActivityDate: string | null;
   previous: {
     activityDays: number;
     gymLoad: number;

@@ -2,6 +2,7 @@ export const SETTINGS_SECTIONS = [
   "muscles",
   "sports",
   "exercises",
+  "profile",
   "appearance",
   "data",
   "account",

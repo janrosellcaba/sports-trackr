@@ -8,7 +8,12 @@ import {
 } from "@/lib/calculations";
 import {
   ANALYTICS_ALL_CHART_DAYS,
+  monthEnd,
+  monthLabel,
+  monthStart,
+  parseAnalyticsMonth,
   parseAnalyticsPeriod,
+  shiftMonth,
   percentChange,
   periodLabel,
   uniqueCount,
@@ -51,14 +56,35 @@ function buildDailySkeleton(days: number, endISO: string): DailyActivityPoint[] 
 export async function getAnalyticsSummary(
   periodInput: AnalyticsPeriod | number = 30,
   todayOverride?: string,
+  monthInput?: string | null,
 ): Promise<AnalyticsSummary> {
   const user = await requireUser();
   const period = parseAnalyticsPeriod(periodInput);
   const today = todayOverride ?? (await getRequestToday());
-  const allTime = period === 0;
-  const rangeDays = allTime ? ANALYTICS_ALL_CHART_DAYS : period;
-  const rangeStart = addDaysISO(today, -(rangeDays - 1));
-  const previousStart = addDaysISO(rangeStart, -rangeDays);
+  const month = parseAnalyticsMonth(monthInput, today);
+  const allTime = month == null && period === 0;
+  // A month runs from its 1st to its last day (or today, for the current month).
+  const rangeEnd = month ? (monthEnd(month) < today ? monthEnd(month) : today) : today;
+  const rangeStart = month
+    ? monthStart(month)
+    : addDaysISO(today, -((allTime ? ANALYTICS_ALL_CHART_DAYS : period) - 1));
+  const rangeDays = month
+    ? Math.round(
+        (new Date(`${rangeEnd}T00:00:00Z`).getTime() -
+          new Date(`${rangeStart}T00:00:00Z`).getTime()) /
+          86_400_000,
+      ) + 1
+    : allTime
+      ? ANALYTICS_ALL_CHART_DAYS
+      : period;
+  // Months compare with the same number of days of the month before; rolling
+  // windows compare with the window right before them.
+  const previousStart = month
+    ? monthStart(shiftMonth(month, -1))
+    : addDaysISO(rangeStart, -rangeDays);
+  const previousEnd = month
+    ? [addDaysISO(previousStart, rangeDays), rangeStart].sort()[0]
+    : rangeStart;
 
   const [
     chartSessions,
@@ -82,34 +108,34 @@ export async function getAnalyticsSummary(
     shapePrs,
   ] = await Promise.all([
     prisma.gymSession.findMany({
-      where: { userId: user.id, date: { gte: rangeStart } },
+      where: { userId: user.id, date: { gte: rangeStart, lte: rangeEnd } },
       include: { hits: true },
     }),
     prisma.supplementIntake.findMany({
-      where: { userId: user.id, date: { gte: rangeStart } },
+      where: { userId: user.id, date: { gte: rangeStart, lte: rangeEnd } },
       select: { date: true },
     }),
     prisma.sportSession.findMany({
-      where: { userId: user.id, date: { gte: rangeStart } },
+      where: { userId: user.id, date: { gte: rangeStart, lte: rangeEnd } },
     }),
     prisma.gymSession.findMany({
       where: {
         userId: user.id,
-        date: { gte: previousStart, lt: rangeStart },
+        date: { gte: previousStart, lt: previousEnd },
       },
       include: { hits: true },
     }),
     prisma.supplementIntake.findMany({
       where: {
         userId: user.id,
-        date: { gte: previousStart, lt: rangeStart },
+        date: { gte: previousStart, lt: previousEnd },
       },
       select: { date: true },
     }),
     prisma.sportSession.findMany({
       where: {
         userId: user.id,
-        date: { gte: previousStart, lt: rangeStart },
+        date: { gte: previousStart, lt: previousEnd },
       },
       select: { date: true },
     }),
@@ -158,7 +184,7 @@ export async function getAnalyticsSummary(
     prisma.bodyWeight.findMany({
       where: {
         userId: user.id,
-        ...(allTime ? {} : { date: { gte: rangeStart } }),
+        ...(allTime ? {} : { date: { gte: rangeStart, lte: rangeEnd } }),
       },
       select: { date: true, weightKg: true },
       orderBy: { date: "asc" },
@@ -196,7 +222,7 @@ export async function getAnalyticsSummary(
   ]);
 
   const dailyMap = new Map(
-    buildDailySkeleton(rangeDays, today).map((point) => [point.date, point]),
+    buildDailySkeleton(rangeDays, rangeEnd).map((point) => [point.date, point]),
   );
 
   let totalHits = 0;
@@ -310,10 +336,16 @@ export async function getAnalyticsSummary(
 
   return {
     days: allTime ? 0 : rangeDays,
-    periodLabel: periodLabel(allTime ? 9999 : rangeDays),
+    periodLabel: month ? monthLabel(month) : periodLabel(allTime ? 9999 : rangeDays),
     chartLabel: allTime
       ? `Activity · last ${ANALYTICS_ALL_CHART_DAYS} days`
       : "Activity",
+    firstActivityDate: [
+      allGymDates[allGymDates.length - 1]?.date,
+      allSportDates[allSportDates.length - 1]?.date,
+    ]
+      .filter((date): date is string => Boolean(date))
+      .sort()[0] ?? null,
     activityDays,
     gymDays,
     sportDays,

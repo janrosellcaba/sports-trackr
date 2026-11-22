@@ -27,9 +27,11 @@ import { copyText } from "@/lib/clipboard";
 import { buildTrainerLog, type TrainerLogRange } from "@/lib/trainer-log";
 import {
   TRAINER_PROMPT_GOAL_LABEL,
+  TRAINER_PROMPT_RANGE,
   buildTrainerPrompt,
   type TrainerPromptGoal,
 } from "@/lib/trainer-prompt";
+import { EMPTY_PROFILE, type Profile } from "@/lib/profile";
 import type { DistanceUnit } from "@/lib/units";
 import {
   CARD_CLS,
@@ -75,6 +77,7 @@ export function LogView({
   bodyWeights,
   muscles,
   sportCatalog = [],
+  profile = EMPTY_PROFILE,
 }: {
   today: string;
   gymSessions: GymSessionPayload[];
@@ -83,6 +86,7 @@ export function LogView({
   bodyWeights: BodyWeightPayload[];
   muscles: MusclePayload[];
   sportCatalog?: SportCatalogPayload[];
+  profile?: Profile;
 }) {
   const router = useRouter();
   const { distanceUnit } = useUnits();
@@ -209,10 +213,10 @@ export function LogView({
     }
   }
 
-  async function copyTrainerPrompt(range: TrainerLogRange, goal: TrainerPromptGoal) {
-    const trainerLog = trainerLogFor(range);
+  async function copyTrainerPrompt(goal: TrainerPromptGoal) {
+    const trainerLog = trainerLogFor(TRAINER_PROMPT_RANGE);
     try {
-      await copyText(buildTrainerPrompt(trainerLog, goal));
+      await copyText(buildTrainerPrompt(trainerLog, goal, profile));
       setNotice({
         id: Date.now(),
         text: `${TRAINER_PROMPT_GOAL_LABEL[goal]} prompt copied (${trainerLog.range}).`,

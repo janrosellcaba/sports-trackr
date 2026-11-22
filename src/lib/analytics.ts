@@ -152,3 +152,67 @@ export function weekCounts(week: ActivityWeek): {
   }
   return { gym, sport, rest, activity };
 }
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+export type MonthKey = string; // "YYYY-MM"
+
+export function isMonthKey(value: unknown): value is MonthKey {
+  return typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+export function monthLabel(key: MonthKey): string {
+  const [year, month] = key.split("-").map(Number);
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+export function shiftMonth(key: MonthKey, delta: number): MonthKey {
+  const [year, month] = key.split("-").map(Number);
+  const index = year * 12 + (month - 1) + delta;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
+}
+
+export function monthStart(key: MonthKey): string {
+  return `${key}-01`;
+}
+
+export function monthEnd(key: MonthKey): string {
+  const [year, month] = key.split("-").map(Number);
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${key}-${String(last).padStart(2, "0")}`;
+}
+
+/** A valid month that is not in the future, or null. */
+export function parseAnalyticsMonth(value: unknown, today: string): MonthKey | null {
+  if (!isMonthKey(value)) return null;
+  return value <= today.slice(0, 7) ? value : null;
+}
+
+/** Months from the current one back to the first activity, newest first. */
+export function monthOptions(
+  firstDate: string | null,
+  today: string,
+): { key: MonthKey; label: string }[] {
+  const current = today.slice(0, 7);
+  const first = firstDate && firstDate.length >= 7 ? firstDate.slice(0, 7) : current;
+  const options: { key: MonthKey; label: string }[] = [];
+  let key = current;
+  while (key >= first && options.length < 240) {
+    options.push({ key, label: monthLabel(key) });
+    key = shiftMonth(key, -1);
+  }
+  return options;
+}

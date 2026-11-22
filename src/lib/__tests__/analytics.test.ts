@@ -1,3 +1,4 @@
+import { monthEnd, monthLabel, monthOptions, parseAnalyticsMonth, shiftMonth } from "@/lib/analytics";
 import { describe, expect, it } from "vitest";
 import {
   activityKind,
@@ -101,5 +102,31 @@ describe("weekStrip", () => {
       "out",
       "out",
     ]);
+  });
+});
+
+describe("analytics months", () => {
+  it("handles bounds, labels and shifting", () => {
+    expect(monthEnd("2026-02")).toBe("2026-02-28");
+    expect(monthEnd("2028-02")).toBe("2028-02-29");
+    expect(monthLabel("2026-10")).toBe("October 2026");
+    expect(shiftMonth("2026-01", -1)).toBe("2025-12");
+    expect(shiftMonth("2026-12", 1)).toBe("2027-01");
+  });
+
+  it("rejects bad or future months", () => {
+    expect(parseAnalyticsMonth("2026-10", "2026-10-06")).toBe("2026-10");
+    expect(parseAnalyticsMonth("2026-11", "2026-10-06")).toBeNull();
+    expect(parseAnalyticsMonth("2026-13", "2026-10-06")).toBeNull();
+    expect(parseAnalyticsMonth(undefined, "2026-10-06")).toBeNull();
+  });
+
+  it("lists months newest first back to the first log", () => {
+    expect(monthOptions("2026-08-14", "2026-10-06").map((m) => m.key)).toEqual([
+      "2026-10",
+      "2026-09",
+      "2026-08",
+    ]);
+    expect(monthOptions(null, "2026-10-06").map((m) => m.key)).toEqual(["2026-10"]);
   });
 });

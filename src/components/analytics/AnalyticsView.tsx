@@ -10,6 +10,7 @@ import { RecoveryOverview } from "@/components/analytics/RecoveryOverview";
 import { TopMuscles } from "@/components/analytics/TopMuscles";
 import { WeekdayPattern } from "@/components/analytics/WeekdayPattern";
 import { WeekGrid } from "@/components/analytics/WeekGrid";
+import { MonthNavigator } from "@/components/analytics/MonthNavigator";
 import { NoticeToast, type Notice } from "@/components/ui/NoticeToast";
 import { useUnits } from "@/components/units/UnitsProvider";
 import { buildAnalyticsAiBrief } from "@/lib/analyticsAiBrief";
@@ -42,11 +43,18 @@ const ShapeChart = dynamic(
   { ssr: false, loading: () => <ChartSkeleton label="Shape" /> },
 );
 
-const PERIODS: { key: AnalyticsPeriod; label: string; href: string }[] = [
-  { key: 7, label: "7d", href: "/analytics?period=7" },
-  { key: 30, label: "30d", href: "/analytics" },
-  { key: 90, label: "90d", href: "/analytics?period=90" },
-  { key: 0, label: "All", href: "/analytics?period=0" },
+type PeriodTab = {
+  key: string;
+  label: string;
+  href: string;
+  active: (period: AnalyticsPeriod, month: string | null) => boolean;
+};
+
+const PERIODS: PeriodTab[] = [
+  { key: "7", label: "7d", href: "/analytics?period=7", active: (p, m) => !m && p === 7 },
+  { key: "30", label: "30d", href: "/analytics", active: (p, m) => !m && p === 30 },
+  { key: "90", label: "90d", href: "/analytics?period=90", active: (p, m) => !m && p === 90 },
+  { key: "all", label: "All", href: "/analytics?period=0", active: (p, m) => !m && p === 0 },
 ];
 
 export function AnalyticsView({
@@ -54,11 +62,15 @@ export function AnalyticsView({
   exercises,
   recovery,
   period,
+  month = null,
+  months = [],
 }: {
   summary: AnalyticsSummary;
   exercises: NotebookExercise[];
   recovery: MuscleRecoveryRow[];
   period: AnalyticsPeriod;
+  month?: string | null;
+  months?: { key: string; label: string }[];
 }) {
   const { massUnit, distanceUnit } = useUnits();
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -93,25 +105,49 @@ export function AnalyticsView({
         <h1 className={PAGE_TITLE}>Analytics</h1>
         <AnalyticsCopyMenu onCopyJson={handleCopyJson} onCopyAi={handleCopyAi} />
       </div>
-      <div className={`${SEGMENT_TRACK} grid-cols-4 sm:w-72`}>
-        {PERIODS.map((item) => {
-          const active = period === item.key;
-          return (
-            <Link
-              key={item.key}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              onPointerUp={blurOnPointerUp}
-              className={segmentItemClass(active)}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
+      <div className="space-y-3">
+        <div className={`${SEGMENT_TRACK} grid-cols-5 sm:w-96`}>
+          {PERIODS.slice(0, 3).map((item) => {
+            const active = item.active(period, month);
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                onPointerUp={blurOnPointerUp}
+                className={segmentItemClass(active)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+          <Link
+            href={`/analytics?month=${months[0]?.key ?? ""}`}
+            aria-current={month ? "page" : undefined}
+            onPointerUp={blurOnPointerUp}
+            className={segmentItemClass(Boolean(month))}
+          >
+            Month
+          </Link>
+          {PERIODS.slice(3).map((item) => {
+            const active = item.active(period, month);
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                onPointerUp={blurOnPointerUp}
+                className={segmentItemClass(active)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+        {month ? <MonthNavigator month={month} months={months} /> : null}
       </div>
 
       <div className="space-y-6">
-        <RecoveryOverview rows={recovery} />
         <KpiGrid summary={summary} />
         <div className="grid gap-6 lg:grid-cols-2">
           <ActivityChart data={summary.daily} chartLabel={summary.chartLabel} />
@@ -130,6 +166,7 @@ export function AnalyticsView({
         </div>
         <WeekdayPattern data={summary.daily} />
         <ShapeChart points={summary.shape} />
+        <RecoveryOverview rows={recovery} />
       </div>
       <NoticeToast notice={notice} onDismissed={dismissNotice} />
     </div>

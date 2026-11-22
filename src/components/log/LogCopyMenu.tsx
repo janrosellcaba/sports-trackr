@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Braces, Sparkles } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import type { TrainerLogRange } from "@/lib/trainer-log";
 import {
   TRAINER_PROMPT_GOALS,
@@ -19,7 +19,12 @@ const ITEM_CLS =
   "flex w-full px-3 py-2.5 text-left text-sm font-medium text-ink transition-colors duration-150 hover:bg-chip";
 
 const TRIGGER_CLS =
-  "inline-flex h-9 items-center gap-1.5 rounded-xl border border-line bg-chip px-3 text-xs font-bold text-muted transition-colors duration-150 hover:bg-chip-hover hover:text-ink disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex size-9 items-center justify-center rounded-xl border border-line bg-chip text-muted transition-colors duration-150 hover:bg-chip-hover hover:text-ink disabled:pointer-events-none disabled:opacity-50";
+
+const PROMPT_ITEMS: Record<TrainerPromptGoal, string> = {
+  today: "What to do today, rest included",
+  analyze: "Full review of my training",
+};
 
 type MenuKind = "json" | "prompt";
 
@@ -30,10 +35,9 @@ export function LogCopyMenu({
 }: {
   disabled: boolean;
   onCopyJson: (range: TrainerLogRange) => Promise<void>;
-  onCopyPrompt: (range: TrainerLogRange, goal: TrainerPromptGoal) => Promise<void>;
+  onCopyPrompt: (goal: TrainerPromptGoal) => Promise<void>;
 }) {
   const [open, setOpen] = useState<MenuKind | null>(null);
-  const [promptRange, setPromptRange] = useState<TrainerLogRange>("days-90");
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -84,8 +88,7 @@ export function LogCopyMenu({
         aria-expanded={open === "json"}
         className={TRIGGER_CLS}
       >
-        <Braces className="h-3.5 w-3.5" aria-hidden="true" />
-        JSON
+        <Copy className="h-4 w-4" aria-hidden="true" />
       </button>
       <button
         type="button"
@@ -95,10 +98,9 @@ export function LogCopyMenu({
         aria-label="Copy AI prompt"
         aria-haspopup="menu"
         aria-expanded={open === "prompt"}
-        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-brand/40 bg-brand-soft px-3 text-xs font-bold text-brand-text transition-colors duration-150 hover:border-brand hover:bg-brand/25 disabled:pointer-events-none disabled:opacity-50"
+        className="ai-shine inline-flex size-9 items-center justify-center rounded-xl text-brand-text transition-transform duration-150 hover:scale-105 disabled:pointer-events-none disabled:opacity-50"
       >
-        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-        Prompt
+        <Sparkles className="ai-sparkle relative z-10 h-4 w-4" aria-hidden="true" />
       </button>
 
       {open === "json" && pos ? (
@@ -130,34 +132,9 @@ export function LogCopyMenu({
           role="menu"
           aria-label="Copy AI prompt"
           style={{ top: pos.top, right: pos.right }}
-          className="toast-enter card-lux fixed z-30 w-60 overflow-hidden rounded-xl py-2"
+          className="toast-enter card-lux fixed z-30 w-64 overflow-hidden rounded-xl py-1"
         >
-          <p className={`${LABEL_CLS} px-3 pb-2`}>Data range</p>
-          <div
-            role="group"
-            aria-label="Prompt range"
-            className="mx-3 mb-3 grid grid-cols-2 gap-1 rounded-xl bg-chip p-1"
-          >
-            {COPY_RANGES.map((item) => {
-              const active = promptRange === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setPromptRange(item.key)}
-                  className={`rounded-lg py-1.5 text-xs font-semibold transition-colors duration-150 ${
-                    active
-                      ? "bg-brand text-[color:var(--accent-fg)]"
-                      : "text-muted hover:text-ink"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className={`${LABEL_CLS} px-3 pb-1`}>Ask the AI to</p>
+          <p className={`${LABEL_CLS} px-3 pt-2 pb-1`}>Ask the AI to…</p>
           {TRAINER_PROMPT_GOALS.map((goal) => (
             <button
               key={goal}
@@ -165,13 +142,19 @@ export function LogCopyMenu({
               role="menuitem"
               onClick={() => {
                 setOpen(null);
-                void onCopyPrompt(promptRange, goal);
+                void onCopyPrompt(goal);
               }}
-              className={ITEM_CLS}
+              className={`${ITEM_CLS} flex-col`}
             >
-              {TRAINER_PROMPT_GOAL_LABEL[goal]}
+              <span>{TRAINER_PROMPT_GOAL_LABEL[goal]}</span>
+              <span className="text-[11px] font-normal text-muted">
+                {PROMPT_ITEMS[goal]}
+              </span>
             </button>
           ))}
+          <p className="border-t border-line px-3 pt-2 pb-2 text-[11px] text-muted">
+            Includes your last 90 days and your profile.
+          </p>
         </div>
       ) : null}
     </div>

@@ -15,6 +15,7 @@ import {
   Map,
   Palette,
   User,
+  UserRound,
 } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 import { deleteAccount, type AccountSession } from "@/app/actions/account";
@@ -28,6 +29,7 @@ import {
   MuscleCatalogView,
 } from "@/components/settings/CatalogViews";
 import { SportCatalogView } from "@/components/settings/SportCatalogView";
+import { ProfileView } from "@/components/settings/ProfileView";
 import { SupportView } from "@/components/settings/SupportView";
 import { confirmsUsername, isAdminUser } from "@/lib/auth-logic";
 import { buildExportCsv } from "@/lib/export-data";
@@ -68,6 +70,12 @@ const PAGES: {
     label: "Exercises",
     hint: "Lift catalog",
     icon: Dumbbell,
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    hint: "Height, sex, goal · for the AI coach",
+    icon: UserRound,
   },
   {
     id: "appearance",
@@ -136,6 +144,21 @@ export function SettingsView({
         {section === "exercises" ? (
           <SectionIntro title="Exercises">
             <ExerciseCatalogView initial={customExercises} muscles={muscles} />
+          </SectionIntro>
+        ) : null}
+
+        {section === "profile" ? (
+          <SectionIntro title="Profile">
+            <ProfileView
+              profile={{
+                heightCm: user.heightCm,
+                sex: user.sex,
+                birthYear: user.birthYear,
+                goal: user.goal,
+                experience: user.experience,
+                profileNotes: user.profileNotes,
+              }}
+            />
           </SectionIntro>
         ) : null}
 

@@ -20,6 +20,8 @@ node scripts/add-dual-weights-column.mjs
 node scripts/add-body-weight-table.mjs
 # Additive columns. Existing users skip the first-run tour.
 node scripts/add-onboarding-columns.mjs
+# Additive nullable columns for the optional athlete profile.
+node scripts/add-profile-columns.mjs
 # Only the unused custom-supplement catalog. Gym, sports, weight, and intake logs stay.
 node scripts/drop-custom-supplements.mjs
 # Schema sync. Adds missing tables/columns only.
