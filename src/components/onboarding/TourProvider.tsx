@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -34,26 +33,26 @@ export function TourProvider({
   children: ReactNode;
 }) {
   const initial = parseAppLocale(locale);
-  const [open, setOpen] = useState(forced);
+  const [manualOpen, setManualOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [lang, setLang] = useState<AppLocale>(initial);
+  const [seenLocale, setSeenLocale] = useState(locale);
+  const open = manualOpen || (forced && !dismissed);
 
-  useEffect(() => {
+  // Follow the saved locale when it changes, without an effect.
+  if (locale !== seenLocale) {
+    setSeenLocale(locale);
     setLang(parseAppLocale(locale));
-  }, [locale]);
-
-  useEffect(() => {
-    if (forced && !dismissed) setOpen(true);
-  }, [forced, dismissed]);
+  }
 
   const openTour = useCallback(() => {
     setDismissed(false);
-    setOpen(true);
+    setManualOpen(true);
   }, []);
 
   const closeTour = useCallback(() => {
     setDismissed(true);
-    setOpen(false);
+    setManualOpen(false);
   }, []);
 
   const value = useMemo(() => ({ openTour }), [openTour]);

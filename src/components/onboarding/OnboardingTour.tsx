@@ -34,16 +34,18 @@ export function OnboardingTour({
   const panelRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<OnboardingStepId>(forced ? "language" : "welcome");
   const [lang, setLang] = useState<AppLocale>(locale);
+  const [seenLocale, setSeenLocale] = useState(locale);
+  // Follow the parent's locale when it changes, without an effect.
+  if (locale !== seenLocale) {
+    setSeenLocale(locale);
+    setLang(locale);
+  }
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const copy = onboardingCopy(lang);
   const preview = starterCatalogPreview(lang);
   const stepIndex = ONBOARDING_STEPS.indexOf(step);
   const stepCount = ONBOARDING_STEPS.length;
-
-  useEffect(() => {
-    setLang(locale);
-  }, [locale]);
 
   useEffect(() => {
     panelRef.current?.querySelector<HTMLElement>("button, [href]")?.focus();

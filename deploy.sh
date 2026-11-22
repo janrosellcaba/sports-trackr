@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Non-interactive ssh sessions do not load nvm; use the same Node as the systemd service.
+export PATH="$HOME/.nvm/versions/node/v24.19.0/bin:$PATH"
+
 echo "🚀 [1/5] Descarregant últims canvis de Git..."
 git pull origin main
 

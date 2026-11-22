@@ -16,11 +16,17 @@ export function NoticeToast({
 }) {
   const [shown, setShown] = useState<Notice | null>(null);
   const [leaving, setLeaving] = useState(false);
+  const [seen, setSeen] = useState<Notice | null>(null);
+
+  // Adopt a new notice during render instead of syncing it from an effect.
+  if (notice && notice !== seen) {
+    setSeen(notice);
+    setShown(notice);
+    setLeaving(false);
+  }
 
   useEffect(() => {
     if (!notice) return;
-    setShown(notice);
-    setLeaving(false);
     const leave = window.setTimeout(() => setLeaving(true), SHOW_MS);
     const gone = window.setTimeout(() => {
       setShown(null);
